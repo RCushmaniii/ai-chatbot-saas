@@ -1,0 +1,113 @@
+import { openai } from "@ai-sdk/openai";
+import { embed } from "ai";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { auth } from "@/app/(auth)/auth";
+import { documents } from "@/lib/db/schema";
+
+// biome-ignore lint: Forbidden non-null assertion.
+const client = postgres(process.env.POSTGRES_URL!);
+const db = drizzle(client);
+
+export async function POST(request: Request) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Optional: Add admin role check here
+    // if (session.user.role !== 'admin') {
+    //   return Response.json({ error: "Forbidden" }, { status: 403 });
+    // }
+
+    const body = await request.json();
+    const { content, url, metadata } = body;
+
+    if (!content) {
+      return Response.json(
+        { error: "Content is required" },
+        { status: 400 }
+      );
+    }
+
+    // Create embedding
+    const { embedding } = await embed({
+      model: openai.embedding("text-embedding-3-small"),
+      value: content,
+    });
+
+    // Insert into database
+    await db.insert(documents).values({
+      content,
+      url: url || "https://www.nyenglishteacher.com",
+      embedding: embedding as any,
+      metadata: JSON.stringify(metadata || {}),
+    });
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error("Error adding knowledge:", error);
+    return Response.json(
+      { error: "Failed to add content" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get all documents
+    const allDocuments = await client.unsafe(`
+      SELECT id, content, url, metadata, "createdAt"
+      FROM "Document_Knowledge"
+      ORDER BY "createdAt" DESC
+      LIMIT 50
+    `);
+
+    return Response.json({ documents: allDocuments }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching knowledge:", error);
+    return Response.json(
+      { error: "Failed to fetch content" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return Response.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    await client.unsafe(`
+      DELETE FROM "Document_Knowledge"
+      WHERE id = ${id}
+    `);
+
+    return Response.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting knowledge:", error);
+    return Response.json(
+      { error: "Failed to delete content" },
+      { status: 500 }
+    );
+  }
+}
