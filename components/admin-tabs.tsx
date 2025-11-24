@@ -5,12 +5,13 @@ import { AdminKnowledgeBase } from "@/components/admin-knowledge-base";
 import { AdminWebsiteScraping } from "@/components/admin-website-scraping";
 import { AdminSystemInstructions } from "@/components/admin-system-instructions";
 import { AdminStarterQuestions } from "@/components/admin-starter-questions";
-import { Database, Globe, Settings, MessageSquare } from "lucide-react";
+import { AdminEmbedCode } from "@/components/admin-embed-code";
+import { Database, Globe, Settings, MessageSquare, Code } from "lucide-react";
 
 export function AdminTabs() {
   return (
     <Tabs defaultValue="manual" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="manual" className="flex items-center gap-2">
           <Database className="h-4 w-4" />
           <span className="hidden sm:inline">Manual Content</span>
@@ -31,6 +32,11 @@ export function AdminTabs() {
           <span className="hidden sm:inline">Instructions</span>
           <span className="sm:hidden">Prompts</span>
         </TabsTrigger>
+        <TabsTrigger value="embed" className="flex items-center gap-2">
+          <Code className="h-4 w-4" />
+          <span className="hidden sm:inline">Embed Code</span>
+          <span className="sm:hidden">Embed</span>
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="manual" className="mt-6">
@@ -47,6 +53,10 @@ export function AdminTabs() {
 
       <TabsContent value="prompts" className="mt-6">
         <AdminSystemInstructions />
+      </TabsContent>
+
+      <TabsContent value="embed" className="mt-6">
+        <AdminEmbedCode />
       </TabsContent>
     </Tabs>
   );

@@ -171,6 +171,21 @@ export async function POST(request: Request) {
     const latestUserText = getTextFromMessage(message) ?? "";
     const knowledgeResults = await searchKnowledgeDirect(latestUserText);
 
+    // Detect language from user's message (with error handling)
+    let detectedLang: 'en' | 'es' = 'en';
+    let learnMoreText = 'Learn more:';
+    let translateUrlFn: ((url: string, lang: 'en' | 'es') => string) | null = null;
+    
+    try {
+      const { detectLanguage, translateUrl, getLearnMoreText } = await import("@/lib/utils/language-detector");
+      detectedLang = detectLanguage(latestUserText);
+      learnMoreText = getLearnMoreText(detectedLang);
+      translateUrlFn = translateUrl;
+      console.log(`🌐 Detected language: ${detectedLang} for message: "${latestUserText.substring(0, 50)}..."`);
+    } catch (error) {
+      console.error('⚠️  Language detection failed, defaulting to English:', error);
+    }
+
     // Debug: Log knowledge results
     if (knowledgeResults.length > 0) {
       console.log(`📚 Found ${knowledgeResults.length} knowledge results for: "${latestUserText}"`);
@@ -181,9 +196,17 @@ export async function POST(request: Request) {
       console.log(`⚠️  No knowledge results found for: "${latestUserText}"`);
     }
 
-    // Extract unique URLs from knowledge results
+    // Extract unique URLs from knowledge results and translate them based on detected language
     const uniqueUrls = knowledgeResults.length
       ? Array.from(new Set(knowledgeResults.map(r => r.url).filter(Boolean)))
+          .map(url => {
+            if (translateUrlFn) {
+              const translated = translateUrlFn(url as string, detectedLang);
+              console.log(`🔗 Translating URL: ${url} -> ${translated}`);
+              return translated;
+            }
+            return url as string;
+          })
       : [];
 
     const knowledgeContext = knowledgeResults.length
@@ -200,7 +223,7 @@ ${knowledgeResults
 
 MANDATORY: After your answer, add this exact section:
 
-Learn more:
+${learnMoreText}
 ${uniqueUrls.map(url => `- ${url}`).join("\n")}
 === END KNOWLEDGE BASE RESULTS ===`
       : "";

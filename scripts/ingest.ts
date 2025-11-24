@@ -18,8 +18,8 @@ const CONFIG = {
   tableName: "website_content",
   chunkSize: 1000,
   chunkOverlap: 200,
-  // Only scrape English pages (exclude Spanish /es/ pages)
-  filterPattern: /^https:\/\/www\.nyenglishteacher\.com\/(en\/|$)/,
+  // Include BOTH English and Spanish pages
+  filterPattern: /^https:\/\/www\.nyenglishteacher\.com\/(en\/|es\/|$)/,
 };
 
 interface PageData {
@@ -130,6 +130,9 @@ function splitIntoChunks(page: PageData): Chunk[] {
     const end = Math.min(start + CONFIG.chunkSize, content.length);
     const chunkContent = content.slice(start, end);
 
+    // Detect language from URL
+    const language = url.includes('/es/') ? 'es' : 'en';
+    
     chunks.push({
       content: chunkContent,
       metadata: {

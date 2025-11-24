@@ -10,8 +10,13 @@ export default async function AdminPage() {
     redirect("/login");
   }
 
-  // Optional: Add admin check here if you want to restrict access
-  // For now, any logged-in user can access
+  // Single-tenant: Only the owner can access admin
+  // Add your email here or use an environment variable
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "your-email@example.com";
+  
+  if (session.user.email !== ADMIN_EMAIL) {
+    redirect("/");
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

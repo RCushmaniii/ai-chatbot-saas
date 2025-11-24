@@ -14,6 +14,11 @@ export type KnowledgeSearchResult = {
   metadata: Record<string, any>;
 };
 
+// Simple in-memory cache for embeddings (prevents rate limiting during testing)
+const embeddingCache = new Map<string, number[]>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cacheTimestamps = new Map<string, number>();
+
 export async function searchKnowledgeDirect(
   query: string
 ): Promise<KnowledgeSearchResult[]> {
@@ -21,38 +26,72 @@ export async function searchKnowledgeDirect(
     const trimmed = query.trim();
     if (!trimmed) return [];
 
-    // 1. Convert the query to an embedding
-    const { embedding } = await embed({
-      model: openai.embedding("text-embedding-3-small"),
-      value: trimmed,
-    });
+    // 1. Generate embedding for the query (with caching)
+    let embedding: number[];
+    const cacheKey = trimmed.toLowerCase();
+    const cachedEmbedding = embeddingCache.get(cacheKey);
+    const cacheTime = cacheTimestamps.get(cacheKey);
+    
+    if (cachedEmbedding && cacheTime && (Date.now() - cacheTime < CACHE_TTL)) {
+      console.log(`📦 Using cached embedding for: "${trimmed.substring(0, 50)}..."`);
+      embedding = cachedEmbedding;
+    } else {
+      try {
+        console.log(`🔄 Generating new embedding for: "${trimmed.substring(0, 50)}..."`);
+        const result = await embed({
+          model: openai.embedding("text-embedding-3-small"),
+          value: trimmed,
+        });
+        embedding = result.embedding;
+        
+        // Cache the embedding
+        embeddingCache.set(cacheKey, embedding);
+        cacheTimestamps.set(cacheKey, Date.now());
+        
+        // Clean up old cache entries (keep cache size manageable)
+        if (embeddingCache.size > 100) {
+          const oldestKey = Array.from(cacheTimestamps.entries())
+            .sort((a, b) => a[1] - b[1])[0][0];
+          embeddingCache.delete(oldestKey);
+          cacheTimestamps.delete(oldestKey);
+        }
+      } catch (embedError) {
+        console.error('⚠️  Embedding generation failed:', embedError);
+        return []; // Return empty results if embedding fails
+      }
+    }
 
-    // 2. Search the vector database for similar content using cosine similarity
-    // First try website_content (scraped from nyenglishteacher.com)
+    // 2. Search BOTH knowledge sources and merge results
+    // Search website_content (scraped from nyenglishteacher.com)
     const websiteResults = await client.unsafe(`
       SELECT content, url, metadata,
         1 - (embedding <=> '${JSON.stringify(embedding)}'::vector) as similarity
       FROM website_content
       WHERE 1 - (embedding <=> '${JSON.stringify(embedding)}'::vector) > 0.5
       ORDER BY similarity DESC
-      LIMIT 3
+      LIMIT 5
     `);
 
-    // Fallback to Document_Knowledge if no website results
-    const results = websiteResults.length > 0 ? websiteResults : await client.unsafe(`
+    // Search Document_Knowledge (manually added content from admin)
+    const manualResults = await client.unsafe(`
       SELECT content, url, metadata,
         1 - (embedding <=> '${JSON.stringify(embedding)}'::vector) as similarity
       FROM "Document_Knowledge"
-      WHERE 1 - (embedding <=> '${JSON.stringify(embedding)}'::vector) > 0.6
+      WHERE 1 - (embedding <=> '${JSON.stringify(embedding)}'::vector) > 0.5
       ORDER BY similarity DESC
-      LIMIT 3
+      LIMIT 5
     `);
 
-    if (!results || results.length === 0) {
+    // Merge and sort by similarity, take top 5
+    const allResults = [...websiteResults, ...manualResults]
+      .sort((a: any, b: any) => Number(b.similarity) - Number(a.similarity))
+      .slice(0, 5);
+
+    if (!allResults || allResults.length === 0) {
       return [];
     }
 
-    return results.map((row: any) => ({
+    return allResults.map((row: any) => ({
       content: row.content as string,
       url: (row.url as string) ?? null,
       similarity: Number(row.similarity),

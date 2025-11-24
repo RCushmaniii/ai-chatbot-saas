@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
 /* include utility classes in streamdown */
 @source '../node_modules/streamdown/dist/index.js';
 

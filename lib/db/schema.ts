@@ -220,6 +220,15 @@ export const botSettings = pgTable("bot_settings", {
     showCitations?: boolean;
     language?: string;
   }>(),
+  embedSettings: jsonb("embedSettings").$type<{
+    buttonColor?: string;
+    buttonSize?: number;
+    position?: "bottom-right" | "bottom-left";
+    welcomeMessage?: string;
+    placeholder?: string;
+    botIcon?: string;
+    suggestedQuestions?: string[];
+  }>(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
