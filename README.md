@@ -14,7 +14,7 @@
 </p>
 <br/>
 
-## Features
+## Features +
 
 ### Core Capabilities
 
