@@ -1,7 +1,7 @@
-<h1 align="center">NY English Teacher AI Chatbot</h1>
+<h1 align="center">AI Chatbot SaaS</h1>
 
 <p align="center">
-    An intelligent, bilingual (English/Spanish) AI chatbot with RAG (Retrieval Augmented Generation) capabilities for New York English Teacher business. Built for white-label deployment.
+    <strong>Ragbot by CushLabs.AI</strong> - Multi-tenant AI chatbot platform with RAG (Retrieval Augmented Generation) capabilities. Built for serving multiple customers with isolated knowledge bases.
 </p>
 
 <p align="center">
