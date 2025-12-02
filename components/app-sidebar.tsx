@@ -119,6 +119,17 @@ export function AppSidebar({ user }: { user: User | undefined }) {
           {user && (
             <div className="flex flex-col gap-1">
               <Link
+                href="/home"
+                onClick={() => setOpenMobile(false)}
+                className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>Home</span>
+              </Link>
+              <Link
                 href="/demo"
                 onClick={() => setOpenMobile(false)}
                 className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
