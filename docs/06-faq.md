@@ -1,12 +1,12 @@
 # Frequently Asked Questions
 
-Common questions and answers about the NY English Teacher AI Chatbot.
+Common questions and answers about the AI Chatbot SaaS.
 
 ## General
 
 ### What is this chatbot?
 
-An intelligent, bilingual AI chatbot built for New York English Teacher business. It uses RAG (Retrieval Augmented Generation) to answer questions based on a custom knowledge base.
+A bilingual AI assistant platform for service businesses. It uses RAG (Retrieval Augmented Generation) to answer questions based on a custom knowledge base.
 
 ### What languages does it support?
 
@@ -14,7 +14,7 @@ Currently English and Spanish. The chatbot automatically detects the user's lang
 
 ### Can I use this for my own business?
 
-Yes! The codebase is open-source and can be customized for any business. See the [Customization Guide](./05-customization.md).
+Contact the maintainer for licensing options and deployment permissions.
 
 ## Setup & Installation
 

@@ -36,6 +36,39 @@ export const user = pgTable("User", {
 
 export type User = InferSelectModel<typeof user>;
 
+export const business = pgTable("Business", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+});
+
+export type Business = InferSelectModel<typeof business>;
+
+export const membership = pgTable("Membership", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("businessId")
+    .notNull()
+    .references(() => business.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  role: varchar("role", { enum: ["owner", "admin", "member"] }).notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+});
+
+export type Membership = InferSelectModel<typeof membership>;
+
+export const bot = pgTable("Bot", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("businessId")
+    .notNull()
+    .references(() => business.id),
+  name: text("name").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+});
+
+export type Bot = InferSelectModel<typeof bot>;
+
 export const chat = pgTable("Chat", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   createdAt: timestamp("createdAt").notNull(),

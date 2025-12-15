@@ -3,7 +3,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import type { DefaultJWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import { DUMMY_PASSWORD } from "@/lib/constants";
-import { createGuestUser, getUser } from "@/lib/db/queries";
+import { createGuestUser, ensureDefaultTenantForUser, getUser } from "@/lib/db/queries";
 import { authConfig } from "./auth.config";
 
 export type UserType = "guest" | "regular";
@@ -13,6 +13,8 @@ declare module "next-auth" {
     user: {
       id: string;
       type: UserType;
+      businessId: string;
+      botId: string;
     } & DefaultSession["user"];
   }
 
@@ -28,6 +30,8 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     type: UserType;
+    businessId: string;
+    botId: string;
   }
 }
 
@@ -75,10 +79,17 @@ export const {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
         token.type = user.type;
+
+        const { businessId, botId } = await ensureDefaultTenantForUser({
+          userId: token.id,
+        });
+
+        token.businessId = businessId;
+        token.botId = botId;
       }
 
       return token;
@@ -87,6 +98,8 @@ export const {
       if (session.user) {
         session.user.id = token.id;
         session.user.type = token.type;
+        session.user.businessId = token.businessId;
+        session.user.botId = token.botId;
       }
 
       return session;

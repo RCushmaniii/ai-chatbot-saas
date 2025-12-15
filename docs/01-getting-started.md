@@ -1,10 +1,10 @@
 # Getting Started
 
-Welcome to the NY English Teacher AI Chatbot documentation. This guide will help you set up and run the project locally.
+Welcome to the AI Chatbot SaaS documentation. This guide will help you set up and run the project locally.
 
 ## Overview
 
-This is an intelligent, bilingual AI chatbot built for New York English Teacher business. It uses RAG (Retrieval Augmented Generation) to answer questions based on a custom knowledge base.
+This is a production-ready, bilingual AI assistant platform with RAG (Retrieval Augmented Generation) to answer questions based on a custom knowledge base.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ Before you begin, ensure you have:
 
 ```bash
 git clone <repository-url>
-cd ny-ai-chatbot
+cd ai-chatbot-saas
 ```
 
 ### 2. Install Dependencies

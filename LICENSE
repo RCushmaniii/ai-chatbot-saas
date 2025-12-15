@@ -1,13 +1,44 @@
-Copyright 2024 Vercel, Inc.
+AI Chatbot SaaS Proprietary License
+Copyright (c) 2025 Robert Cushman. All rights reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+IMPORTANT: This software is proprietary. No rights are granted to you unless
+you have a separate written license agreement signed by the Licensor.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+1. No Public License Granted
+   Except where expressly permitted by a separate written agreement, you may
+   not use, copy, modify, merge, publish, distribute, sublicense, sell, or
+   otherwise exploit the Software, in whole or in part.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+2. Limited Evaluation Permission
+   If you have lawful access to this repository, you may view the source code
+   and run the Software solely for internal evaluation and development
+   purposes, provided that you do not:
+   - deploy the Software for production use,
+   - provide the Software as a service to third parties,
+   - distribute the Software or any derivative works,
+   - remove or alter copyright or ownership notices.
+
+3. Ownership
+   The Software is licensed, not sold. All right, title, and interest in and
+   to the Software remain with the Licensor.
+
+4. No Trademark License
+   This License does not grant permission to use any trademarks, service marks,
+   logos, or branding associated with the Licensor.
+
+5. No Warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+6. Termination
+   Any violation of this License terminates your permission to access or use
+   the Software. Upon termination, you must cease all use and destroy any
+   copies in your possession or control.
+
+For commercial licensing, partnerships, or written permission, contact:
+info@nyenglishteacher.com

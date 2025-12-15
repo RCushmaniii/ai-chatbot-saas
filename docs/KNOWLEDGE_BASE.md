@@ -10,7 +10,7 @@ The chatbot uses a dual-source knowledge base with vector similarity search to p
 
 ### 1. `website_content`
 
-**Purpose:** Stores scraped content from nyenglishteacher.com
+**Purpose:** Stores scraped content from a tenant-provided website
 
 **Schema:**
 

@@ -1,7 +1,7 @@
-<h1 align="center">AI Chatbot SaaS</h1>
+<h1 align="center">Bilingual AI Front Desk & Sales Assistant (SaaS)</h1>
 
 <p align="center">
-    <strong>Ragbot by CushLabs.AI</strong> - Multi-tenant AI chatbot platform with RAG (Retrieval Augmented Generation) capabilities. Built for serving multiple customers with isolated knowledge bases.
+    <strong>AI Chatbot SaaS</strong> - Multi-tenant platform for service businesses to deploy a bilingual (EN/ES), on-brand assistant that answers questions, qualifies leads, captures booking intent, and escalates high-intent prospects.
 </p>
 
 <p align="center">
@@ -10,7 +10,8 @@
   <a href="#tech-stack"><strong>Tech Stack</strong></a> ·
   <a href="#rag-knowledge-base"><strong>RAG & Knowledge Base</strong></a> ·
   <a href="#running-locally"><strong>Running Locally</strong></a> ·
-  <a href="#white-label-deployment"><strong>White-Label Guide</strong></a>
+  <a href="#documentation"><strong>Documentation</strong></a> ·
+  <a href="#license"><strong>License</strong></a>
 </p>
 <br/>
 
@@ -183,6 +184,8 @@ OPENAI_API_KEY="sk-..."
 AUTH_SECRET="your-secret-key"
 ```
 
+Note: Running or deploying this software requires an appropriate license. See `LICENSE`.
+
 ### Installation
 
 1. **Install dependencies:**
@@ -216,10 +219,47 @@ Your app should now be running on [localhost:3000](http://localhost:3000).
 - `/admin` - Knowledge base management (requires authentication)
 - `/documentation` - Project documentation
 
+## Current Status (On Hold)
+
+Development is paused until a new Supabase project (Postgres) is available.
+
+### Blocker
+
+- Database migrations cannot be applied because `POSTGRES_URL` is not configured in the environment used by the migration runner.
+- A Supabase Postgres project is the intended target for v1 database hosting.
+
+### Work completed (latest)
+
+- Licensing and documentation were updated to reflect a proprietary SaaS product.
+- SaaS planning docs are in `/docs`:
+  - `docs/BLUEPRINT.MD`
+  - `docs/FORMAL_PLAN.md`
+  - `docs/PRD.md`
+  - `docs/PROJECT_PLAN.md`
+- PR-1 (tenant scaffolding) work has started in code:
+  - Drizzle schema now includes `Business`, `Membership`, and `Bot`.
+  - Auth session/JWT now expects `businessId` and `botId` (default tenant bootstrap).
+  - A migration was generated: `lib/db/migrations/0009_tense_garia.sql`.
+
+### Resume checklist
+
+1. Create a new Supabase project and enable `pgvector`.
+2. Set `POSTGRES_URL` in `.env.local` or `.env.development.local`.
+3. Run migrations:
+
+   ```bash
+   pnpm db:migrate
+   ```
+
+4. Verify sign-in works (guest + regular).
+5. Continue implementation:
+   - PR-1: finish scoping settings and runtime to `botId` / `businessId`
+   - PR-2: bot-scoped embed isolation (`botId` passed through iframe + scoped embed APIs)
+
 ## Project Structure
 
 ```
-ny-ai-chatbot/
+ai-chatbot-saas/
 ├── app/
 │   ├── (auth)/              # Authentication routes
 │   ├── (chat)/              # Chat interface and API
@@ -244,32 +284,25 @@ ny-ai-chatbot/
     └── populate-knowledge.ts # Seed script
 ```
 
-## White-Label Deployment
+## Documentation
 
-This chatbot is designed for easy white-label deployment. Follow these steps to customize for your business:
+Start here:
 
-### 1. Database Setup
+- [Docs Index](./docs/README.md)
+- [Blueprint](./docs/BLUEPRINT.MD)
+- [Formal Plan](./docs/FORMAL_PLAN.md)
+- [PRD](./docs/PRD.md)
+- [Project Plan](./docs/PROJECT_PLAN.md)
 
-Run the migration SQL in your Vercel Postgres SQL Editor:
+Product usage docs:
 
-```sql
--- See migrations/create_bot_settings.sql
-CREATE TABLE IF NOT EXISTS bot_settings (
-  id SERIAL PRIMARY KEY,
-  "userId" UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
-  "botName" VARCHAR(100),
-  "customInstructions" TEXT,
-  "starterQuestions" JSONB,
-  colors JSONB,
-  settings JSONB,
-  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
+- [Admin Guide](./docs/ADMIN_GUIDE.md)
+- [Embed Widget](./docs/EMBED_WIDGET.md)
+- [Knowledge Base](./docs/KNOWLEDGE_BASE.md)
 
-### 2. Customize via Admin Dashboard
+## Configuration
 
-Navigate to `/admin` and configure:
+Configure the app via `/admin`:
 
 1. **Instructions Tab:**
 
@@ -318,33 +351,6 @@ Edit `lib/ai/prompts.ts` to update:
 - Pricing information
 - Contact/booking URLs
 
-### 5. Deploy to Vercel
-
-```bash
-# Push to GitHub
-git push origin main
-
-# Deploy via Vercel CLI or dashboard
-vercel --prod
-```
-
-### 6. Post-Deployment
-
-1. Create an admin user account
-2. Log in to `/admin`
-3. Configure all settings
-4. Run website ingestion
-5. Test the chatbot thoroughly
-6. Monitor usage and refine prompts
-
-## Documentation
-
-For detailed documentation, see:
-
-- [Admin User Guide](./docs/ADMIN_GUIDE.md)
-- [API Documentation](./docs/API.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
-
 ## License
 
-MIT
+See `LICENSE`.

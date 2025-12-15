@@ -2,7 +2,7 @@
 
 ## Overview
 
-The embed widget allows you to add the NY English Teacher chatbot to any website with a simple script tag. It provides a floating chat bubble that opens a full-featured chat interface in an iframe.
+The embed widget allows you to add the chatbot to any website with a simple script tag. It provides a floating chat bubble that opens a full-featured chat interface in an iframe.
 
 ---
 
@@ -66,8 +66,8 @@ app/
 │       └── page.tsx          # Chat interface (iframe content)
 ├── demo/
 │   └── page.tsx              # SaaS product demo page
-└── demo-ny-english/
-    └── page.tsx              # NY English Teacher demo
+└── demo-brand-example/
+    └── page.tsx              # Example branded demo
 ```
 
 ### How It Works
@@ -99,7 +99,7 @@ app/
 
 The chatbot searches **two knowledge sources** simultaneously:
 
-1. **`website_content`** - Scraped from nyenglishteacher.com sitemap
+1. **`website_content`** - Scraped from a tenant-provided sitemap
 2. **`Document_Knowledge`** - Manually added via admin panel
 
 ### Search Process
@@ -357,7 +357,7 @@ Anonymous chat endpoint for embed widget.
 
 ```json
 {
-  "response": "NY English Teacher offers several services including..."
+  "response": "This business offers several services including..."
 }
 ```
 

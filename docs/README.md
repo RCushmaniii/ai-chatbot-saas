@@ -1,6 +1,6 @@
-# NY English Teacher AI Chatbot Documentation
+# AI Chatbot SaaS Documentation
 
-Welcome to the complete documentation for the NY English Teacher AI Chatbot with RAG capabilities.
+Welcome to the documentation for the bilingual AI front desk & sales assistant SaaS.
 
 ## Table of Contents
 
@@ -52,6 +52,13 @@ Welcome to the complete documentation for the NY English Teacher AI Chatbot with
 - **Admin Panel:** `/admin`
 - **Main Chat:** `/`
 
+## Product & Execution Docs
+
+- [**Blueprint**](./BLUEPRINT.MD)
+- [**Formal Plan**](./FORMAL_PLAN.md)
+- [**PRD**](./PRD.md)
+- [**Project Plan**](./PROJECT_PLAN.md)
+
 ## Getting Help
 
 If you can't find what you're looking for:
@@ -63,12 +70,8 @@ If you can't find what you're looking for:
 
 ## Contributing
 
-Contributions to the documentation are welcome! Please:
-
-1. Fork the repository
-2. Make your changes
-3. Submit a pull request
+This project is proprietary. Contributions are accepted only by explicit permission from the maintainer.
 
 ## License
 
-MIT License - See LICENSE file for details
+See `LICENSE`.

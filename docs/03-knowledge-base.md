@@ -119,9 +119,8 @@ Business overview, services, coaching approach
 **Example:**
 
 ```
-New York English Teacher offers personalized English coaching
-for professionals in Mexico City. Sessions focus on business
-communication, presentations, and career advancement.
+This business offers personalized services for bilingual customers.
+Sessions focus on clear communication, outcomes, and customer success.
 ```
 
 ### FAQ

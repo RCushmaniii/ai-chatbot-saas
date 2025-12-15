@@ -1,6 +1,6 @@
 # RAG Architecture
 
-This document explains the Retrieval Augmented Generation (RAG) implementation in the NY English Teacher AI Chatbot.
+This document explains the Retrieval Augmented Generation (RAG) implementation used by the AI Chatbot SaaS.
 
 ## Overview
 

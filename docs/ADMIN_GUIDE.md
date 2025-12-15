@@ -184,7 +184,7 @@ The preview section shows exactly how questions will appear to users.
 **Bot Name:**
 
 - This name is used when the bot introduces itself
-- Example: "New York English Teacher", "AI Assistant", "Sophia"
+- Example: "Customer Support Assistant", "AI Assistant", "Sophia"
 - Keep it professional and memorable
 
 ### Custom Instructions

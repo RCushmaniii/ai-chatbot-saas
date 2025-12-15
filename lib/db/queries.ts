@@ -20,11 +20,14 @@ import { ChatSDKError } from "../errors";
 import type { AppUsage } from "../usage";
 import { generateUUID } from "../utils";
 import {
+  bot,
+  business,
   type Chat,
   chat,
   type DBMessage,
   document,
   message,
+  membership,
   type Suggestion,
   stream,
   suggestion,
@@ -53,11 +56,93 @@ export async function getUser(email: string): Promise<User[]> {
   }
 }
 
+export async function ensureDefaultTenantForUser({
+  userId,
+  businessName,
+}: {
+  userId: string;
+  businessName?: string;
+}): Promise<{ businessId: string; botId: string }> {
+  try {
+    const existingMemberships = await db
+      .select({ businessId: membership.businessId })
+      .from(membership)
+      .where(eq(membership.userId, userId))
+      .limit(1);
+
+    if (existingMemberships.length > 0) {
+      const businessId = existingMemberships[0].businessId;
+
+      const existingBots = await db
+        .select({ id: bot.id })
+        .from(bot)
+        .where(eq(bot.businessId, businessId))
+        .limit(1);
+
+      if (existingBots.length > 0) {
+        return { businessId, botId: existingBots[0].id };
+      }
+
+      const [createdBot] = await db
+        .insert(bot)
+        .values({
+          businessId,
+          name: "Default Bot",
+          createdAt: new Date(),
+        })
+        .returning({ id: bot.id });
+
+      return { businessId, botId: createdBot.id };
+    }
+
+    const [createdBusiness] = await db
+      .insert(business)
+      .values({
+        name: businessName ?? "My Business",
+        createdAt: new Date(),
+      })
+      .returning({ id: business.id });
+
+    await db.insert(membership).values({
+      businessId: createdBusiness.id,
+      userId,
+      role: "owner",
+      createdAt: new Date(),
+    });
+
+    const [createdBot] = await db
+      .insert(bot)
+      .values({
+        businessId: createdBusiness.id,
+        name: "Default Bot",
+        createdAt: new Date(),
+      })
+      .returning({ id: bot.id });
+
+    return { businessId: createdBusiness.id, botId: createdBot.id };
+  } catch (_error) {
+    throw new ChatSDKError(
+      "bad_request:database",
+      "Failed to ensure default tenant for user"
+    );
+  }
+}
+
 export async function createUser(email: string, password: string) {
   const hashedPassword = generateHashedPassword(password);
 
   try {
-    return await db.insert(user).values({ email, password: hashedPassword });
+    const [createdUser] = await db
+      .insert(user)
+      .values({ email, password: hashedPassword })
+      .returning({ id: user.id });
+
+    await ensureDefaultTenantForUser({
+      userId: createdUser.id,
+      businessName: "My Business",
+    });
+
+    return createdUser;
   } catch (_error) {
     throw new ChatSDKError("bad_request:database", "Failed to create user");
   }
@@ -68,10 +153,17 @@ export async function createGuestUser() {
   const password = generateHashedPassword(generateUUID());
 
   try {
-    return await db.insert(user).values({ email, password }).returning({
+    const [createdGuest] = await db.insert(user).values({ email, password }).returning({
       id: user.id,
       email: user.email,
     });
+
+    await ensureDefaultTenantForUser({
+      userId: createdGuest.id,
+      businessName: "Guest Business",
+    });
+
+    return [createdGuest];
   } catch (_error) {
     throw new ChatSDKError(
       "bad_request:database",
