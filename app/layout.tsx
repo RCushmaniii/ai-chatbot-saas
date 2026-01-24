@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-// TODO: Remove after Clerk migration (Phase 2)
-import { SessionProvider } from "next-auth/react";
+import { ClerkProvider } from "@clerk/nextjs";
+import { esES, enUS } from "@clerk/localizations";
 
 import "./globals.css";
 
@@ -99,35 +99,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
-      // `next-themes` injects an extra classname to the body element to avoid
-      // visual flicker before hydration. Hence the `suppressHydrationWarning`
-      // prop is necessary to avoid the React hydration mismatch warning.
-      // https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
-      lang="es"
-      suppressHydrationWarning
-    >
-      <head>
-        <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
-          dangerouslySetInnerHTML={{
-            __html: THEME_COLOR_SCRIPT,
-          }}
-        />
-      </head>
-      <body className="antialiased font-sans">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          disableTransitionOnChange
-          enableSystem
-        >
-          <Toaster position="top-center" />
-          {/* TODO: Remove SessionProvider after Clerk migration (Phase 2) */}
-          <SessionProvider>{children}</SessionProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider localization={esES}>
+      <html
+        className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
+        // `next-themes` injects an extra classname to the body element to avoid
+        // visual flicker before hydration. Hence the `suppressHydrationWarning`
+        // prop is necessary to avoid the React hydration mismatch warning.
+        // https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
+        lang="es"
+        suppressHydrationWarning
+      >
+        <head>
+          <script
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
+            dangerouslySetInnerHTML={{
+              __html: THEME_COLOR_SCRIPT,
+            }}
+          />
+        </head>
+        <body className="antialiased font-sans">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            disableTransitionOnChange
+            enableSystem
+          >
+            <Toaster position="top-center" />
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

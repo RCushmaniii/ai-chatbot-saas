@@ -3,14 +3,14 @@ import Script from "next/script";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { auth } from "../(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 
 export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
+  const [user, cookieStore] = await Promise.all([getAuthUser(), cookies()]);
   const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
 
   return (
@@ -21,7 +21,7 @@ export default async function Layout({
       />
       <DataStreamProvider>
         <SidebarProvider defaultOpen={!isCollapsed}>
-          <AppSidebar user={session?.user} />
+          <AppSidebar user={user} />
           <SidebarInset>{children}</SidebarInset>
         </SidebarProvider>
       </DataStreamProvider>

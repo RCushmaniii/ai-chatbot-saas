@@ -16,7 +16,7 @@ import {
 import type { ModelCatalog } from "tokenlens/core";
 import { fetchModels } from "tokenlens/fetch";
 import { getUsage } from "tokenlens/helpers";
-import { auth, type UserType } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 import type { VisibilityType } from "@/components/visibility-selector";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
@@ -116,20 +116,19 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
-    const session = await auth();
+    const user = await getAuthUser();
 
-    if (!session?.user) {
+    if (!user) {
       return new ChatSDKError("unauthorized:chat").toResponse();
     }
 
-    const userType: UserType = session.user.type;
-
     const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
+      id: user.id,
       differenceInHours: 24,
     });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+    // Rate limit: 1000 messages per day for authenticated users
+    if (messageCount > 1000) {
       return new ChatSDKError("rate_limit:chat").toResponse();
     }
 
@@ -137,7 +136,7 @@ export async function POST(request: Request) {
     let messagesFromDb: DBMessage[] = [];
 
     if (chat) {
-      if (chat.userId !== session.user.id) {
+      if (chat.userId !== user.id) {
         return new ChatSDKError("forbidden:chat").toResponse();
       }
       // Only fetch messages if chat already exists
@@ -149,7 +148,7 @@ export async function POST(request: Request) {
 
       await saveChat({
         id,
-        userId: session.user.id,
+        userId: user.id,
         title,
         visibility: selectedVisibilityType,
       });
@@ -267,10 +266,10 @@ ${uniqueUrls.map(url => `- ${url}`).join("\n")}
           tools: {
             searchKnowledge: searchKnowledgeTool,
             getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
+            createDocument: createDocument({ user, dataStream }),
+            updateDocument: updateDocument({ user, dataStream }),
             requestSuggestions: requestSuggestions({
-              session,
+              user,
               dataStream,
             }),
           },
@@ -390,15 +389,15 @@ export async function DELETE(request: Request) {
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
-  const session = await auth();
+  const user = await getAuthUser();
 
-  if (!session?.user) {
+  if (!user) {
     return new ChatSDKError("unauthorized:chat").toResponse();
   }
 
   const chat = await getChatById({ id });
 
-  if (chat?.userId !== session.user.id) {
+  if (chat?.userId !== user.id) {
     return new ChatSDKError("forbidden:chat").toResponse();
   }
 

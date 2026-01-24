@@ -1,5 +1,5 @@
 import type { UIMessageStreamWriter } from "ai";
-import type { Session } from "next-auth";
+import type { AuthUser } from "@/lib/auth";
 import { codeDocumentHandler } from "@/artifacts/code/server";
 import { sheetDocumentHandler } from "@/artifacts/sheet/server";
 import { textDocumentHandler } from "@/artifacts/text/server";
@@ -20,14 +20,14 @@ export type CreateDocumentCallbackProps = {
   id: string;
   title: string;
   dataStream: UIMessageStreamWriter<ChatMessage>;
-  session: Session;
+  user: AuthUser;
 };
 
 export type UpdateDocumentCallbackProps = {
   document: Document;
   description: string;
   dataStream: UIMessageStreamWriter<ChatMessage>;
-  session: Session;
+  user: AuthUser;
 };
 
 export type DocumentHandler<T = ArtifactKind> = {
@@ -48,18 +48,16 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
         id: args.id,
         title: args.title,
         dataStream: args.dataStream,
-        session: args.session,
+        user: args.user,
       });
 
-      if (args.session?.user?.id) {
-        await saveDocument({
-          id: args.id,
-          title: args.title,
-          content: draftContent,
-          kind: config.kind,
-          userId: args.session.user.id,
-        });
-      }
+      await saveDocument({
+        id: args.id,
+        title: args.title,
+        content: draftContent,
+        kind: config.kind,
+        userId: args.user.id,
+      });
 
       return;
     },
@@ -68,18 +66,16 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
         document: args.document,
         description: args.description,
         dataStream: args.dataStream,
-        session: args.session,
+        user: args.user,
       });
 
-      if (args.session?.user?.id) {
-        await saveDocument({
-          id: args.document.id,
-          title: args.document.title,
-          content: draftContent,
-          kind: config.kind,
-          userId: args.session.user.id,
-        });
-      }
+      await saveDocument({
+        id: args.document.id,
+        title: args.document.title,
+        content: draftContent,
+        kind: config.kind,
+        userId: args.user.id,
+      });
 
       return;
     },
