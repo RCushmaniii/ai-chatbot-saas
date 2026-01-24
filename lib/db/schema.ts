@@ -3,8 +3,10 @@ import {
   boolean,
   customType,
   foreignKey,
+  integer,
   json,
   jsonb,
+  pgEnum,
   pgTable,
   primaryKey,
   serial,
@@ -14,6 +16,26 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { AppUsage } from "../usage";
+
+// ===========================================
+// ENUMS
+// ===========================================
+
+export const membershipRoleEnum = pgEnum("membership_role", [
+  "owner",
+  "admin",
+  "member",
+]);
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "trialing",
+  "active",
+  "canceled",
+  "past_due",
+  "incomplete",
+]);
+
+export const billingCycleEnum = pgEnum("billing_cycle", ["monthly", "annual"]);
 
 // Custom vector type for pgvector
 const vector = customType<{ data: number[]; driverData: string }>({
@@ -28,10 +50,22 @@ const vector = customType<{ data: number[]; driverData: string }>({
   },
 });
 
+// ===========================================
+// USER (will be synced from Clerk via webhook after Phase 2)
+// ===========================================
+
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  email: varchar("email", { length: 64 }).notNull(),
+  // Clerk integration (Phase 2) - will be required after migration
+  clerkUserId: varchar("clerk_user_id", { length: 100 }).unique(),
+  email: varchar("email", { length: 255 }).notNull(),
+  // DEPRECATED: password field - will be removed after Clerk migration
   password: varchar("password", { length: 64 }),
+  name: varchar("name", { length: 100 }),
+  avatarUrl: varchar("avatar_url", { length: 500 }),
+  locale: varchar("locale", { length: 5 }).default("es"), // 'en' or 'es'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -52,8 +86,8 @@ export const membership = pgTable("Membership", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id),
-  role: varchar("role", { enum: ["owner", "admin", "member"] }).notNull(),
-  createdAt: timestamp("createdAt").notNull(),
+  role: membershipRoleEnum("role").notNull().default("member"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
 export type Membership = InferSelectModel<typeof membership>;
@@ -267,3 +301,74 @@ export const botSettings = pgTable("bot_settings", {
 });
 
 export type BotSettings = InferSelectModel<typeof botSettings>;
+
+// ===========================================
+// BILLING & SUBSCRIPTIONS (Stripe integration)
+// ===========================================
+
+// Subscription Plans
+export const plan = pgTable("Plan", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: varchar("name", { length: 50 }).notNull(), // 'free', 'starter', 'pro', 'business'
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  priceMonthly: integer("price_monthly").notNull(), // cents USD
+  priceAnnual: integer("price_annual").notNull(), // cents USD (annual total)
+  stripePriceIdMonthly: varchar("stripe_price_id_monthly", { length: 100 }),
+  stripePriceIdAnnual: varchar("stripe_price_id_annual", { length: 100 }),
+  // Limits
+  messagesPerMonth: integer("messages_per_month").notNull(),
+  knowledgeBasePagesLimit: integer("knowledge_base_pages_limit").notNull(),
+  chatbotsLimit: integer("chatbots_limit").notNull(),
+  teamMembersLimit: integer("team_members_limit").notNull(),
+  // Features (array of feature strings)
+  features: jsonb("features").$type<string[]>().notNull(),
+  // Flags
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false), // The free tier
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Plan = InferSelectModel<typeof plan>;
+
+// Business Subscriptions
+export const subscription = pgTable("Subscription", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("business_id")
+    .notNull()
+    .references(() => business.id),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => plan.id),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 100 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 100 }),
+  status: subscriptionStatusEnum("status").notNull().default("trialing"),
+  billingCycle: billingCycleEnum("billing_cycle").notNull().default("monthly"),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  canceledAt: timestamp("canceled_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Subscription = InferSelectModel<typeof subscription>;
+
+// Usage Tracking (monthly aggregates)
+export const usageRecord = pgTable("UsageRecord", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("business_id")
+    .notNull()
+    .references(() => business.id),
+  month: varchar("month", { length: 7 }).notNull(), // 'YYYY-MM'
+  messagesCount: integer("messages_count").notNull().default(0),
+  tokensUsed: integer("tokens_used").notNull().default(0),
+  knowledgeBasePagesCount: integer("knowledge_base_pages_count")
+    .notNull()
+    .default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type UsageRecord = InferSelectModel<typeof usageRecord>;

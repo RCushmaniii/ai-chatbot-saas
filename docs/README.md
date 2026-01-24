@@ -1,6 +1,8 @@
-# AI Chatbot SaaS Documentation
+# Converso Documentation
 
-Welcome to the documentation for the bilingual AI front desk & sales assistant SaaS.
+Welcome to the documentation for **Converso** - the bilingual AI chatbot SaaS platform.
+
+> **Tech Stack:** Next.js 15 • Neon (PostgreSQL) • Clerk (Auth) • Stripe (Payments) • OpenAI
 
 ## Table of Contents
 
@@ -47,13 +49,17 @@ Welcome to the documentation for the bilingual AI front desk & sales assistant S
 
 ## Quick Links
 
-- **Live Documentation:** Visit `/documentation` in your running app
-- **GitHub Repository:** [Link to repo]
-- **Admin Panel:** `/admin`
-- **Main Chat:** `/`
+- **Landing Page:** `/`
+- **Dashboard:** `/dashboard` (requires auth)
+- **Settings:** `/settings`
+- **Sign In:** `/sign-in`
+- **Sign Up:** `/sign-up`
+- **Pricing:** `/pricing`
+- **Demo:** `/demo`
 
 ## Product & Execution Docs
 
+- [**Converso Build Spec**](../CONVERSO_BUILD_SPEC.md) - Complete implementation specification
 - [**Blueprint**](./BLUEPRINT.MD)
 - [**Formal Plan**](./FORMAL_PLAN.md)
 - [**PRD**](./PRD.md)
