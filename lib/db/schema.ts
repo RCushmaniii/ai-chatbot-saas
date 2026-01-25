@@ -254,12 +254,76 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-// Knowledge base documents for RAG
+// ===========================================
+// KNOWLEDGE BASE (Multi-tenant RAG)
+// ===========================================
+
+// Content source types for ingestion pipeline
+export const contentSourceTypeEnum = pgEnum("content_source_type", [
+  "website",
+  "pdf",
+  "text",
+  "paste",
+]);
+
+export const contentSourceStatusEnum = pgEnum("content_source_status", [
+  "pending",
+  "processing",
+  "processed",
+  "failed",
+]);
+
+// Content sources (what the tenant uploaded)
+export const contentSource = pgTable("ContentSource", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("business_id")
+    .notNull()
+    .references(() => business.id),
+  botId: uuid("bot_id").references(() => bot.id), // Optional: specific bot or all bots
+  type: contentSourceTypeEnum("type").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  url: varchar("url", { length: 500 }), // For website sources
+  status: contentSourceStatusEnum("status").notNull().default("pending"),
+  pageCount: integer("page_count").default(0),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+export type ContentSource = InferSelectModel<typeof contentSource>;
+
+// Knowledge chunks (tenant-isolated embeddings)
+export const knowledgeChunk = pgTable("KnowledgeChunk", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessId: uuid("business_id")
+    .notNull()
+    .references(() => business.id),
+  botId: uuid("bot_id").references(() => bot.id), // Optional: specific bot or all bots
+  sourceId: uuid("source_id")
+    .notNull()
+    .references(() => contentSource.id),
+  content: text("content").notNull(),
+  embedding: vector("embedding"), // OpenAI text-embedding-3-small (1536 dimensions)
+  metadata: jsonb("metadata").$type<{
+    url?: string;
+    title?: string;
+    page?: number;
+    section?: string;
+    language?: string;
+  }>(),
+  tokenCount: integer("token_count"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type KnowledgeChunk = InferSelectModel<typeof knowledgeChunk>;
+
+// Legacy: Knowledge base documents for RAG (kept for backwards compatibility)
 export const documents = pgTable("Document_Knowledge", {
   id: serial("id").primaryKey(),
+  businessId: uuid("business_id").references(() => business.id), // Added for tenant isolation
   content: text("content").notNull(),
   url: varchar("url", { length: 500 }),
-  embedding: vector("embedding", { dimensions: 1536 }), // OpenAI embeddings are 1536 dimensions
+  embedding: vector("embedding"), // OpenAI embeddings are 1536 dimensions
   metadata: text("metadata"), // Store JSON metadata
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
