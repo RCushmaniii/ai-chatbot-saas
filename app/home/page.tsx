@@ -1,5 +1,5 @@
-import { RagbotLandingPage } from "@/components/ragbot-landing";
+import { ConversoLandingPage } from "@/components/converso-landing";
 
 export default function HomePage() {
-  return <RagbotLandingPage />;
+  return <ConversoLandingPage />;
 }
