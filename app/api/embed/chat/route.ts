@@ -1,58 +1,62 @@
-import { NextResponse } from "next/server";
 import { generateText } from "ai";
+import { NextResponse } from "next/server";
+import { regularPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
-import { detectLanguage, translateUrl, getLearnMoreText } from "@/lib/utils/language-detector";
-import { regularPrompt } from "@/lib/ai/prompts";
+import {
+	detectLanguage,
+	getLearnMoreText,
+	translateUrl,
+} from "@/lib/utils/language-detector";
 
 export async function POST(request: Request) {
-  try {
-    const { message } = await request.json();
+	try {
+		const { message } = await request.json();
 
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Invalid message" }, { status: 400 });
-    }
+		if (!message || typeof message !== "string") {
+			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+		}
 
-    // Search knowledge base
-    const knowledgeResults = await searchKnowledgeDirect(message);
+		// Search knowledge base
+		const knowledgeResults = await searchKnowledgeDirect(message);
 
-    // Detect language
-    const detectedLang = detectLanguage(message);
-    const learnMoreText = getLearnMoreText(detectedLang);
+		// Detect language
+		const detectedLang = detectLanguage(message);
+		const learnMoreText = getLearnMoreText(detectedLang);
 
-    // Build context with knowledge results - use the same system prompt as main chat
-    let context = regularPrompt;
+		// Build context with knowledge results - use the same system prompt as main chat
+		let context = regularPrompt;
 
-    if (knowledgeResults.length > 0) {
-      const uniqueUrls = Array.from(
-        new Set(knowledgeResults.map(r => r.url).filter(Boolean))
-      ).map(url => translateUrl(url as string, detectedLang));
+		if (knowledgeResults.length > 0) {
+			const uniqueUrls = Array.from(
+				new Set(knowledgeResults.map((r) => r.url).filter(Boolean)),
+			).map((url) => translateUrl(url as string, detectedLang));
 
-      context += `\n\nKnowledge base results:\n${knowledgeResults
-        .map(r => r.content)
-        .join("\n\n")}`;
+			context += `\n\nKnowledge base results:\n${knowledgeResults
+				.map((r) => r.content)
+				.join("\n\n")}`;
 
-      if (uniqueUrls.length > 0) {
-        context += `\n\nInclude these links at the end of your response:\n${learnMoreText}\n${uniqueUrls.map(url => `- ${url}`).join("\n")}`;
-      }
-    }
+			if (uniqueUrls.length > 0) {
+				context += `\n\nInclude these links at the end of your response:\n${learnMoreText}\n${uniqueUrls.map((url) => `- ${url}`).join("\n")}`;
+			}
+		}
 
-    // Generate response
-    const model = myProvider.languageModel("chat-model");
-    const { text } = await generateText({
-      model,
-      messages: [
-        { role: "system", content: context },
-        { role: "user", content: message },
-      ],
-    });
+		// Generate response
+		const model = myProvider.languageModel("chat-model");
+		const { text } = await generateText({
+			model,
+			messages: [
+				{ role: "system", content: context },
+				{ role: "user", content: message },
+			],
+		});
 
-    return NextResponse.json({ response: text });
-  } catch (error) {
-    console.error("Embed chat error:", error);
-    return NextResponse.json(
-      { error: "Failed to process message" },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json({ response: text });
+	} catch (error) {
+		console.error("Embed chat error:", error);
+		return NextResponse.json(
+			{ error: "Failed to process message" },
+			{ status: 500 },
+		);
+	}
 }

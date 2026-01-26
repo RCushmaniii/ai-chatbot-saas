@@ -6,25 +6,25 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getAuthUser } from "@/lib/auth";
 
 export default async function Layout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  const [user, cookieStore] = await Promise.all([getAuthUser(), cookies()]);
-  const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
+	const [user, cookieStore] = await Promise.all([getAuthUser(), cookies()]);
+	const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
 
-  return (
-    <>
-      <Script
-        src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
-        strategy="beforeInteractive"
-      />
-      <DataStreamProvider>
-        <SidebarProvider defaultOpen={!isCollapsed}>
-          <AppSidebar user={user} />
-          <SidebarInset>{children}</SidebarInset>
-        </SidebarProvider>
-      </DataStreamProvider>
-    </>
-  );
+	return (
+		<>
+			<Script
+				src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
+				strategy="beforeInteractive"
+			/>
+			<DataStreamProvider>
+				<SidebarProvider defaultOpen={!isCollapsed}>
+					<AppSidebar user={user} />
+					<SidebarInset>{children}</SidebarInset>
+				</SidebarProvider>
+			</DataStreamProvider>
+		</>
+	);
 }

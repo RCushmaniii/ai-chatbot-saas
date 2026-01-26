@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const botId = searchParams.get("id") || "default";
+	const { searchParams } = new URL(request.url);
+	const botId = searchParams.get("id") || "default";
 
-  const embedScript = `
+	const embedScript = `
 (function() {
   'use strict';
   
-  const CHAT_APP_URL = '${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}';
+  const CHAT_APP_URL = '${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}';
   const BOT_ID = '${botId}';
   
   const scriptTag = document.currentScript;
@@ -136,12 +136,12 @@ export async function GET(request: Request) {
 })();
 `;
 
-  return new NextResponse(embedScript, {
-    headers: {
-      "Content-Type": "application/javascript",
-      "Cache-Control": "public, max-age=3600",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET",
-    },
-  });
+	return new NextResponse(embedScript, {
+		headers: {
+			"Content-Type": "application/javascript",
+			"Cache-Control": "public, max-age=3600",
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET",
+		},
+	});
 }

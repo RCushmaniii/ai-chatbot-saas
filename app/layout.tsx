@@ -1,75 +1,74 @@
+import { esES } from "@clerk/localizations";
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ClerkProvider } from "@clerk/nextjs";
-import { esES, enUS } from "@clerk/localizations";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://soyconverso.com"),
-  title: {
-    default: "Converso | AI que habla tu idioma",
-    template: "%s | Converso",
-  },
-  description:
-    "Converso es la inteligencia artificial que habla tu negocio. Chatbots bilingües para empresas en México y Norteamérica.",
-  keywords: [
-    "chatbot",
-    "AI",
-    "inteligencia artificial",
-    "chatbot para empresas",
-    "chatbot México",
-    "bilingual chatbot",
-    "customer support AI",
-  ],
-  authors: [{ name: "Converso" }],
-  openGraph: {
-    type: "website",
-    locale: "es_MX",
-    alternateLocale: "en_US",
-    url: "https://soyconverso.com",
-    siteName: "Converso",
-    title: "Converso | AI que habla tu idioma",
-    description:
-      "Chatbots inteligentes y bilingües para tu negocio. Fácil de integrar, poderoso en resultados.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Converso | AI que habla tu idioma",
-    description:
-      "Chatbots inteligentes y bilingües para tu negocio.",
-    creator: "@soyconverso",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+	metadataBase: new URL("https://soyconverso.com"),
+	title: {
+		default: "Converso | AI que habla tu idioma",
+		template: "%s | Converso",
+	},
+	description:
+		"Converso es la inteligencia artificial que habla tu negocio. Chatbots bilingües para empresas en México y Norteamérica.",
+	keywords: [
+		"chatbot",
+		"AI",
+		"inteligencia artificial",
+		"chatbot para empresas",
+		"chatbot México",
+		"bilingual chatbot",
+		"customer support AI",
+	],
+	authors: [{ name: "Converso" }],
+	openGraph: {
+		type: "website",
+		locale: "es_MX",
+		alternateLocale: "en_US",
+		url: "https://soyconverso.com",
+		siteName: "Converso",
+		title: "Converso | AI que habla tu idioma",
+		description:
+			"Chatbots inteligentes y bilingües para tu negocio. Fácil de integrar, poderoso en resultados.",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "Converso | AI que habla tu idioma",
+		description: "Chatbots inteligentes y bilingües para tu negocio.",
+		creator: "@soyconverso",
+	},
+	robots: {
+		index: true,
+		follow: true,
+	},
 };
 
 export const viewport = {
-  maximumScale: 1, // Disable auto-zoom on mobile Safari
+	maximumScale: 1, // Disable auto-zoom on mobile Safari
 };
 
 // Converso Typography: Inter (body) + Plus Jakarta Sans (display)
 const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
+	subsets: ["latin"],
+	display: "swap",
+	variable: "--font-inter",
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-plus-jakarta",
-  weight: ["500", "600", "700", "800"],
+	subsets: ["latin"],
+	display: "swap",
+	variable: "--font-plus-jakarta",
+	weight: ["500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-geist-mono",
+	subsets: ["latin"],
+	display: "swap",
+	variable: "--font-geist-mono",
 });
 
 // Converso theme colors (Cielito Lindo palette)
@@ -94,41 +93,41 @@ const THEME_COLOR_SCRIPT = `\
 })();`;
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <ClerkProvider localization={esES}>
-      <html
-        className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
-        // `next-themes` injects an extra classname to the body element to avoid
-        // visual flicker before hydration. Hence the `suppressHydrationWarning`
-        // prop is necessary to avoid the React hydration mismatch warning.
-        // https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
-        lang="es"
-        suppressHydrationWarning
-      >
-        <head>
-          <script
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
-            dangerouslySetInnerHTML={{
-              __html: THEME_COLOR_SCRIPT,
-            }}
-          />
-        </head>
-        <body className="antialiased font-sans">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            disableTransitionOnChange
-            enableSystem
-          >
-            <Toaster position="top-center" />
-            {children}
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
-  );
+	return (
+		<ClerkProvider localization={esES}>
+			<html
+				className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
+				// `next-themes` injects an extra classname to the body element to avoid
+				// visual flicker before hydration. Hence the `suppressHydrationWarning`
+				// prop is necessary to avoid the React hydration mismatch warning.
+				// https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
+				lang="es"
+				suppressHydrationWarning
+			>
+				<head>
+					<script
+						// biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
+						dangerouslySetInnerHTML={{
+							__html: THEME_COLOR_SCRIPT,
+						}}
+					/>
+				</head>
+				<body className="antialiased font-sans">
+					<ThemeProvider
+						attribute="class"
+						defaultTheme="light"
+						disableTransitionOnChange
+						enableSystem
+					>
+						<Toaster position="top-center" />
+						{children}
+					</ThemeProvider>
+				</body>
+			</html>
+		</ClerkProvider>
+	);
 }

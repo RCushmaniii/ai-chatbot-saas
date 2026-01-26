@@ -1,54 +1,53 @@
 import { geolocation } from "@vercel/functions";
 import {
-  convertToModelMessages,
-  createUIMessageStream,
-  JsonToSseTransformStream,
-  smoothStream,
-  stepCountIs,
-  streamText,
+	convertToModelMessages,
+	createUIMessageStream,
+	JsonToSseTransformStream,
+	smoothStream,
+	stepCountIs,
+	streamText,
 } from "ai";
 import { unstable_cache as cache } from "next/cache";
 import { after } from "next/server";
 import {
-  createResumableStreamContext,
-  type ResumableStreamContext,
+	createResumableStreamContext,
+	type ResumableStreamContext,
 } from "resumable-stream";
 import type { ModelCatalog } from "tokenlens/core";
 import { fetchModels } from "tokenlens/fetch";
 import { getUsage } from "tokenlens/helpers";
-import { getAuthUser } from "@/lib/auth";
 import type { VisibilityType } from "@/components/visibility-selector";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
-import {
-  searchKnowledgeDirect,
-  searchKnowledgeTool,
-} from "@/lib/ai/tools/search-knowledge";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+import {
+	searchKnowledgeDirect,
+	searchKnowledgeTool,
+} from "@/lib/ai/tools/search-knowledge";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { getAuthUser } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
-  createStreamId,
-  deleteChatById,
-  getChatById,
-  getMessageCountByUserId,
-  getMessagesByChatId,
-  saveChat,
-  saveMessages,
-  updateChatLastContextById,
+	createStreamId,
+	deleteChatById,
+	getChatById,
+	getMessageCountByUserId,
+	getMessagesByChatId,
+	saveChat,
+	saveMessages,
+	updateChatLastContextById,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import {
-  convertToUIMessages,
-  generateUUID,
-  getTextFromMessage,
+	convertToUIMessages,
+	generateUUID,
+	getTextFromMessage,
 } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
@@ -58,350 +57,361 @@ export const maxDuration = 60;
 let globalStreamContext: ResumableStreamContext | null = null;
 
 const getTokenlensCatalog = cache(
-  async (): Promise<ModelCatalog | undefined> => {
-    try {
-      return await fetchModels();
-    } catch (err) {
-      console.warn(
-        "TokenLens: catalog fetch failed, using default catalog",
-        err
-      );
-      return; // tokenlens helpers will fall back to defaultCatalog
-    }
-  },
-  ["tokenlens-catalog"],
-  { revalidate: 24 * 60 * 60 } // 24 hours
+	async (): Promise<ModelCatalog | undefined> => {
+		try {
+			return await fetchModels();
+		} catch (err) {
+			console.warn(
+				"TokenLens: catalog fetch failed, using default catalog",
+				err,
+			);
+			return; // tokenlens helpers will fall back to defaultCatalog
+		}
+	},
+	["tokenlens-catalog"],
+	{ revalidate: 24 * 60 * 60 }, // 24 hours
 );
 
 export function getStreamContext() {
-  if (!globalStreamContext) {
-    try {
-      globalStreamContext = createResumableStreamContext({
-        waitUntil: after,
-      });
-    } catch (error: any) {
-      if (error.message.includes("REDIS_URL")) {
-        console.log(
-          " > Resumable streams are disabled due to missing REDIS_URL"
-        );
-      } else {
-        console.error(error);
-      }
-    }
-  }
+	if (!globalStreamContext) {
+		try {
+			globalStreamContext = createResumableStreamContext({
+				waitUntil: after,
+			});
+		} catch (error: any) {
+			if (error.message.includes("REDIS_URL")) {
+				console.log(
+					" > Resumable streams are disabled due to missing REDIS_URL",
+				);
+			} else {
+				console.error(error);
+			}
+		}
+	}
 
-  return globalStreamContext;
+	return globalStreamContext;
 }
 
 export async function POST(request: Request) {
-  let requestBody: PostRequestBody;
+	let requestBody: PostRequestBody;
 
-  try {
-    const json = await request.json();
-    requestBody = postRequestBodySchema.parse(json);
-  } catch (_) {
-    return new ChatSDKError("bad_request:api").toResponse();
-  }
+	try {
+		const json = await request.json();
+		requestBody = postRequestBodySchema.parse(json);
+	} catch (_) {
+		return new ChatSDKError("bad_request:api").toResponse();
+	}
 
-  try {
-    const {
-      id,
-      message,
-      selectedChatModel,
-      selectedVisibilityType,
-    }: {
-      id: string;
-      message: ChatMessage;
-      selectedChatModel: ChatModel["id"];
-      selectedVisibilityType: VisibilityType;
-    } = requestBody;
+	try {
+		const {
+			id,
+			message,
+			selectedChatModel,
+			selectedVisibilityType,
+		}: {
+			id: string;
+			message: ChatMessage;
+			selectedChatModel: ChatModel["id"];
+			selectedVisibilityType: VisibilityType;
+		} = requestBody;
 
-    const user = await getAuthUser();
+		const user = await getAuthUser();
 
-    if (!user) {
-      return new ChatSDKError("unauthorized:chat").toResponse();
-    }
+		if (!user) {
+			return new ChatSDKError("unauthorized:chat").toResponse();
+		}
 
-    const messageCount = await getMessageCountByUserId({
-      id: user.id,
-      differenceInHours: 24,
-    });
+		const messageCount = await getMessageCountByUserId({
+			id: user.id,
+			differenceInHours: 24,
+		});
 
-    // Rate limit: 1000 messages per day for authenticated users
-    if (messageCount > 1000) {
-      return new ChatSDKError("rate_limit:chat").toResponse();
-    }
+		// Rate limit: 1000 messages per day for authenticated users
+		if (messageCount > 1000) {
+			return new ChatSDKError("rate_limit:chat").toResponse();
+		}
 
-    const chat = await getChatById({ id });
-    let messagesFromDb: DBMessage[] = [];
+		const chat = await getChatById({ id });
+		let messagesFromDb: DBMessage[] = [];
 
-    if (chat) {
-      if (chat.userId !== user.id) {
-        return new ChatSDKError("forbidden:chat").toResponse();
-      }
-      // Only fetch messages if chat already exists
-      messagesFromDb = await getMessagesByChatId({ id });
-    } else {
-      const title = await generateTitleFromUserMessage({
-        message,
-      });
+		if (chat) {
+			if (chat.userId !== user.id) {
+				return new ChatSDKError("forbidden:chat").toResponse();
+			}
+			// Only fetch messages if chat already exists
+			messagesFromDb = await getMessagesByChatId({ id });
+		} else {
+			const title = await generateTitleFromUserMessage({
+				message,
+			});
 
-      await saveChat({
-        id,
-        userId: user.id,
-        title,
-        visibility: selectedVisibilityType,
-      });
-      // New chat - no need to fetch messages, it's empty
-    }
+			await saveChat({
+				id,
+				userId: user.id,
+				title,
+				visibility: selectedVisibilityType,
+			});
+			// New chat - no need to fetch messages, it's empty
+		}
 
-    const uiMessages = [...convertToUIMessages(messagesFromDb), message];
+		const uiMessages = [...convertToUIMessages(messagesFromDb), message];
 
-    const { longitude, latitude, city, country } = geolocation(request);
+		const { longitude, latitude, city, country } = geolocation(request);
 
-    const requestHints: RequestHints = {
-      longitude,
-      latitude,
-      city,
-      country,
-    };
+		const requestHints: RequestHints = {
+			longitude,
+			latitude,
+			city,
+			country,
+		};
 
-    // Build knowledge context from vector DB for the latest user message.
-    const latestUserText = getTextFromMessage(message) ?? "";
-    const knowledgeResults = await searchKnowledgeDirect(latestUserText);
+		// Build knowledge context from vector DB for the latest user message.
+		const latestUserText = getTextFromMessage(message) ?? "";
+		const knowledgeResults = await searchKnowledgeDirect(latestUserText);
 
-    // Detect language from user's message (with error handling)
-    let detectedLang: 'en' | 'es' = 'en';
-    let learnMoreText = 'Learn more:';
-    let translateUrlFn: ((url: string, lang: 'en' | 'es') => string) | null = null;
-    
-    try {
-      const { detectLanguage, translateUrl, getLearnMoreText } = await import("@/lib/utils/language-detector");
-      detectedLang = detectLanguage(latestUserText);
-      learnMoreText = getLearnMoreText(detectedLang);
-      translateUrlFn = translateUrl;
-      console.log(`🌐 Detected language: ${detectedLang} for message: "${latestUserText.substring(0, 50)}..."`);
-    } catch (error) {
-      console.error('⚠️  Language detection failed, defaulting to English:', error);
-    }
+		// Detect language from user's message (with error handling)
+		let detectedLang: "en" | "es" = "en";
+		let learnMoreText = "Learn more:";
+		let translateUrlFn: ((url: string, lang: "en" | "es") => string) | null =
+			null;
 
-    // Debug: Log knowledge results
-    if (knowledgeResults.length > 0) {
-      console.log(`📚 Found ${knowledgeResults.length} knowledge results for: "${latestUserText}"`);
-      knowledgeResults.forEach((r, idx) => {
-        console.log(`  ${idx + 1}. URL: ${r.url}, Similarity: ${r.similarity}`);
-      });
-    } else {
-      console.log(`⚠️  No knowledge results found for: "${latestUserText}"`);
-    }
+		try {
+			const { detectLanguage, translateUrl, getLearnMoreText } = await import(
+				"@/lib/utils/language-detector"
+			);
+			detectedLang = detectLanguage(latestUserText);
+			learnMoreText = getLearnMoreText(detectedLang);
+			translateUrlFn = translateUrl;
+			console.log(
+				`🌐 Detected language: ${detectedLang} for message: "${latestUserText.substring(0, 50)}..."`,
+			);
+		} catch (error) {
+			console.error(
+				"⚠️  Language detection failed, defaulting to English:",
+				error,
+			);
+		}
 
-    // Extract unique URLs from knowledge results and translate them based on detected language
-    const uniqueUrls = knowledgeResults.length
-      ? Array.from(new Set(knowledgeResults.map(r => r.url).filter(Boolean)))
-          .map(url => {
-            if (translateUrlFn) {
-              const translated = translateUrlFn(url as string, detectedLang);
-              console.log(`🔗 Translating URL: ${url} -> ${translated}`);
-              return translated;
-            }
-            return url as string;
-          })
-      : [];
+		// Debug: Log knowledge results
+		if (knowledgeResults.length > 0) {
+			console.log(
+				`📚 Found ${knowledgeResults.length} knowledge results for: "${latestUserText}"`,
+			);
+			knowledgeResults.forEach((r, idx) => {
+				console.log(`  ${idx + 1}. URL: ${r.url}, Similarity: ${r.similarity}`);
+			});
+		} else {
+			console.log(`⚠️  No knowledge results found for: "${latestUserText}"`);
+		}
 
-    const knowledgeContext = knowledgeResults.length
-      ? `\n\n=== KNOWLEDGE BASE RESULTS ===
+		// Extract unique URLs from knowledge results and translate them based on detected language
+		const uniqueUrls = knowledgeResults.length
+			? Array.from(
+					new Set(knowledgeResults.map((r) => r.url).filter(Boolean)),
+				).map((url) => {
+					if (translateUrlFn) {
+						const translated = translateUrlFn(url as string, detectedLang);
+						console.log(`🔗 Translating URL: ${url} -> ${translated}`);
+						return translated;
+					}
+					return url as string;
+				})
+			: [];
+
+		const knowledgeContext = knowledgeResults.length
+			? `\n\n=== KNOWLEDGE BASE RESULTS ===
 Use these facts in your answer, and prefer them over your own assumptions when talking about New York English Teacher.
 
 ${knowledgeResults
-          .map((r, idx) => {
-            const prefix = `${idx + 1}) `;
-            const urlPart = r.url ? ` (source: ${r.url})` : "";
-            return `${prefix}${r.content.trim()}${urlPart}`;
-          })
-          .join("\n\n")}
+	.map((r, idx) => {
+		const prefix = `${idx + 1}) `;
+		const urlPart = r.url ? ` (source: ${r.url})` : "";
+		return `${prefix}${r.content.trim()}${urlPart}`;
+	})
+	.join("\n\n")}
 
 MANDATORY: After your answer, add this exact section:
 
 ${learnMoreText}
-${uniqueUrls.map(url => `- ${url}`).join("\n")}
+${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 === END KNOWLEDGE BASE RESULTS ===`
-      : "";
+			: "";
 
-    await saveMessages({
-      messages: [
-        {
-          chatId: id,
-          id: message.id,
-          role: "user",
-          parts: message.parts,
-          attachments: [],
-          createdAt: new Date(),
-        },
-      ],
-    });
+		await saveMessages({
+			messages: [
+				{
+					chatId: id,
+					id: message.id,
+					role: "user",
+					parts: message.parts,
+					attachments: [],
+					createdAt: new Date(),
+				},
+			],
+		});
 
-    const streamId = generateUUID();
-    await createStreamId({ streamId, chatId: id });
+		const streamId = generateUUID();
+		await createStreamId({ streamId, chatId: id });
 
-    let finalMergedUsage: AppUsage | undefined;
+		let finalMergedUsage: AppUsage | undefined;
 
-    const stream = createUIMessageStream({
-      execute: ({ writer: dataStream }) => {
-        const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: `${systemPrompt({ selectedChatModel, requestHints })}${knowledgeContext}`,
-          messages: convertToModelMessages(uiMessages),
-          stopWhen: stepCountIs(5),
-          experimental_activeTools:
-            selectedChatModel === "chat-model-reasoning"
-              ? []
-              : [
-                  "searchKnowledge",
-                  "getWeather",
-                  "createDocument",
-                  "updateDocument",
-                  "requestSuggestions",
-                ],
-          experimental_transform: smoothStream({ chunking: "word" }),
-          tools: {
-            searchKnowledge: searchKnowledgeTool,
-            getWeather,
-            createDocument: createDocument({ user, dataStream }),
-            updateDocument: updateDocument({ user, dataStream }),
-            requestSuggestions: requestSuggestions({
-              user,
-              dataStream,
-            }),
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: "stream-text",
-          },
-          onFinish: async ({ usage }) => {
-            try {
-              const providers = await getTokenlensCatalog();
-              const modelId =
-                myProvider.languageModel(selectedChatModel).modelId;
-              if (!modelId) {
-                finalMergedUsage = usage;
-                dataStream.write({
-                  type: "data-usage",
-                  data: finalMergedUsage,
-                });
-                return;
-              }
+		const stream = createUIMessageStream({
+			execute: ({ writer: dataStream }) => {
+				const result = streamText({
+					model: myProvider.languageModel(selectedChatModel),
+					system: `${systemPrompt({ selectedChatModel, requestHints })}${knowledgeContext}`,
+					messages: convertToModelMessages(uiMessages),
+					stopWhen: stepCountIs(5),
+					experimental_activeTools:
+						selectedChatModel === "chat-model-reasoning"
+							? []
+							: [
+									"searchKnowledge",
+									"getWeather",
+									"createDocument",
+									"updateDocument",
+									"requestSuggestions",
+								],
+					experimental_transform: smoothStream({ chunking: "word" }),
+					tools: {
+						searchKnowledge: searchKnowledgeTool,
+						getWeather,
+						createDocument: createDocument({ user, dataStream }),
+						updateDocument: updateDocument({ user, dataStream }),
+						requestSuggestions: requestSuggestions({
+							user,
+							dataStream,
+						}),
+					},
+					experimental_telemetry: {
+						isEnabled: isProductionEnvironment,
+						functionId: "stream-text",
+					},
+					onFinish: async ({ usage }) => {
+						try {
+							const providers = await getTokenlensCatalog();
+							const modelId =
+								myProvider.languageModel(selectedChatModel).modelId;
+							if (!modelId) {
+								finalMergedUsage = usage;
+								dataStream.write({
+									type: "data-usage",
+									data: finalMergedUsage,
+								});
+								return;
+							}
 
-              if (!providers) {
-                finalMergedUsage = usage;
-                dataStream.write({
-                  type: "data-usage",
-                  data: finalMergedUsage,
-                });
-                return;
-              }
+							if (!providers) {
+								finalMergedUsage = usage;
+								dataStream.write({
+									type: "data-usage",
+									data: finalMergedUsage,
+								});
+								return;
+							}
 
-              const summary = getUsage({ modelId, usage, providers });
-              finalMergedUsage = { ...usage, ...summary, modelId } as AppUsage;
-              dataStream.write({ type: "data-usage", data: finalMergedUsage });
-            } catch (err) {
-              console.warn("TokenLens enrichment failed", err);
-              finalMergedUsage = usage;
-              dataStream.write({ type: "data-usage", data: finalMergedUsage });
-            }
-          },
-        });
+							const summary = getUsage({ modelId, usage, providers });
+							finalMergedUsage = { ...usage, ...summary, modelId } as AppUsage;
+							dataStream.write({ type: "data-usage", data: finalMergedUsage });
+						} catch (err) {
+							console.warn("TokenLens enrichment failed", err);
+							finalMergedUsage = usage;
+							dataStream.write({ type: "data-usage", data: finalMergedUsage });
+						}
+					},
+				});
 
-        result.consumeStream();
+				result.consumeStream();
 
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: true,
-          })
-        );
-      },
-      generateId: generateUUID,
-      onFinish: async ({ messages }) => {
-        await saveMessages({
-          messages: messages.map((currentMessage) => ({
-            id: currentMessage.id,
-            role: currentMessage.role,
-            parts: currentMessage.parts,
-            createdAt: new Date(),
-            attachments: [],
-            chatId: id,
-          })),
-        });
+				dataStream.merge(
+					result.toUIMessageStream({
+						sendReasoning: true,
+					}),
+				);
+			},
+			generateId: generateUUID,
+			onFinish: async ({ messages }) => {
+				await saveMessages({
+					messages: messages.map((currentMessage) => ({
+						id: currentMessage.id,
+						role: currentMessage.role,
+						parts: currentMessage.parts,
+						createdAt: new Date(),
+						attachments: [],
+						chatId: id,
+					})),
+				});
 
-        if (finalMergedUsage) {
-          try {
-            await updateChatLastContextById({
-              chatId: id,
-              context: finalMergedUsage,
-            });
-          } catch (err) {
-            console.warn("Unable to persist last usage for chat", id, err);
-          }
-        }
-      },
-      onError: () => {
-        return "Oops, an error occurred!";
-      },
-    });
+				if (finalMergedUsage) {
+					try {
+						await updateChatLastContextById({
+							chatId: id,
+							context: finalMergedUsage,
+						});
+					} catch (err) {
+						console.warn("Unable to persist last usage for chat", id, err);
+					}
+				}
+			},
+			onError: () => {
+				return "Oops, an error occurred!";
+			},
+		});
 
-    // const streamContext = getStreamContext();
+		// const streamContext = getStreamContext();
 
-    // if (streamContext) {
-    //   return new Response(
-    //     await streamContext.resumableStream(streamId, () =>
-    //       stream.pipeThrough(new JsonToSseTransformStream())
-    //     )
-    //   );
-    // }
+		// if (streamContext) {
+		//   return new Response(
+		//     await streamContext.resumableStream(streamId, () =>
+		//       stream.pipeThrough(new JsonToSseTransformStream())
+		//     )
+		//   );
+		// }
 
-    return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
-  } catch (error) {
-    const vercelId = request.headers.get("x-vercel-id");
+		return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
+	} catch (error) {
+		const vercelId = request.headers.get("x-vercel-id");
 
-    if (error instanceof ChatSDKError) {
-      return error.toResponse();
-    }
+		if (error instanceof ChatSDKError) {
+			return error.toResponse();
+		}
 
-    // Check for Vercel AI Gateway credit card error
-    if (
-      error instanceof Error &&
-      error.message?.includes(
-        "AI Gateway requires a valid credit card on file to service requests"
-      )
-    ) {
-      return new ChatSDKError("bad_request:activate_gateway").toResponse();
-    }
+		// Check for Vercel AI Gateway credit card error
+		if (
+			error instanceof Error &&
+			error.message?.includes(
+				"AI Gateway requires a valid credit card on file to service requests",
+			)
+		) {
+			return new ChatSDKError("bad_request:activate_gateway").toResponse();
+		}
 
-    console.error("Unhandled error in chat API:", error, { vercelId });
-    return new ChatSDKError("offline:chat").toResponse();
-  }
+		console.error("Unhandled error in chat API:", error, { vercelId });
+		return new ChatSDKError("offline:chat").toResponse();
+	}
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
+	const { searchParams } = new URL(request.url);
+	const id = searchParams.get("id");
 
-  if (!id) {
-    return new ChatSDKError("bad_request:api").toResponse();
-  }
+	if (!id) {
+		return new ChatSDKError("bad_request:api").toResponse();
+	}
 
-  const user = await getAuthUser();
+	const user = await getAuthUser();
 
-  if (!user) {
-    return new ChatSDKError("unauthorized:chat").toResponse();
-  }
+	if (!user) {
+		return new ChatSDKError("unauthorized:chat").toResponse();
+	}
 
-  const chat = await getChatById({ id });
+	const chat = await getChatById({ id });
 
-  if (chat?.userId !== user.id) {
-    return new ChatSDKError("forbidden:chat").toResponse();
-  }
+	if (chat?.userId !== user.id) {
+		return new ChatSDKError("forbidden:chat").toResponse();
+	}
 
-  const deletedChat = await deleteChatById({ id });
+	const deletedChat = await deleteChatById({ id });
 
-  return Response.json(deletedChat, { status: 200 });
+	return Response.json(deletedChat, { status: 200 });
 }
