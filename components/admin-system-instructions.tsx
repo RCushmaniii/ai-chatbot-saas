@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, RotateCcw, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,11 +51,7 @@ export function AdminSystemInstructions() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
 
-	useEffect(() => {
-		loadSettings();
-	}, [loadSettings]);
-
-	const loadSettings = async () => {
+	const loadSettings = useCallback(async () => {
 		setIsLoading(true);
 		try {
 			const response = await fetch("/api/admin/settings");
@@ -79,7 +75,11 @@ export function AdminSystemInstructions() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, []);
+
+	useEffect(() => {
+		loadSettings();
+	}, [loadSettings]);
 
 	const handleSave = async () => {
 		setIsSaving(true);

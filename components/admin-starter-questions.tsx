@@ -1,7 +1,7 @@
 "use client";
 
 import { GripVertical, Loader2, Plus, Save, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,11 +43,7 @@ export function AdminStarterQuestions() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
 
-	useEffect(() => {
-		loadSettings();
-	}, [loadSettings]);
-
-	const loadSettings = async () => {
+	const loadSettings = useCallback(async () => {
 		setIsLoading(true);
 		try {
 			const response = await fetch("/api/admin/settings");
@@ -68,7 +64,11 @@ export function AdminStarterQuestions() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, []);
+
+	useEffect(() => {
+		loadSettings();
+	}, [loadSettings]);
 
 	const handleSave = async () => {
 		setIsSaving(true);

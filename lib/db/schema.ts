@@ -437,3 +437,349 @@ export const usageRecord = pgTable("UsageRecord", {
 });
 
 export type UsageRecord = InferSelectModel<typeof usageRecord>;
+
+// ===========================================
+// CONTACT/LEAD MANAGEMENT
+// ===========================================
+
+export const contactStatusEnum = pgEnum("contact_status", [
+	"new",
+	"engaged",
+	"qualified",
+	"converted",
+]);
+
+export const contact = pgTable("Contact", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	email: varchar("email", { length: 255 }),
+	phone: varchar("phone", { length: 50 }),
+	name: varchar("name", { length: 255 }),
+	status: contactStatusEnum("status").notNull().default("new"),
+	leadScore: integer("lead_score").default(0),
+	tags: jsonb("tags").$type<string[]>().default([]),
+	customFields: jsonb("custom_fields").$type<Record<string, string>>(),
+	firstSeenAt: timestamp("first_seen_at").notNull().defaultNow(),
+	lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Contact = InferSelectModel<typeof contact>;
+
+export const contactActivityTypeEnum = pgEnum("contact_activity_type", [
+	"page_view",
+	"chat_started",
+	"message_sent",
+	"email_captured",
+	"phone_captured",
+	"playbook_completed",
+	"handoff_requested",
+	"converted",
+]);
+
+export const contactActivity = pgTable("ContactActivity", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	contactId: uuid("contact_id")
+		.notNull()
+		.references(() => contact.id),
+	type: contactActivityTypeEnum("type").notNull(),
+	description: text("description"),
+	metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type ContactActivity = InferSelectModel<typeof contactActivity>;
+
+export const widgetConversationStatusEnum = pgEnum(
+	"widget_conversation_status",
+	["active", "closed", "handed_off"],
+);
+
+export const widgetConversation = pgTable("WidgetConversation", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	botId: uuid("bot_id").references(() => bot.id),
+	visitorId: varchar("visitor_id", { length: 100 }).notNull(),
+	sessionId: varchar("session_id", { length: 100 }).notNull(),
+	contactId: uuid("contact_id").references(() => contact.id),
+	status: widgetConversationStatusEnum("status").notNull().default("active"),
+	metadata: jsonb("metadata").$type<{
+		userAgent?: string;
+		referrer?: string;
+		pageUrl?: string;
+		ip?: string;
+	}>(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type WidgetConversation = InferSelectModel<typeof widgetConversation>;
+
+export const widgetMessageRoleEnum = pgEnum("widget_message_role", [
+	"user",
+	"assistant",
+	"system",
+	"agent",
+]);
+
+export const widgetMessage = pgTable("WidgetMessage", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	conversationId: uuid("conversation_id")
+		.notNull()
+		.references(() => widgetConversation.id),
+	role: widgetMessageRoleEnum("role").notNull(),
+	content: text("content").notNull(),
+	playbookStepId: uuid("playbook_step_id"),
+	metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type WidgetMessage = InferSelectModel<typeof widgetMessage>;
+
+// ===========================================
+// PLAYBOOK/FLOW BUILDER SYSTEM
+// ===========================================
+
+export const playbookStatusEnum = pgEnum("playbook_status", [
+	"draft",
+	"active",
+	"paused",
+]);
+
+export const playbookTriggerTypeEnum = pgEnum("playbook_trigger_type", [
+	"keyword",
+	"intent",
+	"url",
+	"manual",
+	"first_message",
+]);
+
+export const playbook = pgTable("Playbook", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	botId: uuid("bot_id").references(() => bot.id),
+	name: varchar("name", { length: 255 }).notNull(),
+	description: text("description"),
+	triggerType: playbookTriggerTypeEnum("trigger_type").notNull(),
+	triggerConfig: jsonb("trigger_config").$type<{
+		keywords?: string[];
+		intents?: string[];
+		urlPatterns?: string[];
+	}>(),
+	status: playbookStatusEnum("status").notNull().default("draft"),
+	priority: integer("priority").notNull().default(0),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Playbook = InferSelectModel<typeof playbook>;
+
+export const playbookStepTypeEnum = pgEnum("playbook_step_type", [
+	"message",
+	"question",
+	"options",
+	"condition",
+	"action",
+	"handoff",
+	"stop",
+]);
+
+export const playbookStep = pgTable("PlaybookStep", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	playbookId: uuid("playbook_id")
+		.notNull()
+		.references(() => playbook.id),
+	type: playbookStepTypeEnum("type").notNull(),
+	name: varchar("name", { length: 255 }),
+	config: jsonb("config").$type<{
+		// For message step
+		message?: string;
+		// For question step
+		question?: string;
+		variableName?: string;
+		validation?: "email" | "phone" | "text" | "number";
+		// For options step
+		options?: Array<{ label: string; value: string; nextStepId?: string }>;
+		// For condition step
+		conditions?: Array<{
+			variable: string;
+			operator: "equals" | "contains" | "startsWith" | "regex";
+			value: string;
+			nextStepId: string;
+		}>;
+		defaultNextStepId?: string;
+		// For action step
+		actionType?: "capture_contact" | "add_tag" | "set_score" | "webhook";
+		actionConfig?: Record<string, unknown>;
+		// For handoff step
+		department?: string;
+		priority?: number;
+		aiSummaryEnabled?: boolean;
+	}>(),
+	position: integer("position").notNull().default(0),
+	nextStepId: uuid("next_step_id"),
+	// Visual position for the flow builder
+	positionX: integer("position_x").default(0),
+	positionY: integer("position_y").default(0),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type PlaybookStep = InferSelectModel<typeof playbookStep>;
+
+export const playbookExecutionStatusEnum = pgEnum("playbook_execution_status", [
+	"active",
+	"completed",
+	"abandoned",
+	"handed_off",
+]);
+
+export const playbookExecution = pgTable("PlaybookExecution", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	playbookId: uuid("playbook_id")
+		.notNull()
+		.references(() => playbook.id),
+	conversationId: uuid("conversation_id")
+		.notNull()
+		.references(() => widgetConversation.id),
+	currentStepId: uuid("current_step_id"),
+	variables: jsonb("variables").$type<Record<string, unknown>>().default({}),
+	status: playbookExecutionStatusEnum("status").notNull().default("active"),
+	startedAt: timestamp("started_at").notNull().defaultNow(),
+	completedAt: timestamp("completed_at"),
+});
+
+export type PlaybookExecution = InferSelectModel<typeof playbookExecution>;
+
+// ===========================================
+// LIVE CHAT HANDOFF SYSTEM
+// ===========================================
+
+export const agentStatusEnum = pgEnum("agent_status", [
+	"online",
+	"away",
+	"busy",
+	"offline",
+]);
+
+export const agent = pgTable("Agent", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => user.id),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	status: agentStatusEnum("status").notNull().default("offline"),
+	maxConcurrentChats: integer("max_concurrent_chats").notNull().default(5),
+	departments: jsonb("departments").$type<string[]>().default([]),
+	currentChatCount: integer("current_chat_count").notNull().default(0),
+	lastActiveAt: timestamp("last_active_at"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Agent = InferSelectModel<typeof agent>;
+
+export const liveChatQueueStatusEnum = pgEnum("live_chat_queue_status", [
+	"waiting",
+	"assigned",
+	"resolved",
+]);
+
+export const liveChatQueue = pgTable("LiveChatQueue", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	conversationId: uuid("conversation_id")
+		.notNull()
+		.references(() => widgetConversation.id),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	priority: integer("priority").notNull().default(0),
+	assignedAgentId: uuid("assigned_agent_id").references(() => agent.id),
+	status: liveChatQueueStatusEnum("status").notNull().default("waiting"),
+	department: varchar("department", { length: 100 }),
+	aiSummary: text("ai_summary"),
+	waitingSince: timestamp("waiting_since").notNull().defaultNow(),
+	assignedAt: timestamp("assigned_at"),
+	resolvedAt: timestamp("resolved_at"),
+});
+
+export type LiveChatQueue = InferSelectModel<typeof liveChatQueue>;
+
+// ===========================================
+// SCHEDULED RETRAINING & TRAINING SUGGESTIONS
+// ===========================================
+
+export const retrainingScheduleEnum = pgEnum("retraining_schedule", [
+	"daily",
+	"weekly",
+	"monthly",
+]);
+
+export const retrainingConfig = pgTable("RetrainingConfig", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id)
+		.unique(),
+	enabled: boolean("enabled").notNull().default(false),
+	schedule: retrainingScheduleEnum("schedule").notNull().default("weekly"),
+	lastRunAt: timestamp("last_run_at"),
+	nextRunAt: timestamp("next_run_at"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type RetrainingConfig = InferSelectModel<typeof retrainingConfig>;
+
+export const sitemapScan = pgTable("SitemapScan", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	sitemapUrl: varchar("sitemap_url", { length: 500 }).notNull(),
+	pagesFound: integer("pages_found").notNull().default(0),
+	newPages: integer("new_pages").notNull().default(0),
+	removedPages: integer("removed_pages").notNull().default(0),
+	scanResults: jsonb("scan_results").$type<{
+		existingUrls: string[];
+		newUrls: string[];
+		removedUrls: string[];
+	}>(),
+	scannedAt: timestamp("scanned_at").notNull().defaultNow(),
+});
+
+export type SitemapScan = InferSelectModel<typeof sitemapScan>;
+
+export const trainingSuggestionTypeEnum = pgEnum("training_suggestion_type", [
+	"new_page",
+	"removed_page",
+	"updated_page",
+]);
+
+export const trainingSuggestionStatusEnum = pgEnum(
+	"training_suggestion_status",
+	["pending", "accepted", "dismissed"],
+);
+
+export const trainingSuggestion = pgTable("TrainingSuggestion", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	scanId: uuid("scan_id").references(() => sitemapScan.id),
+	type: trainingSuggestionTypeEnum("type").notNull(),
+	url: varchar("url", { length: 500 }).notNull(),
+	title: varchar("title", { length: 500 }),
+	status: trainingSuggestionStatusEnum("status").notNull().default("pending"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	processedAt: timestamp("processed_at"),
+});
+
+export type TrainingSuggestion = InferSelectModel<typeof trainingSuggestion>;

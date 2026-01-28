@@ -163,9 +163,106 @@ export function AdminKnowledgeBase() {
 					continue;
 				}
 
+				// Handle CSV files
+				if (lowerName.endsWith(".csv")) {
+					const { processCSV, splitCSVIntoChunks } = await import(
+						"@/lib/ingestion/processors/csv-processor"
+					);
+					const text = await file.text();
+					const result = await processCSV(text);
+					const chunks = splitCSVIntoChunks(result);
+
+					for (const chunk of chunks) {
+						const response = await fetch("/api/admin/knowledge", {
+							method: "POST",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({
+								content: chunk,
+								url,
+								metadata: {
+									type,
+									language,
+									sourceFile: file.name,
+									format: "csv",
+								},
+							}),
+						});
+
+						if (!response.ok) {
+							setUploadItems((prev) =>
+								prev.map((item) =>
+									item.name === file.name
+										? {
+												...item,
+												status: "error",
+												errorMessage: "Failed to process CSV",
+											}
+										: item,
+								),
+							);
+							toast.error(`Failed to add content from ${file.name}`);
+						}
+					}
+
+					setUploadItems((prev) =>
+						prev.map((item) =>
+							item.name === file.name ? { ...item, status: "complete" } : item,
+						),
+					);
+					continue;
+				}
+
+				// Handle DOCX files
+				if (lowerName.endsWith(".docx")) {
+					const { processDOCXFile, splitDOCXIntoChunks } = await import(
+						"@/lib/ingestion/processors/docx-processor"
+					);
+					const result = await processDOCXFile(file);
+					const chunks = splitDOCXIntoChunks(result.content);
+
+					for (const chunk of chunks) {
+						const response = await fetch("/api/admin/knowledge", {
+							method: "POST",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({
+								content: chunk,
+								url,
+								metadata: {
+									type,
+									language,
+									sourceFile: file.name,
+									format: "docx",
+								},
+							}),
+						});
+
+						if (!response.ok) {
+							setUploadItems((prev) =>
+								prev.map((item) =>
+									item.name === file.name
+										? {
+												...item,
+												status: "error",
+												errorMessage: "Failed to process DOCX",
+											}
+										: item,
+								),
+							);
+							toast.error(`Failed to add content from ${file.name}`);
+						}
+					}
+
+					setUploadItems((prev) =>
+						prev.map((item) =>
+							item.name === file.name ? { ...item, status: "complete" } : item,
+						),
+					);
+					continue;
+				}
+
 				// Handle plain text / markdown directly on the client.
 				if (!lowerName.endsWith(".txt") && !lowerName.endsWith(".md")) {
-					const errorMessage = `Unsupported file type for ${file.name}. Currently .txt, .md, and .pdf files are supported.`;
+					const errorMessage = `Unsupported file type for ${file.name}. Supported: .txt, .md, .pdf, .csv, .docx`;
 					toast.error(errorMessage);
 					setUploadItems((prev) =>
 						prev.map((item) =>
@@ -324,9 +421,10 @@ export function AdminKnowledgeBase() {
 				<CardHeader>
 					<CardTitle>Upload Files</CardTitle>
 					<CardDescription>
-						Upload .txt or .md files to automatically add their contents to the
-						knowledge base. Longer files will be split into smaller chunks for
-						better search results.
+						Upload documents to automatically add their contents to the
+						knowledge base. Supported formats: .txt, .md, .pdf, .csv, and .docx.
+						Longer files will be split into smaller chunks for better search
+						results.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -421,14 +519,14 @@ export function AdminKnowledgeBase() {
 								and drop
 							</p>
 							<p className="text-xs text-muted-foreground mt-1">
-								Supports .txt, .md, and .pdf files.
+								Supports .txt, .md, .pdf, .csv, and .docx files.
 							</p>
 							<Input
 								id="file-upload"
 								type="file"
 								multiple
 								className="hidden"
-								accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+								accept=".txt,.md,.pdf,.csv,.docx,text/plain,text/markdown,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 								onChange={handleFileUpload}
 								disabled={isUploading}
 							/>
