@@ -1,22 +1,4 @@
-import type { UserType } from "@/app/(auth)/auth";
 import type { ChatModel } from "./models";
-
-type Entitlements = {
-	maxMessagesPerDay: number;
-	availableChatModelIds: ChatModel["id"][];
-};
-
-// Legacy user type entitlements (for backwards compatibility)
-export const entitlementsByUserType: Record<UserType, Entitlements> = {
-	guest: {
-		maxMessagesPerDay: 10,
-		availableChatModelIds: ["chat-model-mini"],
-	},
-	regular: {
-		maxMessagesPerDay: 50,
-		availableChatModelIds: ["chat-model-mini"],
-	},
-};
 
 // Subscription plan entitlements (multi-tenant SaaS model)
 export type PlanEntitlements = {

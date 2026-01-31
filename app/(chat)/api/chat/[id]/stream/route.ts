@@ -1,6 +1,6 @@
 import { createUIMessageStream, JsonToSseTransformStream } from "ai";
 import { differenceInSeconds } from "date-fns";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 import {
 	getChatById,
 	getMessagesByChatId,
@@ -28,9 +28,9 @@ export async function GET(
 		return new ChatSDKError("bad_request:api").toResponse();
 	}
 
-	const session = await auth();
+	const user = await getAuthUser();
 
-	if (!session?.user) {
+	if (!user) {
 		return new ChatSDKError("unauthorized:chat").toResponse();
 	}
 
@@ -46,7 +46,7 @@ export async function GET(
 		return new ChatSDKError("not_found:chat").toResponse();
 	}
 
-	if (chat.visibility === "private" && chat.userId !== session.user.id) {
+	if (chat.visibility === "private" && chat.userId !== user.id) {
 		return new ChatSDKError("forbidden:chat").toResponse();
 	}
 

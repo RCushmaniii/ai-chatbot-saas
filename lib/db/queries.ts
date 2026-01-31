@@ -147,33 +147,6 @@ export async function createUser(email: string, password: string) {
 	}
 }
 
-export async function createGuestUser() {
-	const email = `guest-${Date.now()}`;
-	const password = generateHashedPassword(generateUUID());
-
-	try {
-		const [createdGuest] = await db
-			.insert(user)
-			.values({ email, password })
-			.returning({
-				id: user.id,
-				email: user.email,
-			});
-
-		await ensureDefaultTenantForUser({
-			userId: createdGuest.id,
-			businessName: "Guest Business",
-		});
-
-		return [createdGuest];
-	} catch (_error) {
-		throw new ChatSDKError(
-			"bad_request:database",
-			"Failed to create guest user",
-		);
-	}
-}
-
 export async function saveChat({
 	id,
 	userId,

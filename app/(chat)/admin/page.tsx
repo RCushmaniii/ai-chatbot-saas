@@ -1,19 +1,19 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 import { AdminTabs } from "@/components/admin-tabs";
 
 export default async function AdminPage() {
-	const session = await auth();
+	const user = await getAuthUser();
 
-	if (!session?.user) {
-		redirect("/login");
+	if (!user) {
+		redirect("/sign-in");
 	}
 
 	// Single-tenant: Only the owner can access admin
 	// Add your email here or use an environment variable
 	const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "your-email@example.com";
 
-	if (session.user.email !== ADMIN_EMAIL) {
+	if (user.email !== ADMIN_EMAIL) {
 		redirect("/");
 	}
 

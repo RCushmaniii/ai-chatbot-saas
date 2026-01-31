@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 
 const execAsync = promisify(exec);
 
@@ -8,8 +8,8 @@ export const maxDuration = 300; // 5 minutes for ingestion
 
 export async function POST(request: Request) {
 	try {
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 

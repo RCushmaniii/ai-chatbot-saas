@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 import { botSettings } from "@/lib/db/schema";
 
 const client = postgres(process.env.POSTGRES_URL!);
@@ -9,8 +9,8 @@ const db = drizzle(client);
 
 export async function GET() {
 	try {
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
@@ -18,7 +18,7 @@ export async function GET() {
 		const settings = await db
 			.select()
 			.from(botSettings)
-			.where(eq(botSettings.userId, session.user.id))
+			.where(eq(botSettings.userId, user.id))
 			.limit(1);
 
 		if (settings.length === 0) {
@@ -37,8 +37,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	try {
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
@@ -55,13 +55,13 @@ export async function POST(request: Request) {
 		const existing = await db
 			.select()
 			.from(botSettings)
-			.where(eq(botSettings.userId, session.user.id))
+			.where(eq(botSettings.userId, user.id))
 			.limit(1);
 
 		if (existing.length === 0) {
 			// Create new settings
 			await db.insert(botSettings).values({
-				userId: session.user.id,
+				userId: user.id,
 				botName,
 				customInstructions,
 				starterQuestions,
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 					...(userSettings !== undefined && { settings: userSettings }),
 					updatedAt: new Date(),
 				})
-				.where(eq(botSettings.userId, session.user.id));
+				.where(eq(botSettings.userId, user.id));
 		}
 
 		return Response.json({ success: true });

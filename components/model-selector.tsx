@@ -1,6 +1,5 @@
 "use client";
 
-import type { Session } from "next-auth";
 import { startTransition, useMemo, useOptimistic, useState } from "react";
 import { saveChatModelAsCookie } from "@/app/(chat)/actions";
 import { Button } from "@/components/ui/button";
@@ -10,36 +9,23 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { chatModels } from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 import { CheckCircleFillIcon, ChevronDownIcon } from "./icons";
 
 export function ModelSelector({
-	session,
 	selectedModelId,
 	className,
 }: {
-	session: Session;
 	selectedModelId: string;
 } & React.ComponentProps<typeof Button>) {
 	const [open, setOpen] = useState(false);
 	const [optimisticModelId, setOptimisticModelId] =
 		useOptimistic(selectedModelId);
 
-	const userType = session.user.type;
-	const { availableChatModelIds } = entitlementsByUserType[userType];
-
-	const availableChatModels = chatModels.filter((chatModel) =>
-		availableChatModelIds.includes(chatModel.id),
-	);
-
 	const selectedChatModel = useMemo(
-		() =>
-			availableChatModels.find(
-				(chatModel) => chatModel.id === optimisticModelId,
-			),
-		[optimisticModelId, availableChatModels],
+		() => chatModels.find((chatModel) => chatModel.id === optimisticModelId),
+		[optimisticModelId],
 	);
 
 	return (
@@ -64,7 +50,7 @@ export function ModelSelector({
 				align="start"
 				className="min-w-[280px] max-w-[90vw] sm:min-w-[300px]"
 			>
-				{availableChatModels.map((chatModel) => {
+				{chatModels.map((chatModel) => {
 					const { id } = chatModel;
 
 					return (

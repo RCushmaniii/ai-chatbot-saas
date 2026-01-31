@@ -1,12 +1,12 @@
 import postgres from "postgres";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 
 const client = postgres(process.env.POSTGRES_URL!);
 
 export async function DELETE() {
 	try {
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 

@@ -2,7 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { embed } from "ai";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { auth } from "@/app/(auth)/auth";
+import { getAuthUser } from "@/lib/auth";
 import { documents } from "@/lib/db/schema";
 
 const client = postgres(process.env.POSTGRES_URL!);
@@ -11,8 +11,8 @@ const db = drizzle(client);
 export async function POST(request: Request) {
 	try {
 		// Check authentication
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
 export async function GET(_request: Request) {
 	try {
 		// Check authentication
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
@@ -75,8 +75,8 @@ export async function GET(_request: Request) {
 export async function DELETE(request: Request) {
 	try {
 		// Check authentication
-		const session = await auth();
-		if (!session?.user) {
+		const user = await getAuthUser();
+		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
