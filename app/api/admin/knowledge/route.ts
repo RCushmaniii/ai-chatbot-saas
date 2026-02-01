@@ -57,13 +57,13 @@ export async function GET(_request: Request) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		// Get all documents
-		const allDocuments = await client.unsafe(`
-      SELECT id, content, url, metadata, "createdAt"
-      FROM "Document_Knowledge"
-      ORDER BY "createdAt" DESC
-      LIMIT 50
-    `);
+		// Get all documents (using parameterized query)
+		const allDocuments = await client`
+			SELECT id, content, url, metadata, "createdAt"
+			FROM "Document_Knowledge"
+			ORDER BY "createdAt" DESC
+			LIMIT 50
+		`;
 
 		return Response.json({ documents: allDocuments }, { status: 200 });
 	} catch (error) {
@@ -87,10 +87,16 @@ export async function DELETE(request: Request) {
 			return Response.json({ error: "ID is required" }, { status: 400 });
 		}
 
-		await client.unsafe(`
-      DELETE FROM "Document_Knowledge"
-      WHERE id = ${id}
-    `);
+		// Validate id is a number to prevent SQL injection
+		const numericId = Number.parseInt(id, 10);
+		if (Number.isNaN(numericId)) {
+			return Response.json({ error: "Invalid ID format" }, { status: 400 });
+		}
+
+		await client`
+			DELETE FROM "Document_Knowledge"
+			WHERE id = ${numericId}
+		`;
 
 		return Response.json({ success: true }, { status: 200 });
 	} catch (error) {

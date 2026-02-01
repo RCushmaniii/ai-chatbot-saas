@@ -18,7 +18,6 @@ import type { ArtifactKind } from "@/components/artifact";
 import type { VisibilityType } from "@/components/visibility-selector";
 import { ChatSDKError } from "../errors";
 import type { AppUsage } from "../usage";
-import { generateUUID } from "../utils";
 import {
 	bot,
 	business,
@@ -31,29 +30,11 @@ import {
 	type Suggestion,
 	stream,
 	suggestion,
-	type User,
-	user,
 	vote,
 } from "./schema";
-import { generateHashedPassword } from "./utils";
-
-// Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
-
-export async function getUser(email: string): Promise<User[]> {
-	try {
-		return await db.select().from(user).where(eq(user.email, email));
-	} catch (_error) {
-		throw new ChatSDKError(
-			"bad_request:database",
-			"Failed to get user by email",
-		);
-	}
-}
 
 export async function ensureDefaultTenantForUser({
 	userId,
@@ -124,26 +105,6 @@ export async function ensureDefaultTenantForUser({
 			"bad_request:database",
 			"Failed to ensure default tenant for user",
 		);
-	}
-}
-
-export async function createUser(email: string, password: string) {
-	const hashedPassword = generateHashedPassword(password);
-
-	try {
-		const [createdUser] = await db
-			.insert(user)
-			.values({ email, password: hashedPassword })
-			.returning({ id: user.id });
-
-		await ensureDefaultTenantForUser({
-			userId: createdUser.id,
-			businessName: "My Business",
-		});
-
-		return createdUser;
-	} catch (_error) {
-		throw new ChatSDKError("bad_request:database", "Failed to create user");
 	}
 }
 
