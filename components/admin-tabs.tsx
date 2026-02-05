@@ -2,6 +2,7 @@
 
 import {
 	Code,
+	CreditCard,
 	Database,
 	Globe,
 	Headphones,
@@ -20,6 +21,7 @@ import { AdminRetrainingTab } from "@/components/admin-retraining/admin-retraini
 import { AdminStarterQuestions } from "@/components/admin-starter-questions";
 import { AdminSystemInstructions } from "@/components/admin-system-instructions";
 import { AdminWebsiteScraping } from "@/components/admin-website-scraping";
+import { BillingSection } from "@/components/billing-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminTabs() {
@@ -62,6 +64,10 @@ export function AdminTabs() {
 					<Code className="h-4 w-4" />
 					<span className="hidden sm:inline">Embed</span>
 				</TabsTrigger>
+				<TabsTrigger value="billing" className="flex items-center gap-2">
+					<CreditCard className="h-4 w-4" />
+					<span className="hidden sm:inline">Billing</span>
+				</TabsTrigger>
 			</TabsList>
 
 			<TabsContent value="manual" className="mt-6">
@@ -98,6 +104,10 @@ export function AdminTabs() {
 
 			<TabsContent value="embed" className="mt-6">
 				<AdminEmbedCode />
+			</TabsContent>
+
+			<TabsContent value="billing" className="mt-6">
+				<BillingSection />
 			</TabsContent>
 		</Tabs>
 	);
