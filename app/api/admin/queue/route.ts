@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	getLiveChatQueue,
@@ -11,10 +11,8 @@ import { ChatSDKError } from "@/lib/errors";
 
 export async function GET(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("chat:use");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,

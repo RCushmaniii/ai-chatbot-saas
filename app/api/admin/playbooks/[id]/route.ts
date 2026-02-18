@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	deletePlaybook,
@@ -32,10 +32,8 @@ export async function GET(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:view");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,
@@ -69,10 +67,8 @@ export async function PUT(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,
@@ -109,10 +105,8 @@ export async function DELETE(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	createAgent,
@@ -24,10 +24,8 @@ const updateAgentSchema = z.object({
 
 export async function GET(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,
@@ -55,10 +53,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,
@@ -102,10 +98,8 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		await ensureDefaultTenantForUser({ userId: user.id });
 

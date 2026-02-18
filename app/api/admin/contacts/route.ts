@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	createContact,
@@ -20,10 +20,8 @@ const createContactSchema = z.object({
 
 export async function GET(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("analytics:view");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,
@@ -63,10 +61,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const { businessId } = await ensureDefaultTenantForUser({
 			userId: user.id,

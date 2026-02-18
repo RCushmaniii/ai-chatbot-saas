@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import { updateTrainingSuggestionStatus } from "@/lib/db/queries-retraining";
 import { ChatSDKError } from "@/lib/errors";
@@ -9,10 +9,8 @@ export async function POST(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
 		await ensureDefaultTenantForUser({ userId: user.id });
 
@@ -45,10 +43,8 @@ export async function DELETE(
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return new ChatSDKError("unauthorized:chat").toResponse();
-		}
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
 		await ensureDefaultTenantForUser({ userId: user.id });
 
