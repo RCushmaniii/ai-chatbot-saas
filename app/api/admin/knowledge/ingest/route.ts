@@ -1,32 +1,45 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 
 const execAsync = promisify(exec);
 
 export const maxDuration = 300; // 5 minutes for ingestion
 
+// Validate URL format to prevent injection
+function isValidSitemapUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === "https:" || parsed.protocol === "http:";
+	} catch {
+		return false;
+	}
+}
+
 export async function POST(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
 		const { sitemapUrl } = await request.json();
 
-		if (!sitemapUrl) {
+		if (!sitemapUrl || typeof sitemapUrl !== "string") {
 			return Response.json(
 				{ error: "Sitemap URL is required" },
 				{ status: 400 },
 			);
 		}
 
-		// Update the sitemap URL in the ingest script config
-		// For now, we'll just run the existing script
-		// In production, you might want to pass the URL as an environment variable
+		if (!isValidSitemapUrl(sitemapUrl)) {
+			return Response.json(
+				{ error: "Invalid sitemap URL. Must be a valid HTTP(S) URL." },
+				{ status: 400 },
+			);
+		}
 
-		console.log("Starting ingestion for sitemap:", sitemapUrl);
+		console.log(
+			`Starting ingestion for sitemap: ${sitemapUrl} (business: ${user.businessId})`,
+		);
 
 		// Run the ingestion script
 		const { stdout, stderr } = await execAsync("pnpm run ingest", {
@@ -34,6 +47,7 @@ export async function POST(request: Request) {
 			env: {
 				...process.env,
 				SITEMAP_URL: sitemapUrl,
+				BUSINESS_ID: user.businessId,
 			},
 			timeout: 280000, // 4 minutes 40 seconds (slightly less than maxDuration)
 		});
@@ -48,7 +62,9 @@ export async function POST(request: Request) {
 		const chunksMatch = stdout.match(/Total chunks: (\d+)/);
 
 		const pagesProcessed = pagesMatch ? pagesMatch.length : 0;
-		const chunksCreated = chunksMatch ? parseInt(chunksMatch[1], 10) : 0;
+		const chunksCreated = chunksMatch
+			? Number.parseInt(chunksMatch[1], 10)
+			: 0;
 
 		return Response.json({
 			success: true,
@@ -62,16 +78,13 @@ export async function POST(request: Request) {
 		// Check if it's a timeout error
 		if (error.killed || error.signal === "SIGTERM") {
 			return Response.json(
-				{
-					error:
-						"Ingestion timed out. The website may be too large. Try running 'pnpm run ingest' manually.",
-				},
+				{ error: "Ingestion timed out. The website may be too large." },
 				{ status: 504 },
 			);
 		}
 
 		return Response.json(
-			{ error: error.message || "Failed to run ingestion" },
+			{ error: "Failed to run ingestion" },
 			{ status: 500 },
 		);
 	}

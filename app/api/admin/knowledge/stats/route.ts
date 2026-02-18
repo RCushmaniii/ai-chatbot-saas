@@ -1,23 +1,23 @@
 import postgres from "postgres";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 
 const client = postgres(process.env.POSTGRES_URL!);
 
 export async function GET() {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("knowledge:view");
+		if (error) return error;
 
-		// Get count from website_content table
+		// Get count from website_content table scoped to business
 		const websiteResult = await client`
       SELECT COUNT(*) as count FROM website_content
+      WHERE business_id = ${user.businessId}
     `;
 
-		// Get count from Document_Knowledge table
+		// Get count from Document_Knowledge table scoped to business
 		const manualResult = await client`
       SELECT COUNT(*) as count FROM "Document_Knowledge"
+      WHERE business_id = ${user.businessId}
     `;
 
 		return Response.json({

@@ -1,5 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import postgres from "postgres";
+import {
+	hasPermission,
+	type MembershipRole,
+	type Permission,
+} from "./permissions";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -12,6 +17,7 @@ export type AuthUser = {
 	locale: string;
 	businessId: string;
 	botId: string;
+	role: MembershipRole;
 };
 
 /**
@@ -35,6 +41,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       u.avatar_url as "avatarUrl",
       u.locale,
       m."businessId",
+      m.role,
       b.id as "botId"
     FROM "User" u
     LEFT JOIN "Membership" m ON m."userId" = u.id
@@ -108,6 +115,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 			locale: "es",
 			businessId: business.id,
 			botId: bot.id,
+			role: "owner" as MembershipRole,
 		};
 	}
 
@@ -125,6 +133,38 @@ export async function requireAuth(): Promise<AuthUser> {
 	}
 
 	return user;
+}
+
+/**
+ * Require authentication + a specific permission for admin routes.
+ * Returns the user if authorized, or a 401/403 Response if not.
+ */
+export async function requirePermission(
+	permission: Permission,
+): Promise<
+	| { user: AuthUser; error: null }
+	| { user: null; error: Response }
+> {
+	const user = await getAuthUser();
+
+	if (!user) {
+		return {
+			user: null,
+			error: Response.json({ error: "Unauthorized" }, { status: 401 }),
+		};
+	}
+
+	if (!hasPermission(user.role, permission)) {
+		return {
+			user: null,
+			error: Response.json(
+				{ error: "Forbidden: insufficient permissions" },
+				{ status: 403 },
+			),
+		};
+	}
+
+	return { user, error: null };
 }
 
 /**

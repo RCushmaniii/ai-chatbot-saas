@@ -9,6 +9,7 @@ import {
 	getWidgetConversationBySession,
 } from "@/lib/db/queries-live-chat";
 import { playbookEngine } from "@/lib/playbook/engine";
+import { rateLimit } from "@/lib/rate-limit";
 import {
 	detectLanguage,
 	getLearnMoreText,
@@ -16,6 +17,13 @@ import {
 } from "@/lib/utils/language-detector";
 
 export async function POST(request: Request) {
+	// Rate limit: 30 messages per minute per IP
+	const rateLimitResponse = rateLimit(request, "embed-chat", {
+		maxRequests: 30,
+		windowSeconds: 60,
+	});
+	if (rateLimitResponse) return rateLimitResponse;
+
 	try {
 		const {
 			message,

@@ -2,7 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { embed } from "ai";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { documents } from "@/lib/db/schema";
 
 const client = postgres(process.env.POSTGRES_URL!);
@@ -10,16 +10,8 @@ const db = drizzle(client);
 
 export async function POST(request: Request) {
 	try {
-		// Check authentication
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
-
-		// Optional: Add admin role check here
-		// if (session.user.role !== 'admin') {
-		//   return Response.json({ error: "Forbidden" }, { status: 403 });
-		// }
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
 		const body = await request.json();
 		const { content, url, metadata } = body;
@@ -34,10 +26,11 @@ export async function POST(request: Request) {
 			value: content,
 		});
 
-		// Insert into database
+		// Insert into database scoped to business
 		await db.insert(documents).values({
+			businessId: user.businessId,
 			content,
-			url: url || "https://www.nyenglishteacher.com",
+			url: url || null,
 			embedding: embedding as any,
 			metadata: JSON.stringify(metadata || {}),
 		});
@@ -51,16 +44,14 @@ export async function POST(request: Request) {
 
 export async function GET(_request: Request) {
 	try {
-		// Check authentication
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("knowledge:view");
+		if (error) return error;
 
-		// Get all documents (using parameterized query)
+		// Get documents scoped to this business
 		const allDocuments = await client`
 			SELECT id, content, url, metadata, "createdAt"
 			FROM "Document_Knowledge"
+			WHERE business_id = ${user.businessId}
 			ORDER BY "createdAt" DESC
 			LIMIT 50
 		`;
@@ -74,11 +65,8 @@ export async function GET(_request: Request) {
 
 export async function DELETE(request: Request) {
 	try {
-		// Check authentication
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get("id");
@@ -93,9 +81,10 @@ export async function DELETE(request: Request) {
 			return Response.json({ error: "Invalid ID format" }, { status: 400 });
 		}
 
+		// Delete only if it belongs to this business
 		await client`
 			DELETE FROM "Document_Knowledge"
-			WHERE id = ${numericId}
+			WHERE id = ${numericId} AND business_id = ${user.businessId}
 		`;
 
 		return Response.json({ success: true }, { status: 200 });

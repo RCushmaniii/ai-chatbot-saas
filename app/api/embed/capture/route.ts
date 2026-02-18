@@ -7,6 +7,7 @@ import {
 	updateContact,
 } from "@/lib/db/queries-contacts";
 import { updateWidgetConversation } from "@/lib/db/queries-live-chat";
+import { rateLimit } from "@/lib/rate-limit";
 
 const captureSchema = z.object({
 	businessId: z.string().uuid(),
@@ -19,6 +20,13 @@ const captureSchema = z.object({
 });
 
 export async function POST(request: Request) {
+	// Rate limit: 10 captures per minute per IP
+	const rateLimitResponse = rateLimit(request, "embed-capture", {
+		maxRequests: 10,
+		windowSeconds: 60,
+	});
+	if (rateLimitResponse) return rateLimitResponse;
+
 	try {
 		const json = await request.json();
 		const data = captureSchema.parse(json);

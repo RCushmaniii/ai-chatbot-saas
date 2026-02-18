@@ -1,17 +1,19 @@
 import postgres from "postgres";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 
 const client = postgres(process.env.POSTGRES_URL!);
 
 export async function DELETE() {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("knowledge:manage");
+		if (error) return error;
 
-		// Clear the website_content table
-		await client`TRUNCATE TABLE website_content`;
+		// Only clear website content for this business
+		await client`
+			DELETE FROM "Document_Knowledge"
+			WHERE business_id = ${user.businessId}
+			AND metadata::jsonb->>'type' = 'website'
+		`;
 
 		return Response.json({
 			success: true,

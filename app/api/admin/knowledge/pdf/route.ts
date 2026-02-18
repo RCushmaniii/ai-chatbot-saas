@@ -3,11 +3,17 @@ import { embed } from "ai";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { extractText } from "unpdf";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { documents } from "@/lib/db/schema";
 
 // Force Node.js runtime so pdf-parse and Buffer work correctly.
 export const runtime = "nodejs";
+
+// Max file size: 10 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// PDF magic bytes: %PDF
+const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46];
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
@@ -36,11 +42,8 @@ function chunkText(text: string, maxLength = 1500) {
 }
 
 export async function POST(request: Request) {
-	const user = await getAuthUser();
-
-	if (!user) {
-		return Response.json({ error: "Unauthorized" }, { status: 401 });
-	}
+	const { user, error } = await requirePermission("knowledge:manage");
+	if (error) return error;
 
 	try {
 		const formData = await request.formData();
@@ -53,10 +56,18 @@ export async function POST(request: Request) {
 			return Response.json({ error: "No file provided" }, { status: 400 });
 		}
 
-		// Validate file type
+		// Validate file extension
 		if (!file.name.toLowerCase().endsWith(".pdf")) {
 			return Response.json(
 				{ error: "Invalid file type. Only PDF files are supported." },
+				{ status: 400 },
+			);
+		}
+
+		// Validate file size
+		if (file.size > MAX_FILE_SIZE) {
+			return Response.json(
+				{ error: "File too large. Maximum size is 10 MB." },
 				{ status: 400 },
 			);
 		}
@@ -74,8 +85,22 @@ export async function POST(request: Request) {
 			);
 		}
 
+		// Validate PDF magic bytes (%PDF)
+		if (
+			uint8Array.length < 4 ||
+			uint8Array[0] !== PDF_MAGIC_BYTES[0] ||
+			uint8Array[1] !== PDF_MAGIC_BYTES[1] ||
+			uint8Array[2] !== PDF_MAGIC_BYTES[2] ||
+			uint8Array[3] !== PDF_MAGIC_BYTES[3]
+		) {
+			return Response.json(
+				{ error: "Invalid file: does not appear to be a valid PDF." },
+				{ status: 400 },
+			);
+		}
+
 		console.log(
-			`[PDF Upload] Processing ${file.name} (${buffer.length} bytes)`,
+			`[PDF Upload] Processing ${file.name} (${buffer.length} bytes) for business ${user.businessId}`,
 		);
 
 		// Extract text from PDF with error handling
@@ -105,13 +130,10 @@ export async function POST(request: Request) {
 				);
 			} catch (parseError) {
 				console.error("[PDF Upload] Both parsers failed:", parseError);
-				const errorMsg =
-					parseError instanceof Error
-						? parseError.message
-						: "Unknown parsing error";
 				return Response.json(
 					{
-						error: `PDF parsing failed: ${errorMsg}. The file may be corrupted, password-protected, or in an unsupported format.`,
+						error:
+							"PDF parsing failed. The file may be corrupted, password-protected, or in an unsupported format.",
 					},
 					{ status: 400 },
 				);
@@ -137,6 +159,7 @@ export async function POST(request: Request) {
 			});
 
 			await db.insert(documents).values({
+				businessId: user.businessId,
 				content: chunk,
 				url,
 				embedding: embedding as any,
@@ -147,10 +170,8 @@ export async function POST(request: Request) {
 		return Response.json({ success: true }, { status: 200 });
 	} catch (error) {
 		console.error("Error processing PDF knowledge upload:", error);
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
 		return Response.json(
-			{ error: `Failed to process PDF: ${errorMessage}` },
+			{ error: "Failed to process PDF upload" },
 			{ status: 500 },
 		);
 	}

@@ -5,43 +5,24 @@ import postgres from "postgres";
 import {
 	plan,
 	subscription,
-	membership,
 	usageRecord,
 	contentSource,
 } from "@/lib/db/schema";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
 export async function GET() {
 	try {
-		const user = await getAuthUser();
-
-		if (!user) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-		}
-
-		// Get user's business
-		const [userMembership] = await db
-			.select()
-			.from(membership)
-			.where(eq(membership.userId, user.id))
-			.limit(1);
-
-		if (!userMembership) {
-			return NextResponse.json({
-				plan: null,
-				subscription: null,
-				usage: { messagesUsed: 0, pagesUsed: 0 },
-			});
-		}
+		const { user, error } = await requirePermission("billing:view");
+		if (error) return error;
 
 		// Get subscription
 		const [userSubscription] = await db
 			.select()
 			.from(subscription)
-			.where(eq(subscription.businessId, userMembership.businessId))
+			.where(eq(subscription.businessId, user.businessId))
 			.limit(1);
 
 		// Get plan details
@@ -72,9 +53,9 @@ export async function GET() {
 			.from(usageRecord)
 			.where(
 				and(
-					eq(usageRecord.businessId, userMembership.businessId),
-					eq(usageRecord.month, currentMonth)
-				)
+					eq(usageRecord.businessId, user.businessId),
+					eq(usageRecord.month, currentMonth),
+				),
 			)
 			.limit(1);
 
@@ -82,7 +63,7 @@ export async function GET() {
 		const [pagesCount] = await db
 			.select({ count: sql<number>`count(*)` })
 			.from(contentSource)
-			.where(eq(contentSource.businessId, userMembership.businessId));
+			.where(eq(contentSource.businessId, user.businessId));
 
 		return NextResponse.json({
 			plan: userPlan
@@ -97,8 +78,8 @@ export async function GET() {
 				? {
 						status: userSubscription.status,
 						billingCycle: userSubscription.billingCycle,
-						currentPeriodEnd: userSubscription.currentPeriodEnd?.toISOString(),
-						stripeCustomerId: userSubscription.stripeCustomerId,
+						currentPeriodEnd:
+							userSubscription.currentPeriodEnd?.toISOString(),
 					}
 				: null,
 			usage: {
@@ -110,7 +91,7 @@ export async function GET() {
 		console.error("Error fetching billing:", error);
 		return NextResponse.json(
 			{ error: "Failed to fetch billing info" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }

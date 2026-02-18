@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { botSettings } from "@/lib/db/schema";
 
 const client = postgres(process.env.POSTGRES_URL!);
@@ -9,10 +9,8 @@ const db = drizzle(client);
 
 export async function GET() {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		// Get settings for this user
 		const settings = await db
@@ -37,10 +35,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	try {
-		const user = await getAuthUser();
-		if (!user) {
-			return Response.json({ error: "Unauthorized" }, { status: 401 });
-		}
+		const { user, error } = await requirePermission("bot:configure");
+		if (error) return error;
 
 		const body = await request.json();
 		const {
