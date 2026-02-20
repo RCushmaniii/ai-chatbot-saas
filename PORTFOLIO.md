@@ -1,47 +1,14 @@
 ---
-# =============================================================================
-# PORTFOLIO.md — AI Chatbot SaaS
-# =============================================================================
-
+# === CONTROL FLAGS ===
 portfolio_enabled: true
 portfolio_priority: 4
 portfolio_featured: false
-portfolio_last_reviewed: "2025-12-31"
 
+# === CARD DISPLAY ===
 title: "AI Chatbot SaaS Platform"
 tagline: "White-label chatbot platform for agencies to deploy custom AI assistants"
 slug: "ai-chatbot-saas"
-
 category: "AI Automation"
-target_audience: "Digital agencies and businesses deploying multiple chatbots"
-tags:
-  - "saas"
-  - "chatbot"
-  - "multi-tenant"
-  - "ai"
-  - "white-label"
-  - "platform"
-
-thumbnail: ""
-hero_images: []
-demo_video_url: ""
-
-live_url: ""
-case_study_url: ""
-
-problem_solved: |
-  Agencies building custom chatbots for clients face repetitive development work,
-  complex deployment logistics, and ongoing maintenance burdens. Each client needs
-  similar core functionality with different branding, training data, and integrations.
-
-key_outcomes:
-  - "Multi-tenant SaaS architecture for managing multiple clients"
-  - "White-label deployment with custom branding per client"
-  - "Centralized training data management and model updates"
-  - "Usage analytics and billing per client/organization"
-  - "API-first design for easy integrations"
-  - "Self-service client dashboard for minor updates"
-
 tech_stack:
   - "Next.js 14"
   - "TypeScript"
@@ -51,8 +18,20 @@ tech_stack:
   - "Stripe"
   - "Vercel"
 
-complexity: "Production"
+# === DETAIL PAGE ===
 
+# === LINKS ===
+demo_url: ""
+live_url: ""
+
+# === OPTIONAL ===
+tags:
+  - "saas"
+  - "chatbot"
+  - "multi-tenant"
+  - "ai"
+  - "white-label"
+  - "platform"
 ---
 
 ## Overview
