@@ -1,356 +1,179 @@
-<h1 align="center">Bilingual AI Front Desk & Sales Assistant (SaaS)</h1>
+# Converso AI — Bilingual AI Front Desk & Sales Assistant
 
-<p align="center">
-    <strong>AI Chatbot SaaS</strong> - Multi-tenant platform for service businesses to deploy a bilingual (EN/ES), on-brand assistant that answers questions, qualifies leads, captures booking intent, and escalates high-intent prospects.
-</p>
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?logo=postgresql)
+![Vercel AI SDK](https://img.shields.io/badge/AI_SDK-5.0-black?logo=vercel)
+![Clerk](https://img.shields.io/badge/Auth-Clerk-6C47FF?logo=clerk)
+![Stripe](https://img.shields.io/badge/Billing-Stripe-635BFF?logo=stripe)
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#admin-dashboard"><strong>Admin Dashboard</strong></a> ·
-  <a href="#tech-stack"><strong>Tech Stack</strong></a> ·
-  <a href="#rag-knowledge-base"><strong>RAG & Knowledge Base</strong></a> ·
-  <a href="#running-locally"><strong>Running Locally</strong></a> ·
-  <a href="#documentation"><strong>Documentation</strong></a> ·
-  <a href="#license"><strong>License</strong></a>
-</p>
-<br/>
+> Multi-tenant SaaS platform for service businesses to deploy a bilingual (EN/ES), on-brand AI assistant that answers questions, qualifies leads, captures booking intent, and escalates high-intent prospects to live agents.
 
-## Features +
+## Overview
 
-### Core Capabilities
+Converso AI is a white-label chatbot platform built for service businesses that operate in bilingual markets. Each tenant gets a fully customizable AI assistant backed by their own knowledge base, with automatic language detection and seamless handoff to human agents when conversations require a personal touch.
 
-- **🌐 Bilingual Support** - Automatically responds in English or Spanish based on user input
-- **🧠 RAG (Retrieval Augmented Generation)** - Answers questions using business-specific knowledge base
-- **📁 Multi-Source Knowledge Base** - Upload files, scrape websites, or add manual content
-- **🎯 Deterministic RAG** - Server-side context injection for reliable, accurate responses
-- **💬 Real-time Chat** - Streaming responses with AI SDK
-- **📚 Persistent Chat History** - Save and retrieve conversation history
-- **🔗 Source Attribution** - Automatically includes URLs in responses for transparency
-- **⚡ Starter Questions** - Customizable suggested prompts to guide users
+The platform combines retrieval-augmented generation (RAG) with a visual playbook builder, giving non-technical business owners the tools to script complex conversational flows without writing code. An embeddable widget drops into any website with a single script tag.
 
-### Technical Features
+The admin dashboard provides full control over knowledge ingestion, lead management, live chat queues, and billing — all tenant-isolated with role-based access control.
 
-- [Next.js 15](https://nextjs.org) with App Router and Turbopack
-  - React Server Components (RSCs) and Server Actions
-  - Edge and Node.js runtime support
-- [AI SDK](https://ai-sdk.dev/docs/introduction)
-  - Direct OpenAI integration (GPT-4o, text-embedding-3-small)
-  - Streaming text generation
-  - Tool calling support
-- [shadcn/ui](https://ui.shadcn.com)
-  - Modern UI components with [Tailwind CSS](https://tailwindcss.com)
-  - Accessible primitives from [Radix UI](https://radix-ui.com)
-- **Vector Database**
-  - PostgreSQL with pgvector extension
-  - Semantic search for knowledge retrieval
-  - Automatic text chunking and embedding
-- [Auth.js](https://authjs.dev)
-  - Secure authentication with NextAuth
-- **PDF Processing**
-  - Dual-parser strategy (unpdf + pdf-parse)
-  - Robust error handling and validation
+## The Challenge
 
-## Admin Dashboard
+Service businesses in bilingual markets face a common problem: they lose leads outside business hours, can't staff bilingual receptionists around the clock, and generic chatbots give wrong answers because they don't know the business.
 
-The `/admin` route provides a comprehensive dashboard for managing your chatbot:
+Existing solutions either require technical expertise to configure, lack real bilingual support (auto-translate is not the same as native language understanding), or charge enterprise prices that small businesses can't justify.
 
-### 📋 Manual Content
+The platform needed to solve three things simultaneously:
+- **Knowledge accuracy** — answers must come from verified business content, not hallucinations
+- **Language fluency** — natural responses in both English and Spanish without translation artifacts
+- **Operational simplicity** — a business owner, not a developer, configures and manages everything
 
-- Upload `.txt`, `.md`, and `.pdf` files
-- Add content manually via textarea
-- Categorize by type (Services, Pricing, FAQ, etc.)
-- Support for English and Spanish content
+## The Solution
 
-### 🌐 Website Scraping
+**Deterministic RAG architecture** ensures every answer traces back to uploaded content. The system retrieves relevant knowledge chunks before the LLM call and injects them into the system prompt, so the model answers from facts rather than imagination. Source URLs are automatically attributed in responses.
 
-- **Automatic sitemap scraping** - Index entire websites automatically
-- **Knowledge base stats** - View counts for website vs manual content
-- **One-click ingestion** - Run `pnpm run ingest` from the UI
-- **Clear data** - Reset website content when needed
-- Uses Cheerio for robust HTML parsing
-- Processes 48+ pages into 193+ searchable chunks
+**Native bilingual design** detects the user's language from their first message and maintains that language throughout the conversation. System prompts, starter questions, and playbook flows all support dual-language configuration.
 
-### ⚙️ Bot Settings (Starter Questions)
+**Self-service admin dashboard** provides a single interface for knowledge management (file uploads, website scraping, manual entry), conversation playbook design (visual flow builder), lead tracking with scoring, live chat handoff queues, and Stripe-powered billing.
 
-- **Add/Edit/Delete** suggested questions
-- **Emoji support** for visual appeal
-- **Drag-and-drop** ordering (coming soon)
-- **Live preview** of how questions appear to users
-- **Bilingual questions** - Mix English and Spanish prompts
+**Embeddable widget** deploys with one script tag. Widget appearance, behavior, and starter questions are configured from the admin panel — no code changes needed on the host site.
 
-### 💬 Instructions (System Prompts)
+## Technical Highlights
 
-- **Bot name** customization
-- **Custom system instructions** - Define personality and behavior
-- **Risk-averse templates** - Pre-built cautious response patterns
-- **Reset to default** - Restore original instructions
-- Instructions guide:
-  - Language matching rules
-  - Knowledge scope boundaries
-  - Cautious language patterns
-  - Missing information handling
-  - URL attribution requirements
+- **Multi-tenant isolation** — every database query scopes to `businessId`; knowledge, conversations, settings, and billing are fully isolated between tenants
+- **HNSW vector indexes** on pgvector embedding columns for sub-linear similarity search across knowledge bases
+- **Streaming responses** via Vercel AI SDK with real-time token delivery to the chat UI
+- **RBAC with Clerk** — owner/admin/member roles enforced at the API route level via `requirePermission()` middleware
+- **Visual playbook builder** using React Flow — business owners design multi-step conversation flows with conditional branching, data capture, and live agent handoff
+- **Webhook-driven billing** — Stripe checkout sessions, subscription lifecycle events, and usage tracking all handled via verified webhooks
+- **Security headers in proxy.ts** — CSP, HSTS, X-Frame-Options applied at the edge via Next.js 16's proxy layer (replaces middleware.ts)
 
-## Tech Stack
-
-- **Framework:** Next.js 15 (App Router, Turbopack)
-- **Language:** TypeScript
-- **AI/ML:** OpenAI (GPT-4o, text-embedding-3-small)
-- **Database:** PostgreSQL with pgvector
-- **ORM:** Drizzle ORM
-- **Authentication:** Auth.js (NextAuth)
-- **UI:** React 19, Tailwind CSS, shadcn/ui
-- **PDF Processing:** unpdf, pdf-parse
-- **Deployment:** Vercel
-
-## RAG Knowledge Base
-
-This chatbot uses a **dual-table RAG implementation** with:
-
-### Architecture
-
-1. **Two Knowledge Tables:**
-   - `website_content` - Automatically scraped from sitemap (193 chunks from 48 pages)
-   - `Document_Knowledge` - Manually uploaded files and text
-2. **Search Priority:**
-
-   - Searches `website_content` first (0.5 similarity threshold)
-   - Falls back to `Document_Knowledge` if no results (0.6 similarity threshold)
-
-3. **Vector Database** - PostgreSQL with pgvector extension
-   - Cosine similarity search
-   - IVFFlat indexes for performance
-4. **Embeddings** - OpenAI `text-embedding-3-small` (1536 dimensions)
-
-5. **Deterministic RAG** - Server-side context injection
-
-   - Knowledge retrieved before LLM call
-   - Results injected into system prompt
-   - URLs automatically included in responses
-
-6. **Automatic Chunking:**
-   - Website content: 1000 characters with 200 overlap
-   - Manual content: 1500 characters with paragraph-aware splitting
-
-### Ingestion Pipeline
-
-The `scripts/ingest.ts` script:
-
-- Fetches and parses XML sitemaps
-- Filters URLs by pattern (e.g., only `/en/` pages)
-- Scrapes HTML with Cheerio
-- Extracts clean text content
-- Splits into chunks
-- Generates embeddings
-- Stores in `website_content` table
-- **Idempotent** - Truncates table before re-ingestion
-
-### Knowledge Base Content Types
-
-- **Services** - English coaching offerings
-- **Target Audience** - Professional demographics
-- **Pricing** - Session rates and packages
-- **FAQs** - Common questions
-- **Blog Posts** - Educational content
-- **Testimonials** - Client reviews
-- **Business Info** - Contact details, booking URL
-
-## Deploy Your Own
-
-You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/nextjs-ai-chatbot)
-
-## Running Locally
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm
-- PostgreSQL database with pgvector extension
+- Node.js >= 18
+- pnpm >= 9.12
+- PostgreSQL database with pgvector extension enabled
 - OpenAI API key
-
-### Environment Variables
-
-Create a `.env.development.local` file with:
-
-```bash
-# Database
-POSTGRES_URL="postgresql://user:password@host:5432/database"
-
-# OpenAI
-OPENAI_API_KEY="sk-..."
-
-# Auth (generate with: openssl rand -base64 32)
-AUTH_SECRET="your-secret-key"
-```
-
-Note: Running or deploying this software requires an appropriate license. See `LICENSE`.
+- Clerk account (publishable + secret keys)
+- Stripe account (for billing features)
 
 ### Installation
 
-1. **Install dependencies:**
+```powershell
+# Clone and install
+git clone https://github.com/RCushmaniii/ai-chatbot-saas.git
+cd ai-chatbot-saas
+pnpm install
 
-   ```bash
-   pnpm install
-   ```
+# Run database migrations
+pnpm db:migrate
 
-2. **Setup database:**
+# Seed pricing plans
+pnpm seed:plans
 
-   ```bash
-   pnpm db:migrate
-   ```
+# Start development server
+pnpm dev
+```
 
-3. **Populate knowledge base (optional):**
+### Environment Variables
 
-   ```bash
-   npx tsx scripts/populate-knowledge.ts
-   ```
+Create a `.env.local` file at the project root:
 
-4. **Start development server:**
-   ```bash
-   pnpm dev
-   ```
+| Variable | Description |
+|----------|-------------|
+| `POSTGRES_URL` | PostgreSQL connection string with pgvector |
+| `OPENAI_API_KEY` | OpenAI API key for GPT-4o and embeddings |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
+| `CLERK_WEBHOOK_SECRET` | Clerk webhook signing secret |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `NEXT_PUBLIC_APP_URL` | Public app URL (e.g., `https://yourdomain.com`) |
 
-Your app should now be running on [localhost:3000](http://localhost:3000).
+## Security
 
-### Key Routes
-
-- `/` - Main chat interface
-- `/admin` - Knowledge base management (requires authentication)
-- `/documentation` - Project documentation
-
-## Current Status (On Hold)
-
-Development is paused until a new Supabase project (Postgres) is available.
-
-### Blocker
-
-- Database migrations cannot be applied because `POSTGRES_URL` is not configured in the environment used by the migration runner.
-- A Supabase Postgres project is the intended target for v1 database hosting.
-
-### Work completed (latest)
-
-- Licensing and documentation were updated to reflect a proprietary SaaS product.
-- SaaS planning docs are in `/docs`:
-  - `docs/BLUEPRINT.MD`
-  - `docs/FORMAL_PLAN.md`
-  - `docs/PRD.md`
-  - `docs/PROJECT_PLAN.md`
-- PR-1 (tenant scaffolding) work has started in code:
-  - Drizzle schema now includes `Business`, `Membership`, and `Bot`.
-  - Auth session/JWT now expects `businessId` and `botId` (default tenant bootstrap).
-  - A migration was generated: `lib/db/migrations/0009_tense_garia.sql`.
-
-### Resume checklist
-
-1. Create a new Supabase project and enable `pgvector`.
-2. Set `POSTGRES_URL` in `.env.local` or `.env.development.local`.
-3. Run migrations:
-
-   ```bash
-   pnpm db:migrate
-   ```
-
-4. Verify sign-in works (guest + regular).
-5. Continue implementation:
-   - PR-1: finish scoping settings and runtime to `botId` / `businessId`
-   - PR-2: bot-scoped embed isolation (`botId` passed through iframe + scoped embed APIs)
+- [x] Clerk authentication with session management
+- [x] RBAC: owner/admin/member roles enforced on every admin API route
+- [x] Parameterized SQL queries throughout (Drizzle ORM + postgres.js template literals)
+- [x] Stripe and Clerk webhook signature verification
+- [x] Security headers via proxy.ts (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+- [x] PDF upload validation (magic bytes + file size limits)
+- [x] Multi-tenant data isolation via `businessId` scoping on all queries
+- [x] Zod schema validation on all API request bodies
+- [x] CSV formula injection sanitization on contact exports
+- [x] Rate limiting on embed chat endpoints (per-IP)
 
 ## Project Structure
 
 ```
 ai-chatbot-saas/
 ├── app/
-│   ├── (auth)/              # Authentication routes
-│   ├── (chat)/              # Chat interface and API
-│   │   ├── api/chat/        # Chat API endpoint
-│   │   └── admin/           # Admin panel
-│   └── api/
-│       └── admin/knowledge/ # Knowledge base API
-├── components/              # React components
-│   ├── admin-knowledge-base.tsx
-│   ├── chat.tsx
-│   └── ...
+│   ├── (auth)/                 # Clerk sign-in/sign-up routes
+│   ├── (chat)/                 # Chat UI, admin dashboard, chat API
+│   │   ├── api/chat/           # Streaming chat endpoint
+│   │   └── admin/              # Admin panel page
+│   ├── api/
+│   │   ├── admin/              # 15+ admin CRUD endpoints
+│   │   ├── embed/              # Widget embed endpoints
+│   │   ├── stripe/             # Checkout + portal
+│   │   ├── webhooks/           # Stripe webhook handler
+│   │   └── clerk/              # Clerk webhook handler
+│   └── embed/chat/             # Embeddable widget page
+├── components/                 # 99 React components
+│   ├── admin-*/                # Admin panel modules
+│   ├── elements/               # Chat message primitives
+│   └── ui/                     # shadcn/ui component library
 ├── lib/
-│   ├── ai/                  # AI configuration
-│   │   ├── prompts.ts       # System prompts
-│   │   ├── providers.ts     # OpenAI setup
-│   │   └── tools/           # RAG search tool
-│   └── db/                  # Database
-│       ├── schema.ts        # Drizzle schema
-│       └── migrate.ts       # Migration script
-├── docs/                    # Documentation
-└── scripts/
-    └── populate-knowledge.ts # Seed script
+│   ├── ai/                     # Models, prompts, providers, tools
+│   ├── db/                     # Drizzle schema, queries, migrations
+│   ├── i18n/                   # Translations and language hooks
+│   ├── ingestion/              # CSV and DOCX processors
+│   └── playbook/               # Playbook execution engine
+├── migrations/                 # Custom SQL migrations
+├── scripts/                    # Seed, ingest, and maintenance scripts
+└── docs/                       # Architecture and planning docs
 ```
 
-## Documentation
+## Deployment
 
-Start here:
+The app deploys to Vercel. The build command runs migrations before building:
 
-- [Docs Index](./docs/README.md)
-- [Blueprint](./docs/BLUEPRINT.MD)
-- [Formal Plan](./docs/FORMAL_PLAN.md)
-- [PRD](./docs/PRD.md)
-- [Project Plan](./docs/PROJECT_PLAN.md)
-
-Product usage docs:
-
-- [Admin Guide](./docs/ADMIN_GUIDE.md)
-- [Embed Widget](./docs/EMBED_WIDGET.md)
-- [Knowledge Base](./docs/KNOWLEDGE_BASE.md)
-
-## Configuration
-
-Configure the app via `/admin`:
-
-1. **Instructions Tab:**
-
-   - Set your bot name
-   - Write custom system instructions
-   - Define personality and tone
-   - Set knowledge scope and boundaries
-
-2. **Bot Settings Tab:**
-
-   - Add starter questions in your language(s)
-   - Include emojis for visual appeal
-   - Preview how they'll appear
-
-3. **Website Scraping Tab:**
-
-   - Enter your sitemap URL
-   - Click "Run Ingestion"
-   - Monitor progress and stats
-
-4. **Manual Content Tab:**
-   - Upload PDFs, TXT, MD files
-   - Add content via textarea
-   - Categorize by type
-
-### 3. Update Environment Variables
-
-```bash
-# Required
-OPENAI_API_KEY="sk-..."
-POSTGRES_URL="postgresql://..."
-AUTH_SECRET="..." # Generate with: openssl rand -base64 32
-
-# Optional
-NEXT_PUBLIC_APP_NAME="Your Business Name"
-NEXT_PUBLIC_APP_URL="https://yourdomain.com"
+```powershell
+pnpm build:migrate
 ```
 
-### 4. Customize Branding
+Ensure all environment variables are configured in the Vercel dashboard. The Stripe and Clerk webhooks must point to your production URL.
 
-Edit `lib/ai/prompts.ts` to update:
+## Results
 
-- Business name and description
-- Services offered
-- Target audience
-- Pricing information
-- Contact/booking URLs
+This platform demonstrates end-to-end SaaS product architecture — from multi-tenant data isolation and role-based access control to Stripe billing integration and embeddable widget distribution.
+
+| Capability | Implementation |
+|------------|---------------|
+| Knowledge ingestion | Website scraping, PDF/DOCX/CSV upload, manual entry |
+| Vector search | pgvector with HNSW indexes, cosine similarity |
+| Conversation flows | Visual playbook builder with 7 node types |
+| Lead management | Contact scoring, activity tracking, CSV import/export |
+| Live chat | Agent queue with priority routing and AI summaries |
+| Billing | Stripe subscriptions with usage-based metering |
+| Widget | One-tag embed with configurable appearance |
+
+## Contact
+
+**Robert Cushman**
+Business Solution Architect & Full-Stack Developer
+Guadalajara, Mexico
+
+info@cushlabs.ai
+[GitHub](https://github.com/RCushmaniii) | [LinkedIn](https://linkedin.com/in/robertcushman) | [Portfolio](https://cushlabs.ai)
 
 ## License
 
-See `LICENSE`.
+(c) 2025 Robert Cushman. All rights reserved. See `LICENSE`.
+
+---
+
+*Last Updated: 2026-02-22*
