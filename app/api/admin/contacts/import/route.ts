@@ -40,15 +40,23 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const contacts = parsed.data.map((row) => ({
-			email: row.email || null,
-			phone: row.phone || null,
-			name: row.name || null,
-			tags: row.tags ? row.tags.split(";").filter(Boolean) : [],
-			customFields: row.customFields
-				? (JSON.parse(row.customFields) as Record<string, string>)
-				: undefined,
-		}));
+		const contacts = parsed.data.map((row, index) => {
+			let customFields: Record<string, string> | undefined;
+			if (row.customFields) {
+				try {
+					customFields = JSON.parse(row.customFields) as Record<string, string>;
+				} catch {
+					throw new Error(`Invalid JSON in customFields at row ${index + 1}`);
+				}
+			}
+			return {
+				email: row.email || null,
+				phone: row.phone || null,
+				name: row.name || null,
+				tags: row.tags ? row.tags.split(";").filter(Boolean) : [],
+				customFields,
+			};
+		});
 
 		const result = await importContacts({ businessId, contacts });
 

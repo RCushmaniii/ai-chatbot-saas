@@ -28,8 +28,8 @@ export async function GET(request: Request) {
 		});
 
 		const { searchParams } = new URL(request.url);
-		const limit = Number.parseInt(searchParams.get("limit") || "50", 10);
-		const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
+		const limit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") || "50", 10), 1), 1000);
+		const offset = Math.max(Number.parseInt(searchParams.get("offset") || "0", 10), 0);
 		const search = searchParams.get("search") || undefined;
 		const status = searchParams.get("status") as
 			| "new"

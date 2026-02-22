@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+	poweredByHeader: false,
+	compress: true,
 	images: {
 		remotePatterns: [
 			{
@@ -15,6 +17,14 @@ const nextConfig: NextConfig = {
 				protocol: "https",
 				hostname: "img.clerk.com",
 			},
+		],
+	},
+	experimental: {
+		optimizePackageImports: [
+			"date-fns",
+			"lucide-react",
+			"@radix-ui/react-icons",
+			"framer-motion",
 		],
 	},
 };

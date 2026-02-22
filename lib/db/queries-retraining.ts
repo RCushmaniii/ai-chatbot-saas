@@ -123,8 +123,11 @@ function calculateNextRunTime(schedule: RetrainingConfig["schedule"]): Date {
 			return new Date(now.getTime() + 24 * 60 * 60 * 1000);
 		case "weekly":
 			return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-		case "monthly":
-			return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+		case "monthly": {
+			const nextMonth = new Date(now);
+			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			return nextMonth;
+		}
 		default:
 			return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 	}

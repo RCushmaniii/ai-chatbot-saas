@@ -59,8 +59,6 @@ export const user = pgTable("User", {
 	// Clerk integration (Phase 2) - will be required after migration
 	clerkUserId: varchar("clerk_user_id", { length: 100 }).unique(),
 	email: varchar("email", { length: 255 }).notNull(),
-	// DEPRECATED: password field - will be removed after Clerk migration
-	password: varchar("password", { length: 64 }),
 	name: varchar("name", { length: 100 }),
 	avatarUrl: varchar("avatar_url", { length: 500 }),
 	locale: varchar("locale", { length: 5 }).default("es"), // 'en' or 'es'

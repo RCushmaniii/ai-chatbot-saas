@@ -20,16 +20,24 @@ export async function GET(request: Request) {
 
 		const contacts = await exportContacts({ businessId, ids });
 
+		// Sanitize CSV values to prevent formula injection in spreadsheets
+		const sanitizeCsvValue = (value: string): string => {
+			if (typeof value === "string" && /^[=+\-@\t\r]/.test(value)) {
+				return `'${value}`;
+			}
+			return value;
+		};
+
 		// Convert to CSV
 		const csvData = contacts.map((c) => ({
 			id: c.id,
-			email: c.email || "",
-			phone: c.phone || "",
-			name: c.name || "",
+			email: sanitizeCsvValue(c.email || ""),
+			phone: sanitizeCsvValue(c.phone || ""),
+			name: sanitizeCsvValue(c.name || ""),
 			status: c.status,
 			leadScore: c.leadScore || 0,
-			tags: (c.tags as string[])?.join(";") || "",
-			customFields: c.customFields ? JSON.stringify(c.customFields) : "",
+			tags: sanitizeCsvValue((c.tags as string[])?.join(";") || ""),
+			customFields: c.customFields ? sanitizeCsvValue(JSON.stringify(c.customFields)) : "",
 			firstSeenAt: c.firstSeenAt?.toISOString() || "",
 			lastSeenAt: c.lastSeenAt?.toISOString() || "",
 			createdAt: c.createdAt?.toISOString() || "",
