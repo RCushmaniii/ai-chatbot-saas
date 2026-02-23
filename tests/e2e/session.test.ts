@@ -1,12 +1,21 @@
 import { expect, test } from "../fixtures";
 
 test.describe("Authentication - Unauthenticated Users", () => {
-	test("Redirect unauthenticated users to /sign-in", async ({ page }) => {
+	test("Unauthenticated users see landing page at /", async ({ page }) => {
 		const response = await page.goto("/");
 
 		if (!response) {
 			throw new Error("Failed to load page");
 		}
+
+		// Unauthenticated users see the public landing page (not redirected)
+		await expect(page).toHaveURL("/");
+	});
+
+	test("Redirect unauthenticated users to /sign-in from protected route", async ({
+		page,
+	}) => {
+		await page.goto("/chat");
 
 		// Clerk redirects unauthenticated users to /sign-in
 		await expect(page).toHaveURL(/\/sign-in/);

@@ -7,6 +7,10 @@ const documentsCreatedByAda: Document[] = [];
 
 test.describe
 	.serial("/api/document", () => {
+		test.beforeEach(async ({ requiresAuth }) => {
+			// All route tests require authentication
+		});
+
 		test("Ada cannot retrieve a document without specifying an id", async ({
 			adaContext,
 		}) => {

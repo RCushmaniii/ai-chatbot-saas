@@ -26,6 +26,10 @@ function normalizeStreamData(lines: string[]): string[] {
 
 test.describe
 	.serial("/api/chat", () => {
+		test.beforeEach(async ({ requiresAuth }) => {
+			// All route tests require authentication
+		});
+
 		test("Ada cannot invoke a chat generation with empty request body", async ({
 			adaContext,
 		}) => {
