@@ -20,7 +20,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 	const user = await getAuthUser();
 
 	if (!user) {
-		redirect("/sign-in");
+		redirect("/");
 	}
 
 	if (chat.visibility === "private") {

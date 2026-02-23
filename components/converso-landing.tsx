@@ -1,13 +1,17 @@
 "use client";
 
 import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/use-language";
+import { LanguageToggle } from "./language-toggle";
 
 // Icons
 const CheckIcon = () => (
 	<svg
-		className="w-5 h-5 text-brand-jade"
+		className="w-5 h-5 text-brand-jade flex-shrink-0"
 		fill="none"
 		stroke="currentColor"
 		viewBox="0 0 24 24"
@@ -133,21 +137,70 @@ const PlugIcon = () => (
 	</svg>
 );
 
+const MenuIcon = () => (
+	<svg
+		className="w-6 h-6"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M4 6h16M4 12h16M4 18h16"
+		/>
+	</svg>
+);
+
+const CloseIcon = () => (
+	<svg
+		className="w-6 h-6"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M6 18L18 6M6 6l12 12"
+		/>
+	</svg>
+);
+
 export function ConversoLandingPage() {
+	const { lang, setLang, t } = useLanguage();
+	const { theme, setTheme, resolvedTheme } = useTheme();
 	const [openFaq, setOpenFaq] = useState<number | null>(null);
 	const [isAnnual, setIsAnnual] = useState(true);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [demoMessages, setDemoMessages] = useState<
 		Array<{ role: string; content: string }>
 	>([]);
 	const [isTyping, setIsTyping] = useState(false);
+	const [isScrolled, setIsScrolled] = useState(false);
+	const [mounted, setMounted] = useState(false);
+
+	// Handle hydration for theme
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	// Scroll detection for navbar
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 20);
+		};
+		window.addEventListener("scroll", handleScroll);
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
 
 	// Demo chat simulation
 	useEffect(() => {
 		const demoSequence = async () => {
 			await new Promise((r) => setTimeout(r, 2000));
-			setDemoMessages([
-				{ role: "user", content: "Hola, what are your business hours?" },
-			]);
+			setDemoMessages([{ role: "user", content: t.demo.userMessage }]);
 			setIsTyping(true);
 			await new Promise((r) => setTimeout(r, 1500));
 			setIsTyping(false);
@@ -155,235 +208,248 @@ export function ConversoLandingPage() {
 				...prev,
 				{
 					role: "assistant",
-					content:
-						"Hello! We're open Monday to Friday from 9am to 6pm CST, and Saturdays from 10am to 2pm. How can I help you today?",
+					content: t.demo.botResponse,
 				},
 			]);
 		};
 		demoSequence();
-	}, []);
+	}, [t.demo.userMessage, t.demo.botResponse]);
 
-	const plans = [
-		{
-			name: "Gratis",
-			nameEn: "Free",
-			price: 0,
-			priceAnnual: 0,
-			description: "Perfecto para probar",
-			features: [
-				"1 chatbot",
-				"50 mensajes/mes",
-				"10 páginas de conocimiento",
-				"Widget básico",
-				"Soporte por email",
-			],
-			cta: "Empezar Gratis",
-			popular: false,
-		},
-		{
-			name: "Starter",
-			nameEn: "Starter",
-			price: 19,
-			priceAnnual: 15,
-			description: "Para negocios en crecimiento",
-			features: [
-				"3 chatbots",
-				"1,000 mensajes/mes",
-				"100 páginas de conocimiento",
-				"Widget personalizable",
-				"Analytics básicos",
-				"Soporte prioritario",
-			],
-			cta: "Comenzar Prueba",
-			popular: true,
-		},
-		{
-			name: "Pro",
-			nameEn: "Pro",
-			price: 49,
-			priceAnnual: 39,
-			description: "Para empresas establecidas",
-			features: [
-				"10 chatbots",
-				"5,000 mensajes/mes",
-				"500 páginas de conocimiento",
-				"API access",
-				"Analytics avanzados",
-				"Integraciones premium",
-				"Soporte 24/7",
-			],
-			cta: "Comenzar Prueba",
-			popular: false,
-		},
-		{
-			name: "Business",
-			nameEn: "Business",
-			price: 99,
-			priceAnnual: 79,
-			description: "Para grandes organizaciones",
-			features: [
-				"Chatbots ilimitados",
-				"25,000 mensajes/mes",
-				"2,000 páginas de conocimiento",
-				"White-label",
-				"SSO / SAML",
-				"Gerente de cuenta dedicado",
-				"SLA garantizado",
-			],
-			cta: "Contactar Ventas",
-			popular: false,
-		},
+	const isDark = mounted && resolvedTheme === "dark";
+
+	const planKeys = ["free", "starter", "pro", "business"] as const;
+	const planPrices = {
+		free: { monthly: 0, annual: 0 },
+		starter: { monthly: 19, annual: 15 },
+		pro: { monthly: 49, annual: 39 },
+		business: { monthly: 99, annual: 79 },
+	};
+
+	const features = [
+		{ key: "bilingual" as const, icon: <GlobeIcon /> },
+		{ key: "learns" as const, icon: <BrainIcon /> },
+		{ key: "widget" as const, icon: <MessageIcon /> },
+		{ key: "analytics" as const, icon: <ChartIcon /> },
+		{ key: "integrations" as const, icon: <PlugIcon /> },
+		{ key: "security" as const, icon: <ShieldIcon /> },
 	];
 
-	const faqs = [
+	const steps = [
+		{ key: "step1" as const, color: "from-brand-cielito to-brand-cielito" },
+		{ key: "step2" as const, color: "from-brand-jade to-brand-jade" },
 		{
-			q: "Is Converso bilingual?",
-			qEs: "¿Converso es bilingüe?",
-			a: "Yes! Converso understands and responds in both English and Spanish automatically. Your customers can write in either language and get natural, fluent responses.",
-			aEs: "¡Sí! Converso entiende y responde en inglés y español automáticamente. Tus clientes pueden escribir en cualquier idioma y recibir respuestas naturales y fluidas.",
-		},
-		{
-			q: "How long does setup take?",
-			qEs: "¿Cuánto tiempo toma la configuración?",
-			a: "Most businesses are live in under 15 minutes. Upload your FAQs, product info, or connect your knowledge base, and Converso learns instantly.",
-			aEs: "La mayoría de los negocios están en línea en menos de 15 minutos. Sube tus FAQs, información de productos, o conecta tu base de conocimiento.",
-		},
-		{
-			q: "Can I customize the chatbot's appearance?",
-			qEs: "¿Puedo personalizar la apariencia del chatbot?",
-			a: "Absolutely. Match your brand colors, add your logo, customize the greeting message, and even adjust the chatbot's personality and tone.",
-			aEs: "Absolutamente. Personaliza los colores de tu marca, agrega tu logo, personaliza el mensaje de bienvenida, e incluso ajusta la personalidad del chatbot.",
-		},
-		{
-			q: "What if the AI can't answer a question?",
-			qEs: "¿Qué pasa si la IA no puede responder?",
-			a: "You can configure fallback behaviors: collect contact info for follow-up, escalate to a human agent, or provide alternative resources. You're always in control.",
-			aEs: "Puedes configurar comportamientos de respaldo: recopilar información de contacto, escalar a un agente humano, o proporcionar recursos alternativos.",
-		},
-		{
-			q: "Is there a free trial?",
-			qEs: "¿Hay una prueba gratuita?",
-			a: "Yes! Start with our free plan forever, or try any paid plan free for 14 days. No credit card required.",
-			aEs: "¡Sí! Comienza con nuestro plan gratuito para siempre, o prueba cualquier plan de pago gratis por 14 días. Sin tarjeta de crédito.",
-		},
-		{
-			q: "How secure is my data?",
-			qEs: "¿Qué tan segura está mi información?",
-			a: "Enterprise-grade security with encryption at rest and in transit, SOC 2 compliance, and you own your data. Delete anytime.",
-			aEs: "Seguridad de nivel empresarial con encriptación en reposo y en tránsito, cumplimiento SOC 2, y tú eres dueño de tus datos.",
+			key: "step3" as const,
+			color: "from-brand-terracotta to-brand-terracotta",
 		},
 	];
 
 	return (
-		<div className="min-h-screen bg-surface-sand">
-			{/* Navigation */}
-			<nav className="sticky top-0 z-50 backdrop-blur-md bg-surface-sand/90 border-b border-ink/5">
-				<div className="max-w-7xl mx-auto px-6 py-4">
+		<div className="min-h-screen bg-surface-sand dark:bg-ink">
+			{/* Navigation - Fixed positioning for reliable sticky behavior */}
+			<nav
+				className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+					isScrolled
+						? "backdrop-blur-md bg-white/95 dark:bg-zinc-900/95 border-ink/10 dark:border-white/10 shadow-sm"
+						: "bg-white dark:bg-zinc-900 border-ink/10 dark:border-white/10"
+				}`}
+			>
+				<div
+					className={`max-w-7xl mx-auto px-6 transition-all duration-300 ${isScrolled ? "py-2" : "py-4"}`}
+				>
 					<div className="flex items-center justify-between">
-						{/* Logo */}
+						{/* Logo - shrinks on scroll */}
 						<Link href="/" className="flex items-center gap-3 group">
-							<div className="w-10 h-10 bg-gradient-to-br from-brand-cielito to-brand-jade rounded-xl flex items-center justify-center shadow-md">
-								<span className="text-white font-bold text-lg">C</span>
+							<div
+								className={`bg-gradient-to-br from-brand-cielito to-brand-jade rounded-xl flex items-center justify-center shadow-md transition-all duration-300 ${isScrolled ? "w-8 h-8" : "w-10 h-10"}`}
+							>
+								<span
+									className={`text-white font-bold transition-all duration-300 ${isScrolled ? "text-base" : "text-lg"}`}
+								>
+									C
+								</span>
 							</div>
-							<span className="text-2xl font-display font-bold text-ink tracking-tight">
+							<span
+								className={`font-display font-bold text-ink dark:text-white tracking-tight transition-all duration-300 ${isScrolled ? "text-xl" : "text-2xl"}`}
+							>
 								Converso
 							</span>
 						</Link>
 
-						{/* Center Nav */}
+						{/* Center Nav - Desktop */}
 						<div className="hidden lg:flex items-center gap-8 text-sm font-medium">
 							<a
 								href="#features"
-								className="text-ink/70 hover:text-ink transition-colors"
+								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
 							>
-								Características
+								{t.nav.features}
 							</a>
 							<a
 								href="#how-it-works"
-								className="text-ink/70 hover:text-ink transition-colors"
+								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
 							>
-								Cómo Funciona
+								{t.nav.howItWorks}
 							</a>
 							<a
 								href="#pricing"
-								className="text-ink/70 hover:text-ink transition-colors"
+								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
 							>
-								Precios
+								{t.nav.pricing}
 							</a>
 							<a
 								href="#faq"
-								className="text-ink/70 hover:text-ink transition-colors"
+								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
 							>
-								FAQ
+								{t.nav.faq}
 							</a>
 						</div>
 
 						{/* Right CTAs */}
-						<div className="flex items-center gap-4">
+						<div className="flex items-center gap-3">
+							{/* Language Toggle */}
+							<LanguageToggle lang={lang} onChange={setLang} />
+
+							{/* Theme Toggle */}
+							<button
+								type="button"
+								onClick={() => setTheme(isDark ? "light" : "dark")}
+								className="p-2 rounded-full bg-ink/5 dark:bg-white/10 hover:bg-ink/10 dark:hover:bg-white/20 transition-colors"
+								aria-label="Toggle theme"
+							>
+								{mounted &&
+									(isDark ? (
+										<Sun className="w-5 h-5 text-white" />
+									) : (
+										<Moon className="w-5 h-5 text-ink" />
+									))}
+							</button>
+
 							<SignedOut>
 								<SignInButton mode="modal">
 									<button
 										type="button"
-										className="hidden sm:block text-sm font-medium text-ink/70 hover:text-ink transition-colors"
+										className="hidden sm:block text-sm font-medium text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
 									>
-										Iniciar Sesión
+										{t.nav.signIn}
 									</button>
 								</SignInButton>
 								<SignUpButton mode="modal">
 									<button
 										type="button"
-										className="px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
+										className="hidden sm:block px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
 									>
-										Empezar Gratis
+										{t.nav.startFree}
 									</button>
 								</SignUpButton>
 							</SignedOut>
 							<SignedIn>
 								<Link
-									href="/"
-									className="px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all"
+									href="/chat"
+									className="hidden sm:block px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all"
 								>
-									Ir al Dashboard
+									{t.nav.dashboard}
 								</Link>
 							</SignedIn>
+
+							{/* Mobile menu button */}
+							<button
+								type="button"
+								className="lg:hidden p-2 text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white"
+								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+							>
+								{mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+							</button>
 						</div>
 					</div>
+
+					{/* Mobile Menu */}
+					{mobileMenuOpen && (
+						<div className="lg:hidden mt-4 pb-4 border-t border-ink/10 dark:border-white/10 pt-4">
+							<div className="flex flex-col gap-4">
+								<a
+									href="#features"
+									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									{t.nav.features}
+								</a>
+								<a
+									href="#how-it-works"
+									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									{t.nav.howItWorks}
+								</a>
+								<a
+									href="#pricing"
+									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									{t.nav.pricing}
+								</a>
+								<a
+									href="#faq"
+									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									{t.nav.faq}
+								</a>
+								<SignedOut>
+									<SignUpButton mode="modal">
+										<button
+											type="button"
+											className="w-full px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md"
+										>
+											{t.nav.startFree}
+										</button>
+									</SignUpButton>
+								</SignedOut>
+								<SignedIn>
+									<Link
+										href="/chat"
+										className="w-full px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md text-center"
+									>
+										{t.nav.dashboard}
+									</Link>
+								</SignedIn>
+							</div>
+						</div>
+					)}
 				</div>
 			</nav>
+
+			{/* Spacer for fixed nav */}
+			<div className="h-[72px]" />
 
 			{/* Hero Section */}
 			<section className="relative pt-16 pb-24 px-6 overflow-hidden">
 				{/* Background decorations */}
-				<div className="absolute top-0 right-0 w-96 h-96 bg-brand-cielito/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-				<div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-jade/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+				<div className="absolute top-0 right-0 w-96 h-96 bg-brand-cielito/10 dark:bg-brand-cielito/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+				<div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-jade/10 dark:bg-brand-jade/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
 				<div className="max-w-7xl mx-auto relative">
 					<div className="grid lg:grid-cols-2 gap-16 items-center">
 						{/* Left: Copy */}
 						<div>
-							<div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm mb-6">
+							<div className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/10 rounded-full shadow-sm mb-6">
 								<span className="w-2 h-2 bg-brand-jade rounded-full animate-pulse" />
-								<span className="text-sm font-medium text-ink/70">
-									Ahora con soporte bilingüe automático
+								<span className="text-sm font-medium text-ink/70 dark:text-white/70">
+									{t.hero.badge}
 								</span>
 							</div>
 
-							<h1 className="text-5xl lg:text-6xl font-display font-bold leading-[1.1] mb-6 text-ink">
-								El chatbot que{" "}
+							<h1 className="text-5xl lg:text-6xl font-display font-bold leading-[1.1] mb-6 text-ink dark:text-white">
+								{t.hero.titlePart1}{" "}
 								<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cielito to-brand-jade">
-									habla tu idioma
+									{t.hero.titleHighlight}
 								</span>
 							</h1>
 
-							<p className="text-xl text-ink/70 mb-4 leading-relaxed max-w-xl">
-								Converso es la inteligencia artificial que atiende a tus
-								clientes en español e inglés, 24/7. Respuestas instantáneas
-								basadas en tu conocimiento de negocio.
+							<p className="text-xl text-ink/70 dark:text-white/70 mb-4 leading-relaxed max-w-xl">
+								{t.hero.description}
 							</p>
 
-							<p className="text-sm text-ink/50 mb-8 max-w-xl">
-								Perfecto para negocios en México y Norteamérica que atienden
-								clientes bilingües.
+							<p className="text-sm text-ink/50 dark:text-white/50 mb-8 max-w-xl">
+								{t.hero.subtext}
 							</p>
 
 							<div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -393,39 +459,39 @@ export function ConversoLandingPage() {
 											type="button"
 											className="px-8 py-4 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-lg text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
 										>
-											Empieza Gratis
+											{t.hero.ctaPrimary}
 										</button>
 									</SignUpButton>
 								</SignedOut>
 								<SignedIn>
 									<Link
-										href="/"
+										href="/chat"
 										className="px-8 py-4 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-lg text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-center"
 									>
-										Ir al Dashboard
+										{t.nav.dashboard}
 									</Link>
 								</SignedIn>
-								<Link
+								<a
 									href="#demo"
-									className="px-8 py-4 border-2 border-ink/20 rounded-xl font-bold text-lg text-ink hover:border-brand-cielito hover:bg-brand-cielito/5 transition-all"
+									className="px-8 py-4 border-2 border-ink/20 dark:border-white/20 rounded-xl font-bold text-lg text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5 dark:hover:bg-brand-cielito/10 transition-all text-center"
 								>
-									Ver Demo
-								</Link>
+									{t.hero.ctaSecondary}
+								</a>
 							</div>
 
 							{/* Trust indicators */}
-							<div className="flex flex-wrap items-center gap-6 text-sm text-ink/50">
+							<div className="flex flex-wrap items-center gap-6 text-sm text-ink/50 dark:text-white/50">
 								<div className="flex items-center gap-2">
 									<CheckIcon />
-									<span>Sin tarjeta de crédito</span>
+									<span>{t.hero.trustNoCard}</span>
 								</div>
 								<div className="flex items-center gap-2">
 									<CheckIcon />
-									<span>Configuración en minutos</span>
+									<span>{t.hero.trustMinutes}</span>
 								</div>
 								<div className="flex items-center gap-2">
 									<CheckIcon />
-									<span>Cancela cuando quieras</span>
+									<span>{t.hero.trustCancel}</span>
 								</div>
 							</div>
 						</div>
@@ -440,10 +506,10 @@ export function ConversoLandingPage() {
 											<MessageIcon />
 										</div>
 										<div className="text-white">
-											<div className="font-bold">Asistente Virtual</div>
+											<div className="font-bold">{t.demo.title}</div>
 											<div className="text-sm text-white/80 flex items-center gap-2">
 												<span className="w-2 h-2 bg-green-400 rounded-full" />
-												En línea
+												{t.demo.online}
 											</div>
 										</div>
 									</div>
@@ -458,8 +524,7 @@ export function ConversoLandingPage() {
 										</div>
 										<div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[80%]">
 											<p className="text-sm text-ink">
-												¡Hola! Soy tu asistente virtual bilingüe. ¿En qué puedo
-												ayudarte hoy?
+												{t.demo.welcomeMessage}
 											</p>
 										</div>
 									</div>
@@ -517,7 +582,7 @@ export function ConversoLandingPage() {
 									<div className="flex gap-2">
 										<input
 											type="text"
-											placeholder="Escribe tu mensaje..."
+											placeholder={t.demo.placeholder}
 											className="flex-1 px-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-cielito/50"
 											disabled
 										/>
@@ -552,38 +617,40 @@ export function ConversoLandingPage() {
 			</section>
 
 			{/* Stats Bar */}
-			<section className="py-12 px-6 bg-white border-y border-ink/5">
+			<section className="py-12 px-6 bg-white dark:bg-white/5 border-y border-ink/5 dark:border-white/5">
 				<div className="max-w-7xl mx-auto">
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
 						<div>
 							<div className="text-4xl font-display font-bold text-brand-cielito mb-2">
 								85%
 							</div>
-							<div className="text-sm text-ink/60">
-								Consultas resueltas automáticamente
+							<div className="text-sm text-ink/60 dark:text-white/60">
+								{t.stats.resolved}
 							</div>
 						</div>
 						<div>
 							<div className="text-4xl font-display font-bold text-brand-jade mb-2">
 								24/7
 							</div>
-							<div className="text-sm text-ink/60">
-								Disponibilidad sin interrupciones
+							<div className="text-sm text-ink/60 dark:text-white/60">
+								{t.stats.availability}
 							</div>
 						</div>
 						<div>
 							<div className="text-4xl font-display font-bold text-brand-terracotta mb-2">
 								3x
 							</div>
-							<div className="text-sm text-ink/60">
-								Más rápido que soporte tradicional
+							<div className="text-sm text-ink/60 dark:text-white/60">
+								{t.stats.faster}
 							</div>
 						</div>
 						<div>
-							<div className="text-4xl font-display font-bold text-ink mb-2">
+							<div className="text-4xl font-display font-bold text-ink dark:text-white mb-2">
 								2 min
 							</div>
-							<div className="text-sm text-ink/60">Tiempo de configuración</div>
+							<div className="text-sm text-ink/60 dark:text-white/60">
+								{t.stats.setup}
+							</div>
 						</div>
 					</div>
 				</div>
@@ -593,67 +660,28 @@ export function ConversoLandingPage() {
 			<section id="features" className="py-24 px-6">
 				<div className="max-w-7xl mx-auto">
 					<div className="text-center mb-16">
-						<h2 className="text-4xl font-display font-bold text-ink mb-4">
-							Todo lo que necesitas para atender mejor
+						<h2 className="text-4xl font-display font-bold text-ink dark:text-white mb-4">
+							{t.features.title}
 						</h2>
-						<p className="text-xl text-ink/60 max-w-2xl mx-auto">
-							Converso combina inteligencia artificial avanzada con facilidad de
-							uso para que cualquier negocio pueda ofrecer atención de clase
-							mundial.
+						<p className="text-xl text-ink/60 dark:text-white/60 max-w-2xl mx-auto">
+							{t.features.subtitle}
 						</p>
 					</div>
 
 					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-						{[
-							{
-								icon: <GlobeIcon />,
-								title: "100% Bilingüe",
-								description:
-									"Detecta automáticamente el idioma y responde en español o inglés. Perfecto para clientes en México y USA.",
-							},
-							{
-								icon: <BrainIcon />,
-								title: "Aprende Tu Negocio",
-								description:
-									"Entrena al chatbot con tus FAQs, productos y políticas. Respuestas precisas basadas en tu conocimiento.",
-							},
-							{
-								icon: <MessageIcon />,
-								title: "Widget Personalizable",
-								description:
-									"Colores, logo, mensajes de bienvenida. Haz que el chatbot se sienta parte de tu marca.",
-							},
-							{
-								icon: <ChartIcon />,
-								title: "Analytics en Tiempo Real",
-								description:
-									"Ve qué preguntan tus clientes, identifica oportunidades y mejora continuamente.",
-							},
-							{
-								icon: <PlugIcon />,
-								title: "Integraciones",
-								description:
-									"Conecta con WhatsApp, Messenger, tu CRM, y más. Un chatbot, múltiples canales.",
-							},
-							{
-								icon: <ShieldIcon />,
-								title: "Seguro y Confiable",
-								description:
-									"Encriptación de datos, cumplimiento de privacidad, y control total sobre tu información.",
-							},
-						].map((feature, i) => (
+						{features.map((feature) => (
 							<div
-								key={i}
-								className="group p-8 bg-white rounded-2xl border border-ink/5 shadow-sm hover:shadow-lg hover:border-brand-cielito/30 transition-all hover:-translate-y-1"
+								key={feature.key}
+								className="group p-8 bg-white dark:bg-white/5 rounded-2xl border border-ink/5 dark:border-white/10 shadow-sm hover:shadow-lg hover:border-brand-cielito/30 transition-all hover:-translate-y-1"
 							>
 								<div className="w-12 h-12 bg-gradient-to-br from-brand-cielito/10 to-brand-jade/10 rounded-xl flex items-center justify-center mb-6 text-brand-cielito group-hover:from-brand-cielito group-hover:to-brand-jade group-hover:text-white transition-all">
 									{feature.icon}
 								</div>
-								<h3 className="text-xl font-display font-bold text-ink mb-3">
-									{feature.title}
+								<h3 className="text-xl font-display font-bold text-ink dark:text-white mb-3">
+									{t.features[feature.key].title}
 								</h3>
-								<p className="text-ink/60 leading-relaxed">
-									{feature.description}
+								<p className="text-ink/60 dark:text-white/60 leading-relaxed">
+									{t.features[feature.key].description}
 								</p>
 							</div>
 						))}
@@ -662,14 +690,17 @@ export function ConversoLandingPage() {
 			</section>
 
 			{/* How It Works */}
-			<section id="how-it-works" className="py-24 px-6 bg-white">
+			<section
+				id="how-it-works"
+				className="py-24 px-6 bg-white dark:bg-white/5"
+			>
 				<div className="max-w-6xl mx-auto">
 					<div className="text-center mb-16">
-						<h2 className="text-4xl font-display font-bold text-ink mb-4">
-							Listo en 3 simples pasos
+						<h2 className="text-4xl font-display font-bold text-ink dark:text-white mb-4">
+							{t.howItWorks.title}
 						</h2>
-						<p className="text-xl text-ink/60">
-							Sin código, sin complicaciones, sin esperas.
+						<p className="text-xl text-ink/60 dark:text-white/60">
+							{t.howItWorks.subtitle}
 						</p>
 					</div>
 
@@ -677,40 +708,18 @@ export function ConversoLandingPage() {
 						{/* Connector line */}
 						<div className="hidden md:block absolute top-16 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-brand-cielito via-brand-jade to-brand-terracotta" />
 
-						{[
-							{
-								num: "1",
-								title: "Crea tu cuenta",
-								description:
-									"Regístrate gratis en segundos. Sin tarjeta de crédito, sin compromisos.",
-								color: "from-brand-cielito to-brand-cielito",
-							},
-							{
-								num: "2",
-								title: "Entrena tu chatbot",
-								description:
-									"Sube documentos, FAQs o simplemente escribe las respuestas que quieres dar.",
-								color: "from-brand-jade to-brand-jade",
-							},
-							{
-								num: "3",
-								title: "Instala en tu sitio",
-								description:
-									"Copia y pega una línea de código. Tu chatbot está listo para atender.",
-								color: "from-brand-terracotta to-brand-terracotta",
-							},
-						].map((step, i) => (
-							<div key={i} className="text-center relative">
+						{steps.map((step, i) => (
+							<div key={step.key} className="text-center relative">
 								<div
 									className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center text-white text-2xl font-bold mb-6 shadow-lg relative z-10`}
 								>
-									{step.num}
+									{i + 1}
 								</div>
-								<h3 className="text-xl font-display font-bold text-ink mb-3">
-									{step.title}
+								<h3 className="text-xl font-display font-bold text-ink dark:text-white mb-3">
+									{t.howItWorks[step.key].title}
 								</h3>
-								<p className="text-ink/60 leading-relaxed">
-									{step.description}
+								<p className="text-ink/60 dark:text-white/60 leading-relaxed">
+									{t.howItWorks[step.key].description}
 								</p>
 							</div>
 						))}
@@ -718,55 +727,35 @@ export function ConversoLandingPage() {
 				</div>
 			</section>
 
-			{/* Social Proof */}
-			<section className="py-24 px-6 bg-gradient-to-br from-brand-cielito/5 to-brand-jade/5">
-				<div className="max-w-6xl mx-auto">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl font-display font-bold text-ink mb-4">
-							Lo que dicen nuestros clientes
+			{/* Founder Story */}
+			<section className="py-24 px-6 bg-gradient-to-br from-brand-cielito/5 to-brand-jade/5 dark:from-brand-cielito/10 dark:to-brand-jade/10">
+				<div className="max-w-4xl mx-auto">
+					<div className="text-center mb-12">
+						<h2 className="text-4xl font-display font-bold text-ink dark:text-white mb-4">
+							{t.founderStory.title}
 						</h2>
 					</div>
 
-					<div className="grid md:grid-cols-3 gap-8">
-						{[
-							{
-								quote:
-									"Converso redujo nuestras llamadas de soporte en un 60%. Los clientes aman poder escribir en español o inglés.",
-								name: "María González",
-								title: "Directora de Servicio",
-								company: "TechMex",
-							},
-							{
-								quote:
-									"La configuración fue increíblemente fácil. En menos de una hora teníamos un chatbot funcionando en nuestro sitio.",
-								name: "Carlos Ruiz",
-								title: "Fundador",
-								company: "Tienda Digital MX",
-							},
-							{
-								quote:
-									"El soporte bilingüe automático es perfecto para nuestros clientes en ambos lados de la frontera.",
-								name: "Jennifer Smith",
-								title: "VP Operations",
-								company: "BorderTrade Co",
-							},
-						].map((testimonial, i) => (
-							<div
-								key={i}
-								className="bg-white rounded-2xl p-8 shadow-sm border border-ink/5"
-							>
-								<div className="text-4xl text-brand-cielito mb-4">"</div>
-								<p className="text-ink/80 mb-6 leading-relaxed">
-									{testimonial.quote}
-								</p>
-								<div className="border-t border-ink/5 pt-6">
-									<div className="font-bold text-ink">{testimonial.name}</div>
-									<div className="text-sm text-ink/50">
-										{testimonial.title}, {testimonial.company}
-									</div>
+					<div className="bg-white dark:bg-white/5 rounded-2xl p-10 md:p-12 shadow-lg border border-ink/5 dark:border-white/10 relative">
+						<div className="text-6xl text-brand-cielito/30 absolute top-6 left-8">
+							"
+						</div>
+						<blockquote className="text-xl md:text-2xl text-ink/80 dark:text-white/80 leading-relaxed mb-8 relative z-10 pl-8">
+							{t.founderStory.quote}
+						</blockquote>
+						<div className="flex items-center gap-4 pl-8">
+							<div className="w-14 h-14 bg-gradient-to-br from-brand-cielito to-brand-jade rounded-full flex items-center justify-center">
+								<span className="text-white font-bold text-xl">R</span>
+							</div>
+							<div>
+								<div className="font-bold text-lg text-ink dark:text-white">
+									{t.founderStory.name}
+								</div>
+								<div className="text-ink/50 dark:text-white/50">
+									{t.founderStory.role}
 								</div>
 							</div>
-						))}
+						</div>
 					</div>
 				</div>
 			</section>
@@ -775,149 +764,160 @@ export function ConversoLandingPage() {
 			<section id="pricing" className="py-24 px-6">
 				<div className="max-w-7xl mx-auto">
 					<div className="text-center mb-12">
-						<h2 className="text-4xl font-display font-bold text-ink mb-4">
-							Precios simples y transparentes
+						<h2 className="text-4xl font-display font-bold text-ink dark:text-white mb-4">
+							{t.pricing.title}
 						</h2>
-						<p className="text-xl text-ink/60 mb-8">
-							Empieza gratis, escala cuando lo necesites
+						<p className="text-xl text-ink/60 dark:text-white/60 mb-8">
+							{t.pricing.subtitle}
 						</p>
 
 						{/* Toggle */}
-						<div className="inline-flex items-center gap-4 bg-white border border-ink/10 rounded-xl p-1 shadow-sm">
+						<div className="inline-flex items-center gap-4 bg-white dark:bg-white/10 border border-ink/10 dark:border-white/10 rounded-xl p-1 shadow-sm">
 							<button
+								type="button"
 								onClick={() => setIsAnnual(false)}
 								className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
 									!isAnnual
 										? "bg-brand-cielito text-white shadow"
-										: "text-ink/60"
+										: "text-ink/60 dark:text-white/60"
 								}`}
 							>
-								Mensual
+								{t.pricing.monthly}
 							</button>
 							<button
+								type="button"
 								onClick={() => setIsAnnual(true)}
 								className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
 									isAnnual
 										? "bg-brand-cielito text-white shadow"
-										: "text-ink/60"
+										: "text-ink/60 dark:text-white/60"
 								}`}
 							>
-								Anual{" "}
+								{t.pricing.annual}{" "}
 								<span className="text-xs ml-1 text-brand-jade font-bold">
-									{isAnnual ? "-20%" : ""}
+									{isAnnual ? t.pricing.annualDiscount : ""}
 								</span>
 							</button>
 						</div>
 					</div>
 
 					<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-						{plans.map((plan, i) => (
-							<div
-								key={i}
-								className={`relative bg-white rounded-2xl p-8 border-2 transition-all hover:-translate-y-1 ${
-									plan.popular
-										? "border-brand-cielito shadow-xl"
-										: "border-ink/5 shadow-sm hover:border-brand-cielito/30 hover:shadow-lg"
-								}`}
-							>
-								{plan.popular && (
-									<div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-full text-xs font-bold text-white">
-										MÁS POPULAR
+						{planKeys.map((planKey) => {
+							const plan = t.pricing.plans[planKey];
+							const price = planPrices[planKey];
+							const isPopular = planKey === "starter";
+
+							return (
+								<div
+									key={planKey}
+									className={`relative bg-white dark:bg-white/5 rounded-2xl p-8 border-2 transition-all hover:-translate-y-1 ${
+										isPopular
+											? "border-brand-cielito shadow-xl"
+											: "border-ink/5 dark:border-white/10 shadow-sm hover:border-brand-cielito/30 hover:shadow-lg"
+									}`}
+								>
+									{isPopular && (
+										<div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-full text-xs font-bold text-white">
+											{t.pricing.mostPopular}
+										</div>
+									)}
+
+									<div className="text-sm font-medium text-ink/50 dark:text-white/50 mb-2">
+										{plan.name}
 									</div>
-								)}
+									<div className="text-4xl font-display font-bold text-ink dark:text-white mb-1">
+										${isAnnual ? price.annual : price.monthly}
+										<span className="text-lg text-ink/50 dark:text-white/50 font-normal">
+											{t.pricing.perMonth}
+										</span>
+									</div>
+									<div className="text-sm text-ink/50 dark:text-white/50 mb-6">
+										{plan.description}
+									</div>
 
-								<div className="text-sm font-medium text-ink/50 mb-2">
-									{plan.name}
-								</div>
-								<div className="text-4xl font-display font-bold text-ink mb-1">
-									${isAnnual ? plan.priceAnnual : plan.price}
-									<span className="text-lg text-ink/50 font-normal">/mes</span>
-								</div>
-								<div className="text-sm text-ink/50 mb-6">
-									{plan.description}
-								</div>
+									<ul className="space-y-3 mb-8">
+										{plan.features.map((feature, j) => (
+											<li
+												key={j}
+												className="flex items-start gap-3 text-sm text-ink/70 dark:text-white/70"
+											>
+												<CheckIcon />
+												<span>{feature}</span>
+											</li>
+										))}
+									</ul>
 
-								<ul className="space-y-3 mb-8">
-									{plan.features.map((feature, j) => (
-										<li
-											key={j}
-											className="flex items-start gap-3 text-sm text-ink/70"
-										>
-											<CheckIcon />
-											<span>{feature}</span>
-										</li>
-									))}
-								</ul>
-
-								<SignedOut>
-									<SignUpButton mode="modal">
-										<button
-											className={`w-full py-3 rounded-xl font-bold transition-all ${
-												plan.popular
+									<SignedOut>
+										<SignUpButton mode="modal">
+											<button
+												type="button"
+												className={`w-full py-3 rounded-xl font-bold transition-all ${
+													isPopular
+														? "bg-gradient-to-r from-brand-cielito to-brand-jade text-white hover:shadow-lg"
+														: "border-2 border-ink/20 dark:border-white/20 text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5"
+												}`}
+											>
+												{plan.cta}
+											</button>
+										</SignUpButton>
+									</SignedOut>
+									<SignedIn>
+										<Link
+											href="/chat"
+											className={`block w-full py-3 rounded-xl font-bold text-center transition-all ${
+												isPopular
 													? "bg-gradient-to-r from-brand-cielito to-brand-jade text-white hover:shadow-lg"
-													: "border-2 border-ink/20 text-ink hover:border-brand-cielito hover:bg-brand-cielito/5"
+													: "border-2 border-ink/20 dark:border-white/20 text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5"
 											}`}
 										>
-											{plan.cta}
-										</button>
-									</SignUpButton>
-								</SignedOut>
-								<SignedIn>
-									<Link
-										href="/"
-										className={`block w-full py-3 rounded-xl font-bold text-center transition-all ${
-											plan.popular
-												? "bg-gradient-to-r from-brand-cielito to-brand-jade text-white hover:shadow-lg"
-												: "border-2 border-ink/20 text-ink hover:border-brand-cielito hover:bg-brand-cielito/5"
-										}`}
-									>
-										Ir al Dashboard
-									</Link>
-								</SignedIn>
-							</div>
-						))}
+											{t.nav.dashboard}
+										</Link>
+									</SignedIn>
+								</div>
+							);
+						})}
 					</div>
 
-					<p className="text-center text-sm text-ink/50 mt-8">
-						14 días de prueba gratis en planes de pago. Sin tarjeta de crédito
-						requerida.
+					<p className="text-center text-sm text-ink/50 dark:text-white/50 mt-8">
+						{t.pricing.trial}
 					</p>
 				</div>
 			</section>
 
 			{/* FAQ */}
-			<section id="faq" className="py-24 px-6 bg-white">
+			<section id="faq" className="py-24 px-6 bg-white dark:bg-white/5">
 				<div className="max-w-3xl mx-auto">
 					<div className="text-center mb-16">
-						<h2 className="text-4xl font-display font-bold text-ink mb-4">
-							Preguntas Frecuentes
+						<h2 className="text-4xl font-display font-bold text-ink dark:text-white mb-4">
+							{t.faq.title}
 						</h2>
 					</div>
 
 					<div className="space-y-4">
-						{faqs.map((faq, i) => (
+						{t.faq.items.map((faq, i) => (
 							<div
 								key={i}
-								className="border border-ink/10 rounded-xl overflow-hidden bg-surface-sand/50"
+								className="border border-ink/10 dark:border-white/10 rounded-xl overflow-hidden bg-surface-sand/50 dark:bg-white/5"
 							>
 								<button
+									type="button"
 									onClick={() => setOpenFaq(openFaq === i ? null : i)}
-									className="w-full flex items-center justify-between p-6 text-left hover:bg-white/50 transition-all"
+									className="w-full flex items-center justify-between p-6 text-left hover:bg-white/50 dark:hover:bg-white/10 transition-all"
 								>
-									<div>
-										<span className="font-bold text-ink block">{faq.qEs}</span>
-										<span className="text-sm text-ink/50">{faq.q}</span>
-									</div>
+									<span className="font-bold text-ink dark:text-white">
+										{faq.q}
+									</span>
 									<div
-										className={`transition-transform text-ink/50 ${openFaq === i ? "rotate-180" : ""}`}
+										className={`transition-transform text-ink/50 dark:text-white/50 ${openFaq === i ? "rotate-180" : ""}`}
 									>
 										<ChevronDownIcon />
 									</div>
 								</button>
 								{openFaq === i && (
-									<div className="px-6 pb-6 border-t border-ink/5 pt-4 space-y-2">
-										<p className="text-ink/70 leading-relaxed">{faq.aEs}</p>
-										<p className="text-sm text-ink/50 italic">{faq.a}</p>
+									<div className="px-6 pb-6 border-t border-ink/5 dark:border-white/10 pt-4">
+										<p className="text-ink/70 dark:text-white/70 leading-relaxed">
+											{faq.a}
+										</p>
 									</div>
 								)}
 							</div>
@@ -940,11 +940,10 @@ export function ConversoLandingPage() {
 
 				<div className="max-w-4xl mx-auto text-center relative z-10">
 					<h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
-						¿Listo para transformar tu atención al cliente?
+						{t.cta.title}
 					</h2>
 					<p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-						Únete a cientos de negocios que ya usan Converso para atender mejor
-						a sus clientes. Empieza gratis hoy.
+						{t.cta.subtitle}
 					</p>
 
 					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -954,29 +953,27 @@ export function ConversoLandingPage() {
 									type="button"
 									className="px-10 py-5 bg-white rounded-xl font-bold text-lg text-brand-cielito shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
 								>
-									Empieza Gratis Ahora
+									{t.cta.primary}
 								</button>
 							</SignUpButton>
 						</SignedOut>
 						<SignedIn>
 							<Link
-								href="/"
+								href="/chat"
 								className="px-10 py-5 bg-white rounded-xl font-bold text-lg text-brand-cielito shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
 							>
-								Ir al Dashboard
+								{t.nav.dashboard}
 							</Link>
 						</SignedIn>
 						<a
 							href="mailto:hola@soyconverso.com"
 							className="px-10 py-5 border-2 border-white/30 rounded-xl font-bold text-lg text-white hover:bg-white/10 transition-all"
 						>
-							Hablar con Ventas
+							{t.cta.secondary}
 						</a>
 					</div>
 
-					<p className="text-sm text-white/60">
-						Sin tarjeta de crédito • 14 días gratis • Configuración en minutos
-					</p>
+					<p className="text-sm text-white/60">{t.cta.trust}</p>
 				</div>
 			</section>
 
@@ -993,18 +990,15 @@ export function ConversoLandingPage() {
 								<span className="text-xl font-display font-bold">Converso</span>
 							</div>
 							<p className="text-white/60 text-sm leading-relaxed mb-4">
-								El chatbot inteligente y bilingüe para negocios en México y
-								Norteamérica.
+								{t.footer.tagline}
 							</p>
-							<p className="text-white/40 text-xs">
-								© 2025 Converso. Todos los derechos reservados.
-							</p>
+							<p className="text-white/40 text-xs">{t.footer.copyright}</p>
 						</div>
 
 						{/* Product */}
 						<div>
 							<div className="text-sm font-bold mb-4 text-white/50">
-								PRODUCTO
+								{t.footer.product}
 							</div>
 							<ul className="space-y-3 text-sm text-white/60">
 								<li>
@@ -1012,7 +1006,7 @@ export function ConversoLandingPage() {
 										href="#features"
 										className="hover:text-white transition-colors"
 									>
-										Características
+										{t.footer.features}
 									</a>
 								</li>
 								<li>
@@ -1020,17 +1014,17 @@ export function ConversoLandingPage() {
 										href="#pricing"
 										className="hover:text-white transition-colors"
 									>
-										Precios
+										{t.footer.pricing}
 									</a>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Integraciones
+										{t.footer.integrations}
 									</a>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										API
+										{t.footer.api}
 									</a>
 								</li>
 							</ul>
@@ -1039,7 +1033,7 @@ export function ConversoLandingPage() {
 						{/* Resources */}
 						<div>
 							<div className="text-sm font-bold mb-4 text-white/50">
-								RECURSOS
+								{t.footer.resources}
 							</div>
 							<ul className="space-y-3 text-sm text-white/60">
 								<li>
@@ -1047,17 +1041,17 @@ export function ConversoLandingPage() {
 										href="/documentation"
 										className="hover:text-white transition-colors"
 									>
-										Documentación
+										{t.footer.documentation}
 									</Link>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Blog
+										{t.footer.blog}
 									</a>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Guías
+										{t.footer.guides}
 									</a>
 								</li>
 								<li>
@@ -1070,21 +1064,23 @@ export function ConversoLandingPage() {
 
 						{/* Legal */}
 						<div>
-							<div className="text-sm font-bold mb-4 text-white/50">LEGAL</div>
+							<div className="text-sm font-bold mb-4 text-white/50">
+								{t.footer.legal}
+							</div>
 							<ul className="space-y-3 text-sm text-white/60">
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Privacidad
+										{t.footer.privacy}
 									</a>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Términos
+										{t.footer.terms}
 									</a>
 								</li>
 								<li>
 									<a href="#" className="hover:text-white transition-colors">
-										Seguridad
+										{t.footer.security}
 									</a>
 								</li>
 							</ul>
@@ -1092,15 +1088,13 @@ export function ConversoLandingPage() {
 					</div>
 
 					<div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-						<div className="text-sm text-white/40">
-							Hecho con amor en México y USA
-						</div>
+						<div className="text-sm text-white/40">{t.footer.madeWith}</div>
 						<div className="flex gap-4">
 							<a
 								href="#"
 								className="w-10 h-10 border border-white/20 rounded-lg flex items-center justify-center hover:border-brand-cielito hover:bg-brand-cielito/10 transition-all"
 							>
-								<span className="text-xs">𝕏</span>
+								<span className="text-xs">X</span>
 							</a>
 							<a
 								href="#"

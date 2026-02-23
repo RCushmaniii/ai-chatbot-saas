@@ -37,7 +37,9 @@ export async function GET(request: Request) {
 			status: c.status,
 			leadScore: c.leadScore || 0,
 			tags: sanitizeCsvValue((c.tags as string[])?.join(";") || ""),
-			customFields: c.customFields ? sanitizeCsvValue(JSON.stringify(c.customFields)) : "",
+			customFields: c.customFields
+				? sanitizeCsvValue(JSON.stringify(c.customFields))
+				: "",
 			firstSeenAt: c.firstSeenAt?.toISOString() || "",
 			lastSeenAt: c.lastSeenAt?.toISOString() || "",
 			createdAt: c.createdAt?.toISOString() || "",

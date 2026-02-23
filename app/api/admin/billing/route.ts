@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
-import { eq, and, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { NextResponse } from "next/server";
 import postgres from "postgres";
+import { requirePermission } from "@/lib/auth";
 import {
+	contentSource,
 	plan,
 	subscription,
 	usageRecord,
-	contentSource,
 } from "@/lib/db/schema";
-import { requirePermission } from "@/lib/auth";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
@@ -78,8 +78,7 @@ export async function GET() {
 				? {
 						status: userSubscription.status,
 						billingCycle: userSubscription.billingCycle,
-						currentPeriodEnd:
-							userSubscription.currentPeriodEnd?.toISOString(),
+						currentPeriodEnd: userSubscription.currentPeriodEnd?.toISOString(),
 					}
 				: null,
 			usage: {

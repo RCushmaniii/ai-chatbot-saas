@@ -1,15 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-	type APIRequestContext,
-	type Browser,
-	type BrowserContext,
-	expect,
-	type Page,
+import type {
+	APIRequestContext,
+	Browser,
+	BrowserContext,
+	Page,
 } from "@playwright/test";
-import { generateId } from "ai";
 import { getUnixTime } from "date-fns";
-import { ChatPage } from "./pages/chat";
 
 export type UserContext = {
 	context: BrowserContext;
@@ -17,6 +14,15 @@ export type UserContext = {
 	request: APIRequestContext;
 };
 
+/**
+ * Creates an authenticated browser context for Playwright tests.
+ *
+ * For Clerk authentication, this requires either:
+ * 1. CLERK_TESTING_TOKEN env var set (from Clerk Dashboard > Testing)
+ * 2. Pre-existing session cookies from a logged-in user
+ *
+ * If no testing token is available, tests requiring authentication will be skipped.
+ */
 export async function createAuthenticatedContext({
 	browser,
 	name,
@@ -32,45 +38,66 @@ export async function createAuthenticatedContext({
 
 	const storageFile = path.join(directory, `${name}.json`);
 
+	// Check if we have a saved session
+	if (fs.existsSync(storageFile)) {
+		const context = await browser.newContext({ storageState: storageFile });
+		const page = await context.newPage();
+		return {
+			context,
+			page,
+			request: context.request,
+		};
+	}
+
+	// Check for Clerk testing token
+	const testingToken = process.env.CLERK_TESTING_TOKEN;
+
+	if (testingToken) {
+		// Use Clerk testing token for authentication
+		const context = await browser.newContext();
+		const page = await context.newPage();
+
+		// Set the Clerk testing token cookie
+		await context.addCookies([
+			{
+				name: "__clerk_db_jwt",
+				value: testingToken,
+				domain: "localhost",
+				path: "/",
+			},
+		]);
+
+		await context.storageState({ path: storageFile });
+
+		return {
+			context,
+			page,
+			request: context.request,
+		};
+	}
+
+	// No auth available - create unauthenticated context
+	// Tests using this will need to handle the redirect to /sign-in
+	console.warn(
+		`No CLERK_TESTING_TOKEN found. Creating unauthenticated context for ${name}.`,
+	);
+	console.warn(
+		"To enable authenticated tests, set CLERK_TESTING_TOKEN from Clerk Dashboard > Testing.",
+	);
+
 	const context = await browser.newContext();
 	const page = await context.newPage();
 
-	const email = `test-${name}@playwright.com`;
-	const password = generateId();
-
-	await page.goto("http://localhost:3000/register");
-	await page.getByPlaceholder("user@acme.com").click();
-	await page.getByPlaceholder("user@acme.com").fill(email);
-	await page.getByLabel("Password").click();
-	await page.getByLabel("Password").fill(password);
-	await page.getByRole("button", { name: "Sign Up" }).click();
-
-	await expect(page.getByTestId("toast")).toContainText(
-		"Account created successfully!",
-	);
-
-	const chatPage = new ChatPage(page);
-	await chatPage.createNewChat();
-	await chatPage.chooseModelFromSelector("chat-model-reasoning");
-	await expect(chatPage.getSelectedModel()).resolves.toEqual("Reasoning model");
-
-	await page.waitForTimeout(1000);
-	await context.storageState({ path: storageFile });
-	await page.close();
-
-	const newContext = await browser.newContext({ storageState: storageFile });
-	const newPage = await newContext.newPage();
-
 	return {
-		context: newContext,
-		page: newPage,
-		request: newContext.request,
+		context,
+		page,
+		request: context.request,
 	};
 }
 
 export function generateRandomTestUser() {
 	const email = `test-${getUnixTime(new Date())}@playwright.com`;
-	const password = generateId();
+	const password = `Test${getUnixTime(new Date())}!`;
 
 	return {
 		email,

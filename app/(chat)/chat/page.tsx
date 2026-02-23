@@ -6,11 +6,11 @@ import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getAuthUser } from "@/lib/auth";
 import { generateUUID } from "@/lib/utils";
 
-export default async function Page() {
+export default async function ChatPage() {
 	const user = await getAuthUser();
 
 	if (!user) {
-		redirect("/sign-in");
+		redirect("/");
 	}
 
 	const id = generateUUID();

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { PricingCard } from "@/components/pricing-card";
 import { PricingToggle } from "@/components/pricing-toggle";
 import type { Plan } from "@/lib/db/schema";
@@ -9,7 +9,9 @@ import type { Plan } from "@/lib/db/schema";
 export default function PricingPage() {
 	const router = useRouter();
 	const [plans, setPlans] = useState<Plan[]>([]);
-	const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+	const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
+		"monthly",
+	);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
@@ -31,7 +33,10 @@ export default function PricingPage() {
 		fetchPlans();
 	}, []);
 
-	const handleSelectPlan = async (planId: string, cycle: "monthly" | "annual") => {
+	const handleSelectPlan = async (
+		planId: string,
+		cycle: "monthly" | "annual",
+	) => {
 		const plan = plans.find((p) => p.id === planId);
 
 		// If it's the free plan, redirect to sign up
@@ -113,9 +118,7 @@ export default function PricingPage() {
 					</h2>
 					<div className="max-w-2xl mx-auto space-y-6 text-left">
 						<div>
-							<h3 className="font-medium mb-2">
-								Can I change my plan later?
-							</h3>
+							<h3 className="font-medium mb-2">Can I change my plan later?</h3>
 							<p className="text-muted-foreground">
 								Yes, you can upgrade or downgrade your plan at any time. Changes
 								take effect immediately, and we'll prorate any charges.
@@ -132,9 +135,7 @@ export default function PricingPage() {
 							</p>
 						</div>
 						<div>
-							<h3 className="font-medium mb-2">
-								Do you offer refunds?
-							</h3>
+							<h3 className="font-medium mb-2">Do you offer refunds?</h3>
 							<p className="text-muted-foreground">
 								Yes, we offer a 14-day money-back guarantee. If you're not
 								satisfied, contact us for a full refund.

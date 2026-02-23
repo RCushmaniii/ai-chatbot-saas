@@ -1,11 +1,11 @@
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import type Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import postgres from "postgres";
-import { stripe, STRIPE_WEBHOOK_SECRET_SNAPSHOT } from "@/lib/stripe";
-import { subscription, plan } from "@/lib/db/schema";
+import type Stripe from "stripe";
+import { plan, subscription } from "@/lib/db/schema";
+import { STRIPE_WEBHOOK_SECRET_SNAPSHOT, stripe } from "@/lib/stripe";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 		console.error("Missing stripe signature or webhook secret");
 		return NextResponse.json(
 			{ error: "Missing stripe signature or webhook secret" },
-			{ status: 400 }
+			{ status: 400 },
 		);
 	}
 
@@ -29,14 +29,14 @@ export async function POST(request: Request) {
 		event = stripe.webhooks.constructEvent(
 			body,
 			signature,
-			STRIPE_WEBHOOK_SECRET_SNAPSHOT
+			STRIPE_WEBHOOK_SECRET_SNAPSHOT,
 		);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "Unknown error";
 		console.error(`Webhook signature verification failed: ${message}`);
 		return NextResponse.json(
 			{ error: `Webhook Error: ${message}` },
-			{ status: 400 }
+			{ status: 400 },
 		);
 	}
 
@@ -44,20 +44,20 @@ export async function POST(request: Request) {
 		switch (event.type) {
 			case "checkout.session.completed":
 				await handleCheckoutSessionCompleted(
-					event.data.object as Stripe.Checkout.Session
+					event.data.object as Stripe.Checkout.Session,
 				);
 				break;
 
 			case "customer.subscription.created":
 			case "customer.subscription.updated":
 				await handleSubscriptionChange(
-					event.data.object as Stripe.Subscription
+					event.data.object as Stripe.Subscription,
 				);
 				break;
 
 			case "customer.subscription.deleted":
 				await handleSubscriptionDeleted(
-					event.data.object as Stripe.Subscription
+					event.data.object as Stripe.Subscription,
 				);
 				break;
 
@@ -78,13 +78,13 @@ export async function POST(request: Request) {
 		console.error("Error processing webhook:", error);
 		return NextResponse.json(
 			{ error: "Webhook handler failed" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }
 
 async function handleCheckoutSessionCompleted(
-	session: Stripe.Checkout.Session
+	session: Stripe.Checkout.Session,
 ) {
 	const customerId = session.customer as string;
 	const subscriptionId = session.subscription as string;
@@ -109,7 +109,9 @@ async function handleCheckoutSessionCompleted(
 	console.log(`Checkout completed for business ${businessId}`);
 }
 
-async function handleSubscriptionChange(stripeSubscription: Stripe.Subscription) {
+async function handleSubscriptionChange(
+	stripeSubscription: Stripe.Subscription,
+) {
 	const customerId = stripeSubscription.customer as string;
 	const subscriptionItem = stripeSubscription.items.data[0];
 	const priceId = subscriptionItem?.price.id;
@@ -144,7 +146,10 @@ async function handleSubscriptionChange(stripeSubscription: Stripe.Subscription)
 	const finalPlan = matchingPlan || matchingAnnualPlan;
 
 	// Map Stripe status to our status enum
-	const statusMap: Record<string, "trialing" | "active" | "canceled" | "past_due" | "incomplete"> = {
+	const statusMap: Record<
+		string,
+		"trialing" | "active" | "canceled" | "past_due" | "incomplete"
+	> = {
 		trialing: "trialing",
 		active: "active",
 		canceled: "canceled",
@@ -156,7 +161,8 @@ async function handleSubscriptionChange(stripeSubscription: Stripe.Subscription)
 	};
 
 	const status = statusMap[stripeSubscription.status] || "incomplete";
-	const billingCycle = priceId === finalPlan?.stripePriceIdAnnual ? "annual" : "monthly";
+	const billingCycle =
+		priceId === finalPlan?.stripePriceIdAnnual ? "annual" : "monthly";
 
 	// Get period dates from subscription item
 	const periodStart = subscriptionItem?.current_period_start;
@@ -180,7 +186,9 @@ async function handleSubscriptionChange(stripeSubscription: Stripe.Subscription)
 	console.log(`Subscription updated for customer ${customerId}: ${status}`);
 }
 
-async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(
+	stripeSubscription: Stripe.Subscription,
+) {
 	const customerId = stripeSubscription.customer as string;
 
 	await db

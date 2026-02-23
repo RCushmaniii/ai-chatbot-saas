@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { NextResponse } from "next/server";
 import postgres from "postgres";
-import { stripe } from "@/lib/stripe";
-import { plan, subscription, membership } from "@/lib/db/schema";
 import { getAuthUser } from "@/lib/auth";
+import { membership, plan, subscription } from "@/lib/db/schema";
+import { stripe } from "@/lib/stripe";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
@@ -14,10 +14,7 @@ export async function POST(request: Request) {
 		const user = await getAuthUser();
 
 		if (!user) {
-			return NextResponse.json(
-				{ error: "Unauthorized" },
-				{ status: 401 }
-			);
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
 		const body = await request.json();
@@ -26,7 +23,7 @@ export async function POST(request: Request) {
 		if (!planId) {
 			return NextResponse.json(
 				{ error: "Plan ID is required" },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -38,10 +35,7 @@ export async function POST(request: Request) {
 			.limit(1);
 
 		if (!selectedPlan) {
-			return NextResponse.json(
-				{ error: "Plan not found" },
-				{ status: 404 }
-			);
+			return NextResponse.json({ error: "Plan not found" }, { status: 404 });
 		}
 
 		// Get the price ID based on billing cycle
@@ -53,7 +47,7 @@ export async function POST(request: Request) {
 		if (!priceId) {
 			return NextResponse.json(
 				{ error: "Stripe price not configured for this plan" },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -67,7 +61,7 @@ export async function POST(request: Request) {
 		if (!userMembership) {
 			return NextResponse.json(
 				{ error: "No business found for user" },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -78,14 +72,17 @@ export async function POST(request: Request) {
 			.where(eq(subscription.businessId, userMembership.businessId))
 			.limit(1);
 
-		const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://botfoundry.online";
+		const baseUrl =
+			process.env.NEXT_PUBLIC_APP_URL || "https://botfoundry.online";
 
 		// Create Stripe checkout session
 		const checkoutSession = await stripe.checkout.sessions.create({
 			mode: "subscription",
 			payment_method_types: ["card"],
 			customer: existingSubscription?.stripeCustomerId || undefined,
-			customer_email: existingSubscription?.stripeCustomerId ? undefined : user.email,
+			customer_email: existingSubscription?.stripeCustomerId
+				? undefined
+				: user.email,
 			line_items: [
 				{
 					price: priceId,
@@ -112,7 +109,7 @@ export async function POST(request: Request) {
 		console.error("Error creating checkout session:", error);
 		return NextResponse.json(
 			{ error: "Failed to create checkout session" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }

@@ -1,7 +1,8 @@
-import { esES } from "@clerk/localizations";
+import { enUS, esES } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -92,20 +93,26 @@ const THEME_COLOR_SCRIPT = `\
   updateThemeColor();
 })();`;
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	// Read language preference from cookie for Clerk localization
+	const cookieStore = await cookies();
+	const langCookie = cookieStore.get("converso-lang");
+	const lang = langCookie?.value === "en" ? "en" : "es";
+	const clerkLocalization = lang === "en" ? enUS : esES;
+
 	return (
-		<ClerkProvider localization={esES}>
+		<ClerkProvider localization={clerkLocalization}>
 			<html
 				className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
 				// `next-themes` injects an extra classname to the body element to avoid
 				// visual flicker before hydration. Hence the `suppressHydrationWarning`
 				// prop is necessary to avoid the React hydration mismatch warning.
 				// https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
-				lang="es"
+				lang={lang}
 				suppressHydrationWarning
 			>
 				<head>

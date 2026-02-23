@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { plan } from "@/lib/db/schema";
 
@@ -20,7 +20,7 @@ export async function GET() {
 		console.error("Error fetching plans:", error);
 		return NextResponse.json(
 			{ error: "Failed to fetch plans" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }

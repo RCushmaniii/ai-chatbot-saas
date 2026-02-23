@@ -62,9 +62,7 @@ export async function POST(request: Request) {
 		const chunksMatch = stdout.match(/Total chunks: (\d+)/);
 
 		const pagesProcessed = pagesMatch ? pagesMatch.length : 0;
-		const chunksCreated = chunksMatch
-			? Number.parseInt(chunksMatch[1], 10)
-			: 0;
+		const chunksCreated = chunksMatch ? Number.parseInt(chunksMatch[1], 10) : 0;
 
 		return Response.json({
 			success: true,
@@ -83,9 +81,6 @@ export async function POST(request: Request) {
 			);
 		}
 
-		return Response.json(
-			{ error: "Failed to run ingestion" },
-			{ status: 500 },
-		);
+		return Response.json({ error: "Failed to run ingestion" }, { status: 500 });
 	}
 }

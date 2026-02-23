@@ -141,10 +141,7 @@ export async function requireAuth(): Promise<AuthUser> {
  */
 export async function requirePermission(
 	permission: Permission,
-): Promise<
-	| { user: AuthUser; error: null }
-	| { user: null; error: Response }
-> {
+): Promise<{ user: AuthUser; error: null } | { user: null; error: Response }> {
 	const user = await getAuthUser();
 
 	if (!user) {

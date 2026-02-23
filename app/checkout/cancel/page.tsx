@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -36,10 +36,7 @@ export default function CheckoutCancelPage() {
 				</CardContent>
 
 				<CardFooter className="flex flex-col gap-3">
-					<Button
-						className="w-full"
-						onClick={() => router.push("/pricing")}
-					>
+					<Button className="w-full" onClick={() => router.push("/pricing")}>
 						View Plans
 					</Button>
 					<Button

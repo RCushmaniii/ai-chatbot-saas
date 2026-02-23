@@ -1,6 +1,6 @@
 import { expect, test } from "../fixtures";
 
-test.describe("Authentication", () => {
+test.describe("Authentication - Unauthenticated Users", () => {
 	test("Redirect unauthenticated users to /sign-in", async ({ page }) => {
 		const response = await page.goto("/");
 
@@ -29,7 +29,18 @@ test.describe("Authentication", () => {
 	});
 });
 
-test.describe("Authenticated User Session", () => {
+test.describe("Authentication - Authenticated Users", () => {
+	// These tests require CLERK_TESTING_TOKEN to be set
+	// Skip if not available
+	test.beforeEach(async () => {
+		if (!process.env.CLERK_TESTING_TOKEN) {
+			test.skip(
+				true,
+				"CLERK_TESTING_TOKEN not set - skipping authenticated tests",
+			);
+		}
+	});
+
 	test("Authenticated user can access chat", async ({ adaContext }) => {
 		const response = await adaContext.page.goto("/");
 

@@ -17,7 +17,7 @@ export function PricingToggle({ billingCycle, onChange }: PricingToggleProps) {
 					"px-4 py-2 text-sm font-medium rounded-lg transition-colors",
 					billingCycle === "monthly"
 						? "bg-primary text-primary-foreground"
-						: "bg-muted text-muted-foreground hover:bg-muted/80"
+						: "bg-muted text-muted-foreground hover:bg-muted/80",
 				)}
 			>
 				Monthly
@@ -29,7 +29,7 @@ export function PricingToggle({ billingCycle, onChange }: PricingToggleProps) {
 					"px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
 					billingCycle === "annual"
 						? "bg-primary text-primary-foreground"
-						: "bg-muted text-muted-foreground hover:bg-muted/80"
+						: "bg-muted text-muted-foreground hover:bg-muted/80",
 				)}
 			>
 				Annual

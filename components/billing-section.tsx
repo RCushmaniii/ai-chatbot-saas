@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { CreditCard, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,7 +12,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 interface BillingInfo {
@@ -122,7 +122,9 @@ export function BillingSection() {
 						</CardDescription>
 					</div>
 					{subscription?.status && subscription.status !== "trialing" && (
-						<Badge className={statusColors[subscription.status] || "bg-gray-500"}>
+						<Badge
+							className={statusColors[subscription.status] || "bg-gray-500"}
+						>
 							{subscription.status}
 						</Badge>
 					)}
@@ -133,14 +135,10 @@ export function BillingSection() {
 				<div className="flex items-center justify-between">
 					<div>
 						<p className="text-sm text-muted-foreground">Current Plan</p>
-						<p className="text-2xl font-bold">
-							{plan?.displayName || "Free"}
-						</p>
+						<p className="text-2xl font-bold">{plan?.displayName || "Free"}</p>
 						{subscription?.currentPeriodEnd && (
 							<p className="text-sm text-muted-foreground">
-								{subscription.status === "canceled"
-									? "Access until"
-									: "Renews"}{" "}
+								{subscription.status === "canceled" ? "Access until" : "Renews"}{" "}
 								{new Date(subscription.currentPeriodEnd).toLocaleDateString()}
 							</p>
 						)}

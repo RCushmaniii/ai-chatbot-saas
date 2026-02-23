@@ -1,7 +1,7 @@
 "use client";
 
-import { UserButton, useUser } from "@clerk/nextjs";
-import { ChevronUp } from "lucide-react";
+import { SignOutButton, UserButton, useUser } from "@clerk/nextjs";
+import { ChevronUp, LogOut } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import {
@@ -88,6 +88,16 @@ export function SidebarUserNav({ user }: { user: AuthUser }) {
 								showName
 							/>
 						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<SignOutButton redirectUrl="/">
+							<DropdownMenuItem
+								className="cursor-pointer text-red-600"
+								data-testid="user-nav-sign-out"
+							>
+								<LogOut className="mr-2 size-4" />
+								Sign out
+							</DropdownMenuItem>
+						</SignOutButton>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</SidebarMenuItem>

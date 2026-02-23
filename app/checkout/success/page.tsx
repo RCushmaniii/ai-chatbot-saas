@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -58,16 +58,13 @@ function CheckoutSuccessContent() {
 
 			<CardContent className="space-y-4">
 				<p className="text-sm text-muted-foreground">
-					You now have access to all the features included in your plan.
-					A confirmation email has been sent to your inbox.
+					You now have access to all the features included in your plan. A
+					confirmation email has been sent to your inbox.
 				</p>
 			</CardContent>
 
 			<CardFooter className="flex flex-col gap-3">
-				<Button
-					className="w-full"
-					onClick={() => router.push("/admin")}
-				>
+				<Button className="w-full" onClick={() => router.push("/admin")}>
 					Go to Dashboard
 				</Button>
 				<Button

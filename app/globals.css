@@ -28,6 +28,7 @@ html {
 	--brand-cielito: #6cb4ee;
 	--brand-jade: #20b2aa;
 	--brand-jade-dark: #16807a;
+	--brand-terracotta: #FF6A3D; /* CushLabs Orange */
 
 	/* Surface Colors (Warm Sand palette) */
 	--surface-sand: #f9f7f2;
@@ -141,6 +142,7 @@ html {
 	--color-brand-cielito: var(--brand-cielito);
 	--color-brand-jade: var(--brand-jade);
 	--color-brand-jade-dark: var(--brand-jade-dark);
+	--color-brand-terracotta: var(--brand-terracotta);
 
 	/* Converso Surface Colors */
 	--color-surface-sand: var(--surface-sand);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Check } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,9 +12,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { Plan } from "@/lib/db/schema";
+import { cn } from "@/lib/utils";
 
 interface PricingCardProps {
 	plan: Plan;
@@ -42,7 +42,7 @@ export function PricingCard({
 		<Card
 			className={cn(
 				"relative flex flex-col",
-				isPopular && "border-primary shadow-lg scale-105"
+				isPopular && "border-primary shadow-lg scale-105",
 			)}
 		>
 			{isPopular && (
@@ -90,9 +90,7 @@ export function PricingCard({
 						<li className="flex items-center gap-2 text-sm">
 							<Check className="h-4 w-4 text-green-500 shrink-0" />
 							<span>
-								{plan.chatbotsLimit === -1
-									? "Unlimited"
-									: plan.chatbotsLimit}{" "}
+								{plan.chatbotsLimit === -1 ? "Unlimited" : plan.chatbotsLimit}{" "}
 								chatbot{plan.chatbotsLimit !== 1 ? "s" : ""}
 							</span>
 						</li>
