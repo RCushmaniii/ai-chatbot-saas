@@ -14,7 +14,8 @@ export const test = baseTest.extend<
 	Omit<Fixtures, "requiresAuth">
 >({
 	requiresAuth: [
-		async (_deps, use, testInfo) => {
+		// biome-ignore lint/correctness/noEmptyPattern: Playwright requires object destructuring for fixture deps
+		async ({}, use, testInfo) => {
 			if (!process.env.CLERK_TESTING_TOKEN) {
 				testInfo.skip(
 					true,
