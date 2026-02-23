@@ -4,7 +4,7 @@ import { ChatPage } from "../pages/chat";
 test.describe("Chat activity", () => {
 	let chatPage: ChatPage;
 
-	test.beforeEach(async ({ page }) => {
+	test.beforeEach(async ({ page, requiresAuth }) => {
 		chatPage = new ChatPage(page);
 		await chatPage.createNewChat();
 	});

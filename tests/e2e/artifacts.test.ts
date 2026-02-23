@@ -6,7 +6,7 @@ test.describe("Artifacts activity", () => {
 	let chatPage: ChatPage;
 	let artifactPage: ArtifactPage;
 
-	test.beforeEach(async ({ page }) => {
+	test.beforeEach(async ({ page, requiresAuth }) => {
 		chatPage = new ChatPage(page);
 		artifactPage = new ArtifactPage(page);
 

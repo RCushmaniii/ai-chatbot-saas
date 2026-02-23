@@ -6,9 +6,25 @@ type Fixtures = {
 	adaContext: UserContext;
 	babbageContext: UserContext;
 	curieContext: UserContext;
+	requiresAuth: void;
 };
 
-export const test = baseTest.extend<object, Fixtures>({
+export const test = baseTest.extend<
+	{ requiresAuth: void },
+	Omit<Fixtures, "requiresAuth">
+>({
+	requiresAuth: [
+		async (_deps, use, testInfo) => {
+			if (!process.env.CLERK_TESTING_TOKEN) {
+				testInfo.skip(
+					true,
+					"CLERK_TESTING_TOKEN not set — skipping authenticated test",
+				);
+			}
+			await use();
+		},
+		{ auto: false },
+	],
 	adaContext: [
 		async ({ browser }, use, workerInfo) => {
 			const ada = await createAuthenticatedContext({
