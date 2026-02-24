@@ -16,10 +16,10 @@ export const test = baseTest.extend<
 	requiresAuth: [
 		// biome-ignore lint/correctness/noEmptyPattern: Playwright requires object destructuring for fixture deps
 		async ({}, use, testInfo) => {
-			if (!process.env.CLERK_SECRET_KEY) {
+			if (!process.env.E2E_CLERK_USER_USERNAME) {
 				testInfo.skip(
 					true,
-					"CLERK_SECRET_KEY not set — skipping authenticated test",
+					"E2E_CLERK_USER_USERNAME not set — skipping authenticated test",
 				);
 			}
 			await use();
