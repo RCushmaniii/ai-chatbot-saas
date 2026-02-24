@@ -66,18 +66,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Get Clerk testing token
-        run: |
-          TOKEN=$(curl -s -X POST https://api.clerk.com/v1/testing_tokens \
-            -H "Authorization: Bearer $CLERK_SECRET_KEY" \
-            -H "Content-Type: application/json" | node -e "
-              let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-                const r=JSON.parse(d);
-                if(r.token) console.log(r.token);
-                else { console.error('Failed to get token:',d); process.exit(1); }
-              })")
-          echo "CLERK_TESTING_TOKEN=$TOKEN" >> $GITHUB_ENV
-
       - name: Run Playwright tests
         run: pnpm test
 

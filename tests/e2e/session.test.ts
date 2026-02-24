@@ -39,15 +39,8 @@ test.describe("Authentication - Unauthenticated Users", () => {
 });
 
 test.describe("Authentication - Authenticated Users", () => {
-	// These tests require CLERK_TESTING_TOKEN to be set
-	// Skip if not available
-	test.beforeEach(async () => {
-		if (!process.env.CLERK_TESTING_TOKEN) {
-			test.skip(
-				true,
-				"CLERK_TESTING_TOKEN not set - skipping authenticated tests",
-			);
-		}
+	test.beforeEach(async ({ requiresAuth }) => {
+		// requiresAuth fixture skips tests if CLERK_SECRET_KEY is not set
 	});
 
 	test("Authenticated user can access chat", async ({ adaContext }) => {
@@ -57,8 +50,8 @@ test.describe("Authentication - Authenticated Users", () => {
 			throw new Error("Failed to load page");
 		}
 
-		// Should stay on main page (not redirected to sign-in)
-		await expect(adaContext.page).toHaveURL("/");
+		// Authenticated users are redirected from / to /chat
+		await expect(adaContext.page).toHaveURL(/\/chat/);
 
 		// Should see chat input
 		await expect(
@@ -68,14 +61,14 @@ test.describe("Authentication - Authenticated Users", () => {
 
 	test("Authenticated user cannot access /login", async ({ adaContext }) => {
 		await adaContext.page.goto("/login");
-		// Authenticated users should be redirected away from login
-		await expect(adaContext.page).toHaveURL("/");
+		// Authenticated users should be redirected away from login to /chat
+		await expect(adaContext.page).toHaveURL(/\/chat/);
 	});
 
 	test("Authenticated user cannot access /register", async ({ adaContext }) => {
 		await adaContext.page.goto("/register");
-		// Authenticated users should be redirected away from register
-		await expect(adaContext.page).toHaveURL("/");
+		// Authenticated users should be redirected away from register to /chat
+		await expect(adaContext.page).toHaveURL(/\/chat/);
 	});
 
 	test("Display user email in user menu", async ({ adaContext }) => {

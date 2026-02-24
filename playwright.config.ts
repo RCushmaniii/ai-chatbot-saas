@@ -52,8 +52,13 @@ export default defineConfig({
 	/* Configure projects */
 	projects: [
 		{
+			name: "setup",
+			testMatch: /global\.setup\.ts/,
+		},
+		{
 			name: "e2e",
 			testMatch: /e2e\/.*.test.ts/,
+			dependencies: ["setup"],
 			use: {
 				...devices["Desktop Chrome"],
 			},
@@ -61,6 +66,7 @@ export default defineConfig({
 		{
 			name: "routes",
 			testMatch: /routes\/.*.test.ts/,
+			dependencies: ["setup"],
 			use: {
 				...devices["Desktop Chrome"],
 			},
