@@ -69,24 +69,33 @@ export async function createAuthenticatedContext({
 		return { context, page, request: context.request };
 	}
 
-	// Inject the Clerk testing token to bypass bot detection
-	await setupClerkTestingToken({ page });
+	try {
+		// Inject the Clerk testing token to bypass bot detection
+		await setupClerkTestingToken({ page });
 
-	// Navigate to a page that loads Clerk before signing in
-	await page.goto("/");
+		// Navigate to a page that loads Clerk before signing in
+		await page.goto("/");
 
-	// Sign in using Clerk's testing helpers (calls Clerk API directly, no UI interaction)
-	await clerk.signIn({
-		page,
-		signInParams: {
-			strategy: "password",
-			identifier: user.email,
-			password: user.password,
-		},
-	});
+		// Sign in using Clerk's testing helpers (calls Clerk API directly, no UI interaction)
+		await clerk.signIn({
+			page,
+			signInParams: {
+				strategy: "password",
+				identifier: user.email,
+				password: user.password,
+			},
+		});
 
-	// Save session state for potential reuse
-	await context.storageState({ path: storageFile });
+		// Save session state for potential reuse
+		await context.storageState({ path: storageFile });
+	} catch (error) {
+		console.error(
+			`Failed to authenticate "${baseName}" (${user.email}). ` +
+				"Ensure test users exist in Clerk — run: pnpm test:setup\n",
+			error,
+		);
+		throw error;
+	}
 
 	return { context, page, request: context.request };
 }

@@ -6,9 +6,9 @@ test.describe("Artifacts activity", () => {
 	let chatPage: ChatPage;
 	let artifactPage: ArtifactPage;
 
-	test.beforeEach(async ({ page, requiresAuth }) => {
-		chatPage = new ChatPage(page);
-		artifactPage = new ArtifactPage(page);
+	test.beforeEach(async ({ adaContext, requiresAuth }) => {
+		chatPage = new ChatPage(adaContext.page);
+		artifactPage = new ArtifactPage(adaContext.page);
 
 		await chatPage.createNewChat();
 	});

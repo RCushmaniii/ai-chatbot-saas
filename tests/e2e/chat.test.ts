@@ -4,8 +4,8 @@ import { ChatPage } from "../pages/chat";
 test.describe("Chat activity", () => {
 	let chatPage: ChatPage;
 
-	test.beforeEach(async ({ page, requiresAuth }) => {
-		chatPage = new ChatPage(page);
+	test.beforeEach(async ({ adaContext, requiresAuth }) => {
+		chatPage = new ChatPage(adaContext.page);
 		await chatPage.createNewChat();
 	});
 
@@ -139,8 +139,8 @@ test.describe("Chat activity", () => {
 		await chatPage.isVoteComplete();
 	});
 
-	test("Create message from url query", async ({ page }) => {
-		await page.goto("/?query=Why is the sky blue?");
+	test("Create message from url query", async ({ adaContext }) => {
+		await adaContext.page.goto("/?query=Why is the sky blue?");
 
 		await chatPage.isGenerationComplete();
 
