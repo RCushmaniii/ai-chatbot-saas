@@ -90,8 +90,14 @@ export async function createAuthenticatedContext({
 
 		console.log(`[auth] clerk.signIn() completed for "${baseName}"`);
 
-		// Verify authentication by navigating to a protected route
-		await page.goto("/chat", { waitUntil: "networkidle", timeout: 30000 });
+		// Verify authentication by navigating to a protected route.
+		// Use "domcontentloaded" instead of "networkidle" — the first /chat
+		// load on CI can take 30s+ due to Turbopack compilation and Clerk
+		// token refresh requests that keep the network busy.
+		await page.goto("/chat", {
+			waitUntil: "domcontentloaded",
+			timeout: 60000,
+		});
 		const finalUrl = page.url();
 
 		if (finalUrl.includes("/sign-in") || finalUrl.includes("/sign-up")) {
