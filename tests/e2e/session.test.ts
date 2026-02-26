@@ -72,8 +72,8 @@ test.describe("Authentication - Authenticated Users", () => {
 	});
 
 	test("Display user email in user menu", async ({ adaContext }) => {
-		await adaContext.page.goto("/");
-		await expect(adaContext.page).toHaveURL("/");
+		await adaContext.page.goto("/chat");
+		await expect(adaContext.page).toHaveURL(/\/chat/);
 
 		const sidebarToggleButton = adaContext.page.getByTestId(
 			"sidebar-toggle-button",
