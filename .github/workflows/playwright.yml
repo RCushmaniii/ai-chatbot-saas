@@ -59,6 +59,14 @@ jobs:
       - name: Set up Clerk test users
         run: pnpm test:setup
 
+      - name: Generate Clerk testing token
+        id: clerk-token
+        run: |
+          TOKEN=$(curl -s -X POST https://api.clerk.com/v1/testing_tokens \
+            -H "Authorization: Bearer $CLERK_SECRET_KEY" | jq -r '.token')
+          echo "CLERK_TESTING_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "Generated Clerk testing token"
+
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         id: playwright-cache
