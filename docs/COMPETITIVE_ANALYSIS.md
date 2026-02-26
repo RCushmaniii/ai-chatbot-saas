@@ -229,6 +229,148 @@ Horizontal ←————————————————————→ Ve
 
 ---
 
+## Phase 1 Launch Gap Analysis
+
+Cross-referencing competitor table stakes against what Converso has built today. Grouped by launch priority.
+
+### What's DONE and Competitive (ship as-is)
+
+| Feature | Status | Competitive Position |
+|---------|--------|---------------------|
+| Auth + multi-tenancy + RBAC | Done | On par with all competitors |
+| Chat UI with streaming | Done | On par (streaming is table stakes) |
+| Knowledge base / RAG (website, PDF, text, URL) | Done | On par with Chatbase, Tidio, ChatBot |
+| Lead capture + scoring + activity logging | Done | Stronger than Denser, BigSur; on par with Chatbase |
+| Visual playbook builder (7 step types) | Done | **Advantage** — Chatbase and Denser don't have this |
+| Stripe billing (plans, subscriptions, portal) | Done | On par |
+| Admin dashboard (10 tabs) | Done | On par with Tidio; more comprehensive than Chatbase |
+| Embeddable widget with conversation tracking | Done | On par |
+| Bilingual EN/ES (detection + translations + UI) | Done | **Advantage** — no competitor specializes in EN/ES |
+| Human handoff (queue, agent assignment, AI summary) | Done | On par with Tidio, Chatbase |
+| Brand voice (custom system instructions) | Done | On par |
+
+### CRITICAL Gaps — Must fix before launch
+
+These are things every competitor ships and customers will expect on day one.
+
+#### 1. Onboarding Wizard
+- **Gap:** Converso auto-provisions (user → business → bot → subscription) but drops users at the dashboard with no guidance.
+- **Competitors:** Chatbase has "paste your URL → chatbot in 2 minutes." Tidio has a guided setup flow. ChatBot has same-day setup promise.
+- **Why critical:** Activation is everything for self-serve SaaS. If users don't ingest knowledge + install the widget in their first session, they churn.
+- **Recommendation:** Build a 4-step onboarding checklist that persists until complete:
+  1. Name your business + bot
+  2. Add knowledge (paste URL or upload PDF)
+  3. Test your chatbot
+  4. Copy embed code to your website
+- **Effort:** Medium (UI + state tracking, no new backend)
+
+#### 2. Plan Limit Enforcement
+- **Gap:** Code has `TODO` comments — three endpoints default to `entitlementsByPlan.free` without enforcing actual plan limits. Playbooks, retraining, and other features don't gate on plan.
+- **Competitors:** Every paid competitor enforces limits. Chatbase limits credits. Tidio limits conversations.
+- **Why critical:** Without enforcement, free users have no reason to upgrade. Billing is theater.
+- **Recommendation:** Wire up plan limit checks across all gated endpoints. Show usage vs limit in admin.
+- **Effort:** Medium (logic exists in schema, needs enforcement layer)
+
+#### 3. Hot Lead / Handoff Notifications
+- **Gap:** When a lead is qualified as "hot" or requests human handoff, nothing notifies staff. They'd have to be staring at the admin panel.
+- **Competitors:** Tidio sends real-time notifications. Chatbase has smart escalation. ChatBot has seamless agent alerts.
+- **Why critical:** The entire value proposition is "capture leads 24/7." If no one sees the lead for hours, the value is gone.
+- **Recommendation:** Email notification when: (a) hot lead captured, (b) handoff requested, (c) new contact with phone/email. Phase 2 can add SMS/push.
+- **Effort:** Low-Medium (email via Resend or similar, triggered from existing handoff/lead events)
+
+### HIGH Priority Gaps — Expected within first 30 days of launch
+
+#### 4. Basic Analytics Dashboard
+- **Gap:** Data is being collected (UsageRecord, ContactActivity, conversations) but there's no visualization. No conversion funnel, no top questions, no volume trends.
+- **Competitors:** Tidio has advanced analytics. Chatbase shows resolution metrics. ChatBot tracks visitor trends.
+- **Why it matters:** Customers need to see ROI to justify the subscription. "Your chatbot handled 847 conversations and captured 23 leads this month" is the retention hook.
+- **Recommendation:** Single analytics tab showing:
+  - Conversation volume (daily/weekly/monthly chart)
+  - Lead funnel (new → engaged → qualified → converted)
+  - Top 10 questions asked
+  - Resolution rate (AI-handled vs handoff)
+- **Effort:** Medium (data exists, needs aggregation queries + chart components)
+
+#### 5. Rate Limiting at Scale
+- **Gap:** In-memory rate limiter in `lib/rate-limit.ts` doesn't work across Vercel serverless instances. A single abusive user could hit different instances and bypass limits.
+- **Competitors:** Not user-facing, but production-critical. Chatbase is SOC 2 certified. Tidio handles 300K+ businesses.
+- **Why it matters:** Without this, one bad actor could run up your OpenAI bill. Launch blocker for production.
+- **Recommendation:** Migrate to Upstash Redis. Their `@upstash/ratelimit` package is purpose-built for Vercel serverless.
+- **Effort:** Low (drop-in replacement, Upstash has a free tier)
+
+#### 6. Playbook Templates (3-5 industry starters)
+- **Gap:** Playbook builder is powerful but empty. New users face a blank canvas.
+- **Competitors:** Tidio ships 35+ pre-built Flows templates. ChatBot has industry templates.
+- **Why it matters:** Service business owners aren't going to design conversation flows from scratch. Templates = instant value.
+- **Recommendation:** Ship 3-5 templates:
+  - General service inquiry (captures name, phone, service needed)
+  - Appointment request (captures preferred time, service, contact)
+  - Emergency/urgent service (fast-tracks to handoff)
+  - Pricing inquiry (collects scope, provides range or escalates)
+  - New customer welcome (introduces business, captures needs)
+- **Effort:** Low (JSON playbook definitions, seed script)
+
+### MEDIUM Priority Gaps — Nice for launch, fine for fast-follow
+
+#### 7. Source Citations in Widget Responses
+- **Gap:** RAG returns source URLs but unclear if they display to end users in the widget chat.
+- **Competitors:** Denser AI's entire brand is built on source citations. Chatbase shows sources.
+- **Why it matters:** Citations build trust. When the AI says "Based on your FAQ page..." it feels authoritative, not hallucinated.
+- **Recommendation:** Show collapsible source links below AI responses in the widget.
+- **Effort:** Low (data exists from RAG, needs UI treatment)
+
+#### 8. Appointment Scheduling MVP
+- **Gap:** Not started. PRD says v1 "must support" scheduling or booking intent capture.
+- **Competitors:** Tidio, Chatbase (Calendly integration), ChatBot all support some form of booking.
+- **Why it matters:** "Book an appointment" is one of the top 3 actions service business visitors want to take.
+- **Recommendation:** Don't build a calendar. Instead:
+  - Add a playbook "booking intent" action that captures: service, preferred date/time, contact info
+  - Store as a booking request in the leads pipeline
+  - Notify staff via email (see gap #3)
+  - Phase 2: integrate Calendly/Cal.com for real-time booking
+- **Effort:** Low (leverages existing playbook engine + lead capture)
+
+#### 9. Knowledge Retraining Pipeline
+- **Gap:** Cron job is wired (`api/cron/`) but marked TODO. Doesn't actually re-ingest or update embeddings.
+- **Competitors:** Chatbase auto-retrains on Standard+ plans. Denser supports continuous training.
+- **Why it matters:** Businesses update their websites. Stale knowledge = wrong answers = lost trust.
+- **Recommendation:** Complete the retraining cron to re-scrape websites on a configurable schedule and update embeddings.
+- **Effort:** Medium (pipeline exists, needs the actual re-ingestion logic)
+
+### NOT Needed for Phase 1 (defer)
+
+| Feature | Why defer |
+|---------|-----------|
+| SOC 2 / ISO compliance | Enterprise feature, Phase 6. No SMB buyer asks for this. |
+| Multi-LLM model selection | Over-engineering. GPT-4o is fine for launch. |
+| Omnichannel (SMS, WhatsApp, Messenger) | Explicitly deferred in PRD. Web widget is enough for v1. |
+| Commission-based pricing | Complex billing model. Start with flat subscription. |
+| AI-generated landing pages | Cool idea from BigSur, but not core to service businesses. |
+| Resolution rate guarantee | Needs months of data before you can make this promise. |
+| White-label / remove branding | Phase 2-3 feature for agency channel. |
+| Multi-LLM comparison/testing | Enterprise feature. Not needed for SMB launch. |
+
+### Phase 1 Launch Readiness Scorecard
+
+| Requirement | Status | Blocker? |
+|-------------|--------|----------|
+| Tenant can sign up and create a bot | DONE | No |
+| Knowledge ingestion (website + PDF + text) | DONE | No |
+| AI answers grounded with citations | PARTIAL (citations may not show in widget) | Minor |
+| Lead qualification (cold/warm/hot) | DONE | No |
+| Handoff packet generated | DONE | No |
+| Bilingual EN/ES end-to-end | DONE | No |
+| Tenant isolation tested | DONE | No |
+| Onboarding guides user through setup | **NOT DONE** | **Yes — activation risk** |
+| Plan limits enforced | **NOT DONE** | **Yes — monetization risk** |
+| Staff notified on hot leads | **NOT DONE** | **Yes — value delivery risk** |
+| Rate limiting works at scale | **NOT DONE** | **Yes — production risk** |
+| Basic analytics visible | **NOT DONE** | **No — but retention risk** |
+
+**Bottom line:** Converso has ~80% of what it needs to launch. The 4 blockers above are the difference between "demo-ready" and "revenue-ready."
+
+---
+
 ## Feature Ideas Inspired by Competitors
 
 | Idea | Source | Priority | Rationale |
