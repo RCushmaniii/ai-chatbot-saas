@@ -140,9 +140,16 @@ test.describe("Chat activity", () => {
 	});
 
 	test("Create message from url query", async ({ adaContext }) => {
+		// Set up response listener BEFORE navigating — the React app
+		// auto-submits the query on mount, which can finish before
+		// isGenerationComplete() starts listening.
+		const responsePromise = adaContext.page.waitForResponse((r) =>
+			r.url().includes("/api/chat"),
+		);
 		await adaContext.page.goto("/?query=Why is the sky blue?");
 
-		await chatPage.isGenerationComplete();
+		const response = await responsePromise;
+		await response.finished();
 
 		const userMessage = await chatPage.getRecentUserMessage();
 		expect(userMessage.content).toBe("Why is the sky blue?");

@@ -134,7 +134,9 @@ test.describe
 			const response = await adaContext.request.get(
 				`/api/chat/${generateUUID()}/stream`,
 			);
-			expect(response.status()).toBe(404);
+			// 404 when resumable streams are enabled (REDIS_URL set),
+			// 204 when feature is disabled (no REDIS_URL)
+			expect([204, 404]).toContain(response.status());
 		});
 
 		test("Ada can resume chat generation", async ({ adaContext }) => {

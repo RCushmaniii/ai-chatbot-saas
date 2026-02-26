@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { Response } from "@playwright/test";
 import { expect, type Page } from "@playwright/test";
 import { chatModels } from "@/lib/ai/models";
 
@@ -8,6 +9,7 @@ const CHAT_ID_REGEX =
 
 export class ChatPage {
 	private readonly page: Page;
+	private pendingChatResponse: Promise<Response> | null = null;
 
 	constructor(page: Page) {
 		this.page = page;
@@ -42,16 +44,22 @@ export class ChatPage {
 	}
 
 	async sendUserMessage(message: string) {
+		// Start listening for the /api/chat response BEFORE clicking send.
+		// The mock model streams fast enough that the response can finish
+		// before a separate waitForResponse call starts listening.
+		this.pendingChatResponse = this.page.waitForResponse((r) =>
+			r.url().includes("/api/chat"),
+		);
 		await this.multimodalInput.click();
 		await this.multimodalInput.fill(message);
 		await this.sendButton.click();
 	}
 
 	async isGenerationComplete() {
-		const response = await this.page.waitForResponse((currentResponse) =>
-			currentResponse.url().includes("/api/chat"),
-		);
-
+		const response = this.pendingChatResponse
+			? await this.pendingChatResponse
+			: await this.page.waitForResponse((r) => r.url().includes("/api/chat"));
+		this.pendingChatResponse = null;
 		await response.finished();
 	}
 
@@ -68,6 +76,9 @@ export class ChatPage {
 	}
 
 	async sendUserMessageFromSuggestion() {
+		this.pendingChatResponse = this.page.waitForResponse((r) =>
+			r.url().includes("/api/chat"),
+		);
 		await this.page
 			.getByRole("button", { name: "What are the advantages of" })
 			.click();

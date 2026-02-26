@@ -52,6 +52,27 @@ const MOCK_USAGE = {
 	totalTokens: 30,
 };
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Emit stream chunks with small delays between them.
+ * This prevents a race condition where the entire response completes
+ * before Playwright's waitForResponse starts listening.
+ */
+function createDelayedStream(
+	chunks: Array<Record<string, unknown>>,
+): ReadableStream {
+	return new ReadableStream({
+		async start(controller) {
+			for (const chunk of chunks) {
+				controller.enqueue(chunk);
+				await delay(5);
+			}
+			controller.close();
+		},
+	});
+}
+
 /**
  * Creates a mock language model implementing LanguageModelV2 stream format.
  *
@@ -59,6 +80,9 @@ const MOCK_USAGE = {
  * - stream-start (with warnings)
  * - text-start / text-delta / text-end (with id)
  * - finish (with usage including totalTokens)
+ *
+ * Chunks are emitted with small delays to simulate realistic streaming
+ * behavior — required for Playwright E2E tests to reliably capture responses.
  */
 const createMockModel = (): LanguageModel => {
 	return {
@@ -88,26 +112,20 @@ const createMockModel = (): LanguageModel => {
 			// Step 2: after tool result, model responds with text
 			if (lower.includes("weather") && !hasToolResult(options.prompt)) {
 				return {
-					stream: new ReadableStream({
-						start(controller) {
-							controller.enqueue({
-								type: "stream-start",
-								warnings: [],
-							});
-							controller.enqueue({
-								type: "tool-call",
-								toolCallId: "mock-weather-call",
-								toolName: "getWeather",
-								input: JSON.stringify({ city: "San Francisco" }),
-							});
-							controller.enqueue({
-								type: "finish",
-								finishReason: "tool-calls",
-								usage: MOCK_USAGE,
-							});
-							controller.close();
+					stream: createDelayedStream([
+						{ type: "stream-start", warnings: [] },
+						{
+							type: "tool-call",
+							toolCallId: "mock-weather-call",
+							toolName: "getWeather",
+							input: JSON.stringify({ city: "San Francisco" }),
 						},
-					}),
+						{
+							type: "finish",
+							finishReason: "tool-calls",
+							usage: MOCK_USAGE,
+						},
+					]),
 				};
 			}
 
@@ -117,33 +135,17 @@ const createMockModel = (): LanguageModel => {
 				: getResponseText(userText);
 
 			return {
-				stream: new ReadableStream({
-					start(controller) {
-						controller.enqueue({
-							type: "stream-start",
-							warnings: [],
-						});
-						controller.enqueue({
-							type: "text-start",
-							id: "text-1",
-						});
-						controller.enqueue({
-							type: "text-delta",
-							id: "text-1",
-							delta: responseText,
-						});
-						controller.enqueue({
-							type: "text-end",
-							id: "text-1",
-						});
-						controller.enqueue({
-							type: "finish",
-							finishReason: "stop",
-							usage: MOCK_USAGE,
-						});
-						controller.close();
+				stream: createDelayedStream([
+					{ type: "stream-start", warnings: [] },
+					{ type: "text-start", id: "text-1" },
+					{ type: "text-delta", id: "text-1", delta: responseText },
+					{ type: "text-end", id: "text-1" },
+					{
+						type: "finish",
+						finishReason: "stop",
+						usage: MOCK_USAGE,
 					},
-				}),
+				]),
 			};
 		},
 	} as unknown as LanguageModel;
@@ -163,33 +165,21 @@ const createMockReasoningModel = (): LanguageModel => {
 			const responseText = getResponseText(userText);
 
 			return {
-				stream: new ReadableStream({
-					start(controller) {
-						controller.enqueue({
-							type: "stream-start",
-							warnings: [],
-						});
-						controller.enqueue({
-							type: "text-start",
-							id: "text-1",
-						});
-						controller.enqueue({
-							type: "text-delta",
-							id: "text-1",
-							delta: `<think>Thinking about: ${userText}</think>${responseText}`,
-						});
-						controller.enqueue({
-							type: "text-end",
-							id: "text-1",
-						});
-						controller.enqueue({
-							type: "finish",
-							finishReason: "stop",
-							usage: MOCK_USAGE,
-						});
-						controller.close();
+				stream: createDelayedStream([
+					{ type: "stream-start", warnings: [] },
+					{ type: "text-start", id: "text-1" },
+					{
+						type: "text-delta",
+						id: "text-1",
+						delta: `<think>Thinking about: ${userText}</think>${responseText}`,
 					},
-				}),
+					{ type: "text-end", id: "text-1" },
+					{
+						type: "finish",
+						finishReason: "stop",
+						usage: MOCK_USAGE,
+					},
+				]),
 			};
 		},
 	} as unknown as LanguageModel;
