@@ -103,7 +103,7 @@ test.describe("Authentication - Authenticated Users", () => {
 		const userNavMenu = adaContext.page.getByTestId("user-nav-menu");
 		await expect(userNavMenu).toBeVisible();
 
-		const authMenuItem = adaContext.page.getByTestId("user-nav-item-auth");
-		await expect(authMenuItem).toContainText("Sign out");
+		const signOutItem = adaContext.page.getByTestId("user-nav-sign-out");
+		await expect(signOutItem).toContainText("Sign out");
 	});
 });

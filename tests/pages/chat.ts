@@ -136,6 +136,14 @@ export class ChatPage {
 	}
 
 	async getRecentAssistantMessage() {
+		// Wait for React to commit the assistant message to the DOM.
+		// The stream response may finish before React's state update cycle
+		// (especially with experimental_throttle) renders the element.
+		await this.page.waitForSelector('[data-testid="message-assistant"]', {
+			state: "attached",
+			timeout: 10_000,
+		});
+
 		const messageElements = await this.page
 			.getByTestId("message-assistant")
 			.all();
