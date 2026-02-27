@@ -222,6 +222,72 @@ export const translations = {
 				"No credit card \u2022 14-day free trial on paid plans \u2022 Setup in minutes",
 		},
 
+		// Onboarding Wizard
+		onboarding: {
+			// Stepper labels
+			step1Label: "Setup",
+			step2Label: "Knowledge",
+			step3Label: "Test",
+			step4Label: "Install",
+
+			// Step 1 - Welcome
+			welcomeTitle: "Welcome to Converso!",
+			welcomeSubtitle:
+				"Let's get your AI chatbot up and running in just a few minutes.",
+			businessNameLabel: "Business Name",
+			businessNamePlaceholder: "Your Business Name",
+			botNameLabel: "Chatbot Name",
+			botNamePlaceholder: "My Chatbot",
+
+			// Step 2 - Knowledge
+			knowledgeTitle: "Train your chatbot",
+			knowledgeSubtitle:
+				"Give your chatbot knowledge about your business so it can answer customer questions accurately.",
+			knowledgeWebsite: "Import from website",
+			knowledgeWebsiteDesc: "Enter your sitemap URL to import content automatically",
+			knowledgePdf: "Upload a PDF",
+			knowledgePdfDesc: "Upload documents, menus, or catalogs (max 10 MB)",
+			knowledgeText: "Paste text",
+			knowledgeTextDesc: "Paste FAQs, service descriptions, or any business info",
+			websiteUrlPlaceholder: "https://example.com/sitemap.xml",
+			textContentPlaceholder:
+				"Paste your business information here...\n\nExample:\nOur hours are Monday-Friday 9am-6pm.\nWe offer web design, SEO, and social media services.\nPrices start at $500/month.",
+			importing: "Importing content...",
+			uploading: "Uploading...",
+			processing: "Processing...",
+			contentAdded: "Content added successfully!",
+			skipKnowledge: "Skip — I'll add knowledge later",
+
+			// Step 3 - Test Chat
+			testTitle: "Test your chatbot",
+			testSubtitle:
+				"Try chatting with your bot to see how it responds. Ask it about your business!",
+			testNoKnowledge:
+				"You skipped adding knowledge — your chatbot will give generic responses until you add content in the admin dashboard.",
+			testTip: "Try asking: \"What services do you offer?\"",
+
+			// Step 4 - Embed Code
+			embedTitle: "Install on your website",
+			embedSubtitle:
+				"Copy this code and paste it before the closing </body> tag on your website.",
+			embedButtonColor: "Button Color",
+			embedPosition: "Position",
+			embedPositionRight: "Bottom Right",
+			embedPositionLeft: "Bottom Left",
+			embedCopy: "Copy Code",
+			embedCopied: "Copied!",
+			embedInstructions: "Installation Instructions",
+			embedStep1: "Copy the embed code above",
+			embedStep2: "Paste it before the closing </body> tag in your HTML",
+			embedStep3: "The chat bubble will appear on your website automatically",
+
+			// Navigation
+			next: "Next",
+			back: "Back",
+			skip: "Skip Setup",
+			finish: "Go to Dashboard",
+		},
+
 		// Footer
 		footer: {
 			tagline:
@@ -467,6 +533,76 @@ export const translations = {
 			secondary: "Hablar con Ventas",
 			trust:
 				"Sin tarjeta de crédito \u2022 14 días de prueba en planes de pago \u2022 Configuración en minutos",
+		},
+
+		// Onboarding Wizard
+		onboarding: {
+			// Stepper labels
+			step1Label: "Configurar",
+			step2Label: "Conocimiento",
+			step3Label: "Probar",
+			step4Label: "Instalar",
+
+			// Step 1 - Welcome
+			welcomeTitle: "¡Bienvenido a Converso!",
+			welcomeSubtitle:
+				"Vamos a configurar tu chatbot de IA en solo unos minutos.",
+			businessNameLabel: "Nombre del Negocio",
+			businessNamePlaceholder: "Tu Nombre de Negocio",
+			botNameLabel: "Nombre del Chatbot",
+			botNamePlaceholder: "Mi Chatbot",
+
+			// Step 2 - Knowledge
+			knowledgeTitle: "Entrena tu chatbot",
+			knowledgeSubtitle:
+				"Dale a tu chatbot conocimiento sobre tu negocio para que pueda responder preguntas de clientes con precisión.",
+			knowledgeWebsite: "Importar desde sitio web",
+			knowledgeWebsiteDesc:
+				"Ingresa la URL de tu sitemap para importar contenido automáticamente",
+			knowledgePdf: "Subir un PDF",
+			knowledgePdfDesc: "Sube documentos, menús o catálogos (máx 10 MB)",
+			knowledgeText: "Pegar texto",
+			knowledgeTextDesc:
+				"Pega FAQs, descripciones de servicios o cualquier info de tu negocio",
+			websiteUrlPlaceholder: "https://ejemplo.com/sitemap.xml",
+			textContentPlaceholder:
+				"Pega la información de tu negocio aquí...\n\nEjemplo:\nNuestro horario es lunes a viernes de 9am a 6pm.\nOfrecemos diseño web, SEO y redes sociales.\nLos precios comienzan en $500/mes.",
+			importing: "Importando contenido...",
+			uploading: "Subiendo...",
+			processing: "Procesando...",
+			contentAdded: "¡Contenido agregado exitosamente!",
+			skipKnowledge: "Omitir — agregaré conocimiento después",
+
+			// Step 3 - Test Chat
+			testTitle: "Prueba tu chatbot",
+			testSubtitle:
+				"Prueba tu bot para ver cómo responde. ¡Pregúntale sobre tu negocio!",
+			testNoKnowledge:
+				"Omitiste agregar conocimiento — tu chatbot dará respuestas genéricas hasta que agregues contenido en el panel de administración.",
+			testTip: "Intenta preguntar: \"¿Qué servicios ofrecen?\"",
+
+			// Step 4 - Embed Code
+			embedTitle: "Instala en tu sitio web",
+			embedSubtitle:
+				"Copia este código y pégalo antes de la etiqueta de cierre </body> en tu sitio web.",
+			embedButtonColor: "Color del Botón",
+			embedPosition: "Posición",
+			embedPositionRight: "Abajo a la Derecha",
+			embedPositionLeft: "Abajo a la Izquierda",
+			embedCopy: "Copiar Código",
+			embedCopied: "¡Copiado!",
+			embedInstructions: "Instrucciones de Instalación",
+			embedStep1: "Copia el código de arriba",
+			embedStep2:
+				"Pégalo antes de la etiqueta de cierre </body> en tu HTML",
+			embedStep3:
+				"La burbuja de chat aparecerá en tu sitio web automáticamente",
+
+			// Navigation
+			next: "Siguiente",
+			back: "Atrás",
+			skip: "Omitir Configuración",
+			finish: "Ir al Panel",
 		},
 
 		// Footer

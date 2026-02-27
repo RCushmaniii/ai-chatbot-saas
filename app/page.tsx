@@ -5,8 +5,11 @@ import { getAuthUser } from "@/lib/auth";
 export default async function RootPage() {
 	const user = await getAuthUser();
 
-	// Authenticated users go directly to the chat dashboard
+	// Authenticated users: check onboarding status first
 	if (user) {
+		if (user.onboardingStatus === "pending") {
+			redirect("/onboarding");
+		}
 		redirect("/chat");
 	}
 

@@ -13,6 +13,10 @@ export default async function ChatPage() {
 		redirect("/");
 	}
 
+	if (user.onboardingStatus === "pending") {
+		redirect("/onboarding");
+	}
+
 	const id = generateUUID();
 
 	const cookieStore = await cookies();

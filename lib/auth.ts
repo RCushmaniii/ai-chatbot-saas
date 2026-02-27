@@ -16,8 +16,11 @@ export type AuthUser = {
 	avatarUrl: string | null;
 	locale: string;
 	businessId: string;
+	businessName: string;
 	botId: string;
 	role: MembershipRole;
+	onboardingStatus: string;
+	onboardingStep: number;
 };
 
 /**
@@ -42,10 +45,14 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       u.locale,
       m."businessId",
       m.role,
-      b.id as "botId"
+      b.id as "botId",
+      biz.name as "businessName",
+      biz.onboarding_status as "onboardingStatus",
+      biz.onboarding_step as "onboardingStep"
     FROM "User" u
     LEFT JOIN "Membership" m ON m."userId" = u.id
     LEFT JOIN "Bot" b ON b."businessId" = m."businessId"
+    LEFT JOIN "Business" biz ON biz.id = m."businessId"
     WHERE u.clerk_user_id = ${userId}
     LIMIT 1
   `;
@@ -114,8 +121,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 			avatarUrl: clerkUser.imageUrl,
 			locale: "es",
 			businessId: business.id,
+			businessName: name ? `${name}'s Business` : "Mi Negocio",
 			botId: bot.id,
 			role: "owner" as MembershipRole,
+			onboardingStatus: "pending",
+			onboardingStep: 1,
 		};
 	}
 

@@ -71,6 +71,10 @@ export type User = InferSelectModel<typeof user>;
 export const business = pgTable("Business", {
 	id: uuid("id").primaryKey().notNull().defaultRandom(),
 	name: text("name").notNull(),
+	onboardingStatus: varchar("onboarding_status", { length: 20 })
+		.notNull()
+		.default("pending"),
+	onboardingStep: integer("onboarding_step").notNull().default(1),
 	createdAt: timestamp("createdAt").notNull(),
 });
 
