@@ -244,19 +244,34 @@ export const translations = {
 			knowledgeSubtitle:
 				"Give your chatbot knowledge about your business so it can answer customer questions accurately.",
 			knowledgeWebsite: "Import from website",
-			knowledgeWebsiteDesc: "Enter your sitemap URL to import content automatically",
+			knowledgeWebsiteDesc: "Enter your website domain to import content automatically",
 			knowledgePdf: "Upload a PDF",
 			knowledgePdfDesc: "Upload documents, menus, or catalogs (max 10 MB)",
 			knowledgeText: "Paste text",
 			knowledgeTextDesc: "Paste FAQs, service descriptions, or any business info",
-			websiteUrlPlaceholder: "https://example.com/sitemap.xml",
+			websiteUrlPlaceholder: "cushlabs.ai or https://example.com/sitemap.xml",
+			websiteUrlHelp: "Enter your domain — we'll find the sitemap automatically. You can also paste a direct sitemap URL.",
 			textContentPlaceholder:
 				"Paste your business information here...\n\nExample:\nOur hours are Monday-Friday 9am-6pm.\nWe offer web design, SEO, and social media services.\nPrices start at $500/month.",
 			importing: "Importing content...",
+			importingDetail: "Discovering sitemap and importing pages...",
 			uploading: "Uploading...",
 			processing: "Processing...",
 			contentAdded: "Content added successfully!",
+			contentAddedDetail: "{pages} pages imported, {chunks} knowledge chunks created.",
 			skipKnowledge: "Skip — I'll add knowledge later",
+			importWebsite: "Import Website",
+			selectPdf: "Click to select a PDF file",
+
+			// Error messages (keyed to API error codes)
+			errorUrlRequired: "Please enter a website URL or domain.",
+			errorInvalidUrl: "Invalid URL. Enter a domain like cushlabs.ai or a full URL.",
+			errorNoSitemap: "No sitemap found for this website. The site needs a sitemap.xml file.",
+			errorEmptySitemap: "The sitemap was found but contains no pages.",
+			errorIngestionFailed: "Something went wrong importing the website. Please try again.",
+			errorTimeout: "The import timed out. The website may be too large — try a smaller site.",
+			errorUploadFailed: "Failed to upload the file. Please try again.",
+			errorAddFailed: "Failed to add content. Please try again.",
 
 			// Step 3 - Test Chat
 			testTitle: "Test your chatbot",
@@ -558,20 +573,35 @@ export const translations = {
 				"Dale a tu chatbot conocimiento sobre tu negocio para que pueda responder preguntas de clientes con precisión.",
 			knowledgeWebsite: "Importar desde sitio web",
 			knowledgeWebsiteDesc:
-				"Ingresa la URL de tu sitemap para importar contenido automáticamente",
+				"Ingresa el dominio de tu sitio web para importar contenido automáticamente",
 			knowledgePdf: "Subir un PDF",
 			knowledgePdfDesc: "Sube documentos, menús o catálogos (máx 10 MB)",
 			knowledgeText: "Pegar texto",
 			knowledgeTextDesc:
 				"Pega FAQs, descripciones de servicios o cualquier info de tu negocio",
-			websiteUrlPlaceholder: "https://ejemplo.com/sitemap.xml",
+			websiteUrlPlaceholder: "cushlabs.ai o https://ejemplo.com/sitemap.xml",
+			websiteUrlHelp: "Ingresa tu dominio — encontraremos el sitemap automáticamente. También puedes pegar un URL de sitemap directo.",
 			textContentPlaceholder:
 				"Pega la información de tu negocio aquí...\n\nEjemplo:\nNuestro horario es lunes a viernes de 9am a 6pm.\nOfrecemos diseño web, SEO y redes sociales.\nLos precios comienzan en $500/mes.",
 			importing: "Importando contenido...",
+			importingDetail: "Buscando sitemap e importando páginas...",
 			uploading: "Subiendo...",
 			processing: "Procesando...",
 			contentAdded: "¡Contenido agregado exitosamente!",
+			contentAddedDetail: "{pages} páginas importadas, {chunks} fragmentos de conocimiento creados.",
 			skipKnowledge: "Omitir — agregaré conocimiento después",
+			importWebsite: "Importar Sitio Web",
+			selectPdf: "Haz clic para seleccionar un archivo PDF",
+
+			// Error messages (keyed to API error codes)
+			errorUrlRequired: "Por favor ingresa un URL o dominio de sitio web.",
+			errorInvalidUrl: "URL inválido. Ingresa un dominio como cushlabs.ai o un URL completo.",
+			errorNoSitemap: "No se encontró sitemap para este sitio web. El sitio necesita un archivo sitemap.xml.",
+			errorEmptySitemap: "Se encontró el sitemap pero no contiene páginas.",
+			errorIngestionFailed: "Algo salió mal al importar el sitio web. Por favor intenta de nuevo.",
+			errorTimeout: "La importación tardó demasiado. El sitio web puede ser muy grande — intenta con uno más pequeño.",
+			errorUploadFailed: "Error al subir el archivo. Por favor intenta de nuevo.",
+			errorAddFailed: "Error al agregar contenido. Por favor intenta de nuevo.",
 
 			// Step 3 - Test Chat
 			testTitle: "Prueba tu chatbot",

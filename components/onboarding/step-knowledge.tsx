@@ -29,13 +29,39 @@ interface StepKnowledgeProps {
 	t: OnboardingStrings;
 }
 
+/**
+ * Map an API error code to a translated string.
+ * Falls back to a generic translated error if the code is unknown.
+ */
+function getErrorMessage(
+	errorCode: string | undefined,
+	fallbackMessage: string,
+	t: OnboardingStrings,
+): string {
+	const errorMap: Record<string, string> = {
+		URL_REQUIRED: t.errorUrlRequired,
+		INVALID_URL: t.errorInvalidUrl,
+		NO_SITEMAP_FOUND: t.errorNoSitemap,
+		EMPTY_SITEMAP: t.errorEmptySitemap,
+		INGESTION_FAILED: t.errorIngestionFailed,
+		INGESTION_TIMEOUT: t.errorTimeout,
+	};
+	return errorMap[errorCode || ""] || fallbackMessage;
+}
+
+interface ImportResult {
+	pagesProcessed?: number;
+	chunksCreated?: number;
+}
+
 export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 	const [mode, setMode] = useState<KnowledgeMode>(null);
 	const [status, setStatus] = useState<UploadStatus>("idle");
 	const [errorMsg, setErrorMsg] = useState("");
+	const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
 	// Website fields
-	const [sitemapUrl, setSitemapUrl] = useState("");
+	const [websiteUrl, setWebsiteUrl] = useState("");
 
 	// Text fields
 	const [textContent, setTextContent] = useState("");
@@ -44,24 +70,35 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 	const [pdfFile, setPdfFile] = useState<File | null>(null);
 
 	const handleWebsiteImport = async () => {
-		if (!sitemapUrl.trim()) return;
+		if (!websiteUrl.trim()) return;
 		setStatus("loading");
 		setErrorMsg("");
+		setImportResult(null);
 		try {
 			const res = await fetch("/api/admin/knowledge/ingest", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ sitemapUrl: sitemapUrl.trim() }),
+				body: JSON.stringify({ sitemapUrl: websiteUrl.trim() }),
 			});
+			const data = await res.json();
 			if (!res.ok) {
-				const data = await res.json();
-				throw new Error(data.error || "Import failed");
+				throw { code: data.error, message: data.message || "Import failed" };
 			}
 			setStatus("success");
+			setImportResult({
+				pagesProcessed: data.pagesProcessed,
+				chunksCreated: data.chunksCreated,
+			});
 			onKnowledgeAdded();
-		} catch (err) {
+		} catch (err: any) {
 			setStatus("error");
-			setErrorMsg(err instanceof Error ? err.message : "Import failed");
+			if (err.code) {
+				setErrorMsg(getErrorMessage(err.code, err.message, t));
+			} else {
+				setErrorMsg(
+					getErrorMessage(undefined, t.errorIngestionFailed, t),
+				);
+			}
 		}
 	};
 
@@ -80,14 +117,13 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 				body: formData,
 			});
 			if (!res.ok) {
-				const data = await res.json();
-				throw new Error(data.error || "Upload failed");
+				throw new Error("UPLOAD_FAILED");
 			}
 			setStatus("success");
 			onKnowledgeAdded();
-		} catch (err) {
+		} catch {
 			setStatus("error");
-			setErrorMsg(err instanceof Error ? err.message : "Upload failed");
+			setErrorMsg(t.errorUploadFailed);
 		}
 	};
 
@@ -105,24 +141,33 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 				}),
 			});
 			if (!res.ok) {
-				const data = await res.json();
-				throw new Error(data.error || "Failed to add content");
+				throw new Error("ADD_FAILED");
 			}
 			setStatus("success");
 			onKnowledgeAdded();
-		} catch (err) {
+		} catch {
 			setStatus("error");
-			setErrorMsg(err instanceof Error ? err.message : "Failed to add content");
+			setErrorMsg(t.errorAddFailed);
 		}
 	};
 
 	// Success state
 	if (status === "success") {
+		const detail =
+			importResult?.pagesProcessed != null
+				? t.contentAddedDetail
+						.replace("{pages}", String(importResult.pagesProcessed))
+						.replace("{chunks}", String(importResult.chunksCreated || 0))
+				: "";
+
 		return (
 			<Card>
 				<CardContent className="flex flex-col items-center justify-center py-12 gap-4">
 					<CheckCircle2 className="w-12 h-12 text-green-500" />
 					<p className="text-lg font-medium">{t.contentAdded}</p>
+					{detail && (
+						<p className="text-sm text-muted-foreground">{detail}</p>
+					)}
 				</CardContent>
 			</Card>
 		);
@@ -209,27 +254,37 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 			<CardContent className="space-y-4">
 				{mode === "website" && (
 					<>
-						<Input
-							type="url"
-							value={sitemapUrl}
-							onChange={(e) => setSitemapUrl(e.target.value)}
-							placeholder={t.websiteUrlPlaceholder}
-							disabled={status === "loading"}
-						/>
+						<div className="space-y-2">
+							<Input
+								type="text"
+								value={websiteUrl}
+								onChange={(e) => setWebsiteUrl(e.target.value)}
+								placeholder={t.websiteUrlPlaceholder}
+								disabled={status === "loading"}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && websiteUrl.trim()) {
+										handleWebsiteImport();
+									}
+								}}
+							/>
+							<p className="text-xs text-muted-foreground">
+								{t.websiteUrlHelp}
+							</p>
+						</div>
 						<Button
 							onClick={handleWebsiteImport}
-							disabled={!sitemapUrl.trim() || status === "loading"}
+							disabled={!websiteUrl.trim() || status === "loading"}
 							className="w-full"
 						>
 							{status === "loading" ? (
 								<>
 									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									{t.importing}
+									{t.importingDetail}
 								</>
 							) : (
 								<>
 									<Globe className="w-4 h-4 mr-2" />
-									{t.knowledgeWebsite}
+									{t.importWebsite}
 								</>
 							)}
 						</Button>
@@ -256,7 +311,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 									<p className="font-medium">{pdfFile.name}</p>
 								) : (
 									<p className="text-muted-foreground">
-										Click to select a PDF file
+										{t.selectPdf}
 									</p>
 								)}
 							</label>
