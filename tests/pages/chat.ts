@@ -60,6 +60,17 @@ export class ChatPage {
 			? await this.pendingChatResponse
 			: await this.page.waitForResponse((r) => r.url().includes("/api/chat"));
 		this.pendingChatResponse = null;
+
+		const status = response.status();
+		console.log(`[test] /api/chat response status: ${status}`);
+
+		if (status !== 200) {
+			const body = await response.text().catch(() => "(unreadable)");
+			console.error(
+				`[test] /api/chat returned non-200: ${status}\n${body}`,
+			);
+		}
+
 		await response.finished();
 		// Allow React to flush its final throttled render batch
 		// (experimental_throttle batches updates every 100ms)
@@ -153,9 +164,39 @@ export class ChatPage {
 		// Wait for React to commit the assistant message to the DOM.
 		// The stream response may finish before React's state update cycle
 		// (especially with experimental_throttle) renders the element.
-		await expect(
-			this.page.getByTestId("message-assistant").first(),
-		).toBeAttached({ timeout: 10_000 });
+		try {
+			await expect(
+				this.page.getByTestId("message-assistant").first(),
+			).toBeAttached({ timeout: 10_000 });
+		} catch (err) {
+			// Dump page state for debugging CI failures
+			const url = this.page.url();
+			const userMsgs = await this.page
+				.getByTestId("message-user")
+				.count()
+				.catch(() => -1);
+			const assistantMsgs = await this.page
+				.getByTestId("message-assistant")
+				.count()
+				.catch(() => -1);
+			const toastText = await this.page
+				.getByTestId("toast")
+				.textContent()
+				.catch(() => "(no toast)");
+			const thinkingVisible = await this.page
+				.getByTestId("message-assistant-loading")
+				.isVisible()
+				.catch(() => false);
+			console.error(
+				`[test:debug] message-assistant not found after 10s\n` +
+					`  URL: ${url}\n` +
+					`  User messages: ${userMsgs}\n` +
+					`  Assistant messages: ${assistantMsgs}\n` +
+					`  Thinking visible: ${thinkingVisible}\n` +
+					`  Toast: ${toastText}`,
+			);
+			throw err;
+		}
 
 		const messageElements = await this.page
 			.getByTestId("message-assistant")

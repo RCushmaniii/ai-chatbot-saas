@@ -5,6 +5,16 @@ test.describe("Chat activity", () => {
 	let chatPage: ChatPage;
 
 	test.beforeEach(async ({ adaContext, requiresAuth }) => {
+		// Capture client-side JS errors and important console messages
+		adaContext.page.on("pageerror", (err) => {
+			console.error(`[browser:error] ${err.message}`);
+		});
+		adaContext.page.on("console", (msg) => {
+			if (msg.type() === "error" || msg.type() === "warning") {
+				console.log(`[browser:${msg.type()}] ${msg.text()}`);
+			}
+		});
+
 		chatPage = new ChatPage(adaContext.page);
 		await chatPage.createNewChat();
 	});
