@@ -212,10 +212,16 @@ export class ChatPage {
 			.innerText()
 			.catch(() => null);
 
-		const reasoningElement = await lastMessageElement
-			.getByTestId("message-reasoning-content")
-			.textContent()
-			.catch(() => null);
+		// Use count() first — it's instant (no auto-wait).
+		// textContent() auto-waits up to 30s, which would stall
+		// every non-reasoning test waiting for an element that never exists.
+		const reasoningLocator = lastMessageElement.getByTestId(
+			"message-reasoning-content",
+		);
+		const hasReasoning = (await reasoningLocator.count()) > 0;
+		const reasoningElement = hasReasoning
+			? await reasoningLocator.textContent().catch(() => null)
+			: null;
 
 		return {
 			element: lastMessageElement,

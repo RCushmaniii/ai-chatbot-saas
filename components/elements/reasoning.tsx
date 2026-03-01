@@ -159,6 +159,7 @@ export const ReasoningContent = memo(
 				"data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 outline-hidden data-[state=closed]:animate-out data-[state=open]:animate-in",
 				className,
 			)}
+			forceMount
 			{...props}
 		>
 			<Response className="grid gap-2">{children}</Response>

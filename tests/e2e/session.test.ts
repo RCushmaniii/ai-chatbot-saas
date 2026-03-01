@@ -100,7 +100,7 @@ test.describe("Authentication - Authenticated Users", () => {
 		await expect(userNavButton).toBeVisible();
 
 		await userNavButton.scrollIntoViewIfNeeded();
-		await userNavButton.click();
+		await userNavButton.click({ force: true });
 		const userNavMenu = adaContext.page.getByTestId("user-nav-menu");
 		await expect(userNavMenu).toBeVisible();
 
