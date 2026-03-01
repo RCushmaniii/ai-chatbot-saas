@@ -7,6 +7,9 @@ import type {
 	BrowserContext,
 	Page,
 } from "@playwright/test";
+import postgres from "postgres";
+
+const sql = postgres(process.env.POSTGRES_URL!);
 
 export type UserContext = {
 	context: BrowserContext;
@@ -24,6 +27,23 @@ const TEST_USERS: Record<string, string> = {
 	babbage: "babbage-test@cushlabs.ai",
 	curie: "curie-test@cushlabs.ai",
 };
+
+/**
+ * Mark a test user's business onboarding as completed.
+ * The first authenticated page load auto-provisions User/Business/Membership
+ * with onboarding_status='pending'. Without this, the (chat) layout redirects
+ * to /onboarding and chat tests never see the chat UI.
+ */
+export async function completeOnboardingForUser(email: string): Promise<void> {
+	await sql`
+		UPDATE "Business" SET onboarding_status = 'completed', onboarding_step = 1
+		WHERE id IN (
+			SELECT m."businessId" FROM "Membership" m
+			JOIN "User" u ON u.id = m."userId"
+			WHERE u.email = ${email}
+		)
+	`;
+}
 
 /**
  * Creates an authenticated browser context for Playwright tests.
@@ -89,6 +109,17 @@ export async function createAuthenticatedContext({
 		});
 
 		console.log(`[auth] clerk.signIn() completed for "${baseName}"`);
+
+		// Trigger auto-provisioning: the first authenticated page load creates
+		// User/Business/Membership records with onboarding_status='pending'.
+		// We must complete onboarding before navigating to /chat, otherwise the
+		// (chat) layout redirects to /onboarding.
+		await page.goto("/", {
+			waitUntil: "domcontentloaded",
+			timeout: 60000,
+		});
+		await completeOnboardingForUser(email);
+		console.log(`[auth] Onboarding completed for "${baseName}" in database`);
 
 		// Verify authentication by navigating to a protected route.
 		// Use "domcontentloaded" instead of "networkidle" — the first /chat

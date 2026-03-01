@@ -244,13 +244,16 @@ export const translations = {
 			knowledgeSubtitle:
 				"Give your chatbot knowledge about your business so it can answer customer questions accurately.",
 			knowledgeWebsite: "Import from website",
-			knowledgeWebsiteDesc: "Enter your website domain to import content automatically",
+			knowledgeWebsiteDesc:
+				"Enter your website domain to import content automatically",
 			knowledgePdf: "Upload a PDF",
 			knowledgePdfDesc: "Upload documents, menus, or catalogs (max 10 MB)",
 			knowledgeText: "Paste text",
-			knowledgeTextDesc: "Paste FAQs, service descriptions, or any business info",
+			knowledgeTextDesc:
+				"Paste FAQs, service descriptions, or any business info",
 			websiteUrlPlaceholder: "cushlabs.ai or https://example.com/sitemap.xml",
-			websiteUrlHelp: "Enter your domain — we'll find the sitemap automatically. You can also paste a direct sitemap URL.",
+			websiteUrlHelp:
+				"Enter your domain — we'll find the sitemap automatically. You can also paste a direct sitemap URL.",
 			textContentPlaceholder:
 				"Paste your business information here...\n\nExample:\nOur hours are Monday-Friday 9am-6pm.\nWe offer web design, SEO, and social media services.\nPrices start at $500/month.",
 			importing: "Importing content...",
@@ -258,18 +261,23 @@ export const translations = {
 			uploading: "Uploading...",
 			processing: "Processing...",
 			contentAdded: "Content added successfully!",
-			contentAddedDetail: "{pages} pages imported, {chunks} knowledge chunks created.",
+			contentAddedDetail:
+				"{pages} pages imported, {chunks} knowledge chunks created.",
 			skipKnowledge: "Skip — I'll add knowledge later",
 			importWebsite: "Import Website",
 			selectPdf: "Click to select a PDF file",
 
 			// Error messages (keyed to API error codes)
 			errorUrlRequired: "Please enter a website URL or domain.",
-			errorInvalidUrl: "Invalid URL. Enter a domain like cushlabs.ai or a full URL.",
-			errorNoSitemap: "No sitemap found for this website. The site needs a sitemap.xml file.",
+			errorInvalidUrl:
+				"Invalid URL. Enter a domain like cushlabs.ai or a full URL.",
+			errorNoSitemap:
+				"No sitemap found for this website. The site needs a sitemap.xml file.",
 			errorEmptySitemap: "The sitemap was found but contains no pages.",
-			errorIngestionFailed: "Something went wrong importing the website. Please try again.",
-			errorTimeout: "The import timed out. The website may be too large — try a smaller site.",
+			errorIngestionFailed:
+				"Something went wrong importing the website. Please try again.",
+			errorTimeout:
+				"The import timed out. The website may be too large — try a smaller site.",
 			errorUploadFailed: "Failed to upload the file. Please try again.",
 			errorAddFailed: "Failed to add content. Please try again.",
 
@@ -279,7 +287,7 @@ export const translations = {
 				"Try chatting with your bot to see how it responds. Ask it about your business!",
 			testNoKnowledge:
 				"You skipped adding knowledge — your chatbot will give generic responses until you add content in the admin dashboard.",
-			testTip: "Try asking: \"What services do you offer?\"",
+			testTip: 'Try asking: "What services do you offer?"',
 
 			// Step 4 - Embed Code
 			embedTitle: "Install on your website",
@@ -580,7 +588,8 @@ export const translations = {
 			knowledgeTextDesc:
 				"Pega FAQs, descripciones de servicios o cualquier info de tu negocio",
 			websiteUrlPlaceholder: "cushlabs.ai o https://ejemplo.com/sitemap.xml",
-			websiteUrlHelp: "Ingresa tu dominio — encontraremos el sitemap automáticamente. También puedes pegar un URL de sitemap directo.",
+			websiteUrlHelp:
+				"Ingresa tu dominio — encontraremos el sitemap automáticamente. También puedes pegar un URL de sitemap directo.",
 			textContentPlaceholder:
 				"Pega la información de tu negocio aquí...\n\nEjemplo:\nNuestro horario es lunes a viernes de 9am a 6pm.\nOfrecemos diseño web, SEO y redes sociales.\nLos precios comienzan en $500/mes.",
 			importing: "Importando contenido...",
@@ -588,19 +597,25 @@ export const translations = {
 			uploading: "Subiendo...",
 			processing: "Procesando...",
 			contentAdded: "¡Contenido agregado exitosamente!",
-			contentAddedDetail: "{pages} páginas importadas, {chunks} fragmentos de conocimiento creados.",
+			contentAddedDetail:
+				"{pages} páginas importadas, {chunks} fragmentos de conocimiento creados.",
 			skipKnowledge: "Omitir — agregaré conocimiento después",
 			importWebsite: "Importar Sitio Web",
 			selectPdf: "Haz clic para seleccionar un archivo PDF",
 
 			// Error messages (keyed to API error codes)
 			errorUrlRequired: "Por favor ingresa un URL o dominio de sitio web.",
-			errorInvalidUrl: "URL inválido. Ingresa un dominio como cushlabs.ai o un URL completo.",
-			errorNoSitemap: "No se encontró sitemap para este sitio web. El sitio necesita un archivo sitemap.xml.",
+			errorInvalidUrl:
+				"URL inválido. Ingresa un dominio como cushlabs.ai o un URL completo.",
+			errorNoSitemap:
+				"No se encontró sitemap para este sitio web. El sitio necesita un archivo sitemap.xml.",
 			errorEmptySitemap: "Se encontró el sitemap pero no contiene páginas.",
-			errorIngestionFailed: "Algo salió mal al importar el sitio web. Por favor intenta de nuevo.",
-			errorTimeout: "La importación tardó demasiado. El sitio web puede ser muy grande — intenta con uno más pequeño.",
-			errorUploadFailed: "Error al subir el archivo. Por favor intenta de nuevo.",
+			errorIngestionFailed:
+				"Algo salió mal al importar el sitio web. Por favor intenta de nuevo.",
+			errorTimeout:
+				"La importación tardó demasiado. El sitio web puede ser muy grande — intenta con uno más pequeño.",
+			errorUploadFailed:
+				"Error al subir el archivo. Por favor intenta de nuevo.",
 			errorAddFailed: "Error al agregar contenido. Por favor intenta de nuevo.",
 
 			// Step 3 - Test Chat
@@ -609,7 +624,7 @@ export const translations = {
 				"Prueba tu bot para ver cómo responde. ¡Pregúntale sobre tu negocio!",
 			testNoKnowledge:
 				"Omitiste agregar conocimiento — tu chatbot dará respuestas genéricas hasta que agregues contenido en el panel de administración.",
-			testTip: "Intenta preguntar: \"¿Qué servicios ofrecen?\"",
+			testTip: 'Intenta preguntar: "¿Qué servicios ofrecen?"',
 
 			// Step 4 - Embed Code
 			embedTitle: "Instala en tu sitio web",
@@ -623,8 +638,7 @@ export const translations = {
 			embedCopied: "¡Copiado!",
 			embedInstructions: "Instrucciones de Instalación",
 			embedStep1: "Copia el código de arriba",
-			embedStep2:
-				"Pégalo antes de la etiqueta de cierre </body> en tu HTML",
+			embedStep2: "Pégalo antes de la etiqueta de cierre </body> en tu HTML",
 			embedStep3:
 				"La burbuja de chat aparecerá en tu sitio web automáticamente",
 

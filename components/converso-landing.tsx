@@ -171,7 +171,7 @@ const CloseIcon = () => (
 
 export function ConversoLandingPage() {
 	const { lang, setLang, t } = useLanguage();
-	const { theme, setTheme, resolvedTheme } = useTheme();
+	const { setTheme, resolvedTheme } = useTheme();
 	const [openFaq, setOpenFaq] = useState<number | null>(null);
 	const [isAnnual, setIsAnnual] = useState(true);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

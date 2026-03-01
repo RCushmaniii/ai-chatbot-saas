@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import {
+	CheckCircle2,
 	FileText,
 	Globe,
 	Loader2,
 	Type,
-	CheckCircle2,
 	Upload,
 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Card,
 	CardContent,
@@ -19,6 +17,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { OnboardingStrings } from "./types";
 
 type KnowledgeMode = null | "website" | "pdf" | "text";
@@ -95,9 +95,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 			if (err.code) {
 				setErrorMsg(getErrorMessage(err.code, err.message, t));
 			} else {
-				setErrorMsg(
-					getErrorMessage(undefined, t.errorIngestionFailed, t),
-				);
+				setErrorMsg(getErrorMessage(undefined, t.errorIngestionFailed, t));
 			}
 		}
 	};
@@ -165,9 +163,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 				<CardContent className="flex flex-col items-center justify-center py-12 gap-4">
 					<CheckCircle2 className="w-12 h-12 text-green-500" />
 					<p className="text-lg font-medium">{t.contentAdded}</p>
-					{detail && (
-						<p className="text-sm text-muted-foreground">{detail}</p>
-					)}
+					{detail && <p className="text-sm text-muted-foreground">{detail}</p>}
 				</CardContent>
 			</Card>
 		);
@@ -310,9 +306,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 								{pdfFile ? (
 									<p className="font-medium">{pdfFile.name}</p>
 								) : (
-									<p className="text-muted-foreground">
-										{t.selectPdf}
-									</p>
+									<p className="text-muted-foreground">{t.selectPdf}</p>
 								)}
 							</label>
 						</div>

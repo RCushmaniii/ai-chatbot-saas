@@ -36,6 +36,7 @@ function getCookieLanguage(): Language | null {
 function setCookie(name: string, value: string, days: number) {
 	const expires = new Date();
 	expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+	// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API has limited browser support
 	document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
 }
 

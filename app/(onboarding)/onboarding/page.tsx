@@ -1,13 +1,16 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getAuthUser } from "@/lib/auth";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { getAuthUser } from "@/lib/auth";
 
 /**
  * Detect locale from the browser's Accept-Language header.
  * Falls back to the user's DB locale.
  */
-function detectLocale(acceptLanguage: string | null, dbLocale: string): "en" | "es" {
+function detectLocale(
+	acceptLanguage: string | null,
+	dbLocale: string,
+): "en" | "es" {
 	if (acceptLanguage) {
 		if (acceptLanguage.startsWith("es")) return "es";
 		if (acceptLanguage.startsWith("en")) return "en";

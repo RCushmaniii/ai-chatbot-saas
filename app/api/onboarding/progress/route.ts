@@ -1,6 +1,6 @@
+import postgres from "postgres";
 import { z } from "zod";
 import { getAuthUser } from "@/lib/auth";
-import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -55,9 +55,6 @@ export async function POST(request: Request) {
 		return Response.json({ success: true });
 	} catch (error) {
 		console.error("Failed to save onboarding progress:", error);
-		return Response.json(
-			{ error: "Failed to save progress" },
-			{ status: 500 },
-		);
+		return Response.json({ error: "Failed to save progress" }, { status: 500 });
 	}
 }

@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Card,
 	CardContent,
@@ -12,6 +10,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -31,8 +31,7 @@ export function StepEmbedCode({ botId, t }: StepEmbedCodeProps) {
 	const [buttonColor, setButtonColor] = useState("#1c4992");
 	const [position, setPosition] = useState("bottom-right");
 
-	const origin =
-		typeof window !== "undefined" ? window.location.origin : "";
+	const origin = typeof window !== "undefined" ? window.location.origin : "";
 
 	const embedCode = `<script
   async

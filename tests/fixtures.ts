@@ -6,11 +6,11 @@ type Fixtures = {
 	adaContext: UserContext;
 	babbageContext: UserContext;
 	curieContext: UserContext;
-	requiresAuth: void;
+	requiresAuth: undefined;
 };
 
 export const test = baseTest.extend<
-	{ requiresAuth: void },
+	{ requiresAuth: undefined },
 	Omit<Fixtures, "requiresAuth">
 >({
 	requiresAuth: [

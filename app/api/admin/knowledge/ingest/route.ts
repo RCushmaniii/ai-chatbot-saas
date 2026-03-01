@@ -167,8 +167,7 @@ async function extractUrlsFromSitemap(
 	// If XML parsing yielded nothing, try regex as fallback
 	if (urls.length === 0) {
 		const locRegex = /<loc>(.*?)<\/loc>/g;
-		let match: RegExpExecArray | null;
-		while ((match = locRegex.exec(xml)) !== null) {
+		for (const match of xml.matchAll(locRegex)) {
 			if (match[1]) urls.push(match[1].trim());
 		}
 	}

@@ -1,6 +1,6 @@
+import postgres from "postgres";
 import { z } from "zod";
 import { getAuthUser } from "@/lib/auth";
-import postgres from "postgres";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 

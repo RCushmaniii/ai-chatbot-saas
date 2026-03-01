@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { translations } from "@/lib/i18n/translations";
 import { OnboardingStepper } from "./onboarding-stepper";
-import { StepWelcome } from "./step-welcome";
+import { StepEmbedCode } from "./step-embed-code";
 import { StepKnowledge } from "./step-knowledge";
 import { StepTestChat } from "./step-test-chat";
-import { StepEmbedCode } from "./step-embed-code";
+import { StepWelcome } from "./step-welcome";
 
 interface OnboardingWizardProps {
 	initialStep: number;

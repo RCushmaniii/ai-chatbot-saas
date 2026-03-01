@@ -37,10 +37,9 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/progress",
-			{ data: { step: 2 } },
-		);
+		const response = await adaContext.request.post("/api/onboarding/progress", {
+			data: { step: 2 },
+		});
 		expect(response.status()).toBe(200);
 		expect((await response.json()).success).toBe(true);
 	});
@@ -49,16 +48,13 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/progress",
-			{
-				data: {
-					step: 2,
-					businessName: "Ada's Test Business",
-					botName: "Ada Bot",
-				},
+		const response = await adaContext.request.post("/api/onboarding/progress", {
+			data: {
+				step: 2,
+				businessName: "Ada's Test Business",
+				botName: "Ada Bot",
 			},
-		);
+		});
 		expect(response.status()).toBe(200);
 		expect((await response.json()).success).toBe(true);
 	});
@@ -67,10 +63,9 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/progress",
-			{ data: { step: 99 } },
-		);
+		const response = await adaContext.request.post("/api/onboarding/progress", {
+			data: { step: 99 },
+		});
 		expect(response.status()).toBe(400);
 	});
 
@@ -78,10 +73,9 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/complete",
-			{ data: { status: "completed" } },
-		);
+		const response = await adaContext.request.post("/api/onboarding/complete", {
+			data: { status: "completed" },
+		});
 		expect(response.status()).toBe(200);
 		expect((await response.json()).success).toBe(true);
 	});
@@ -90,10 +84,9 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/complete",
-			{ data: { status: "skipped" } },
-		);
+		const response = await adaContext.request.post("/api/onboarding/complete", {
+			data: { status: "skipped" },
+		});
 		expect(response.status()).toBe(200);
 		// Restore to completed for subsequent tests
 		await adaContext.request.post("/api/onboarding/complete", {
@@ -105,10 +98,9 @@ test.describe("Onboarding wizard", () => {
 		adaContext,
 		requiresAuth,
 	}) => {
-		const response = await adaContext.request.post(
-			"/api/onboarding/complete",
-			{ data: { status: "invalid" } },
-		);
+		const response = await adaContext.request.post("/api/onboarding/complete", {
+			data: { status: "invalid" },
+		});
 		expect(response.status()).toBe(400);
 	});
 
@@ -192,7 +184,9 @@ test.describe("Onboarding wizard", () => {
 		await botInput.fill("Babbage Bot");
 
 		// Click Next (use exact match to avoid matching Next.js Dev Tools button)
-		await babbageContext.page.getByRole("button", { name: /^(Next|Siguiente)$/ }).click();
+		await babbageContext.page
+			.getByRole("button", { name: /^(Next|Siguiente)$/ })
+			.click();
 
 		// Should now be on step 2 — knowledge options should appear
 		await expect(
@@ -245,9 +239,7 @@ test.describe("Onboarding wizard", () => {
 
 		// Should now be on step 3 — chat preview
 		await expect(
-			babbageContext.page.getByText(
-				/test your chatbot|prueba tu chatbot/i,
-			),
+			babbageContext.page.getByText(/test your chatbot|prueba tu chatbot/i),
 		).toBeVisible({ timeout: 10000 });
 	});
 
@@ -261,9 +253,7 @@ test.describe("Onboarding wizard", () => {
 
 		// Check step 3 is shown (wizard resumes at step 3)
 		await expect(
-			babbageContext.page.getByText(
-				/test your chatbot|prueba tu chatbot/i,
-			),
+			babbageContext.page.getByText(/test your chatbot|prueba tu chatbot/i),
 		).toBeVisible({ timeout: 10000 });
 
 		// Chat preview iframe should exist
@@ -271,7 +261,9 @@ test.describe("Onboarding wizard", () => {
 		await expect(iframe).toBeVisible();
 
 		// Click Next to go to step 4
-		await babbageContext.page.getByRole("button", { name: /^(Next|Siguiente)$/ }).click();
+		await babbageContext.page
+			.getByRole("button", { name: /^(Next|Siguiente)$/ })
+			.click();
 
 		// Step 4 — embed code
 		await expect(
@@ -361,11 +353,7 @@ test.describe("Onboarding wizard", () => {
 	// =========================================
 
 	test("Cleanup: restore test users", async () => {
-		await setOnboardingStatus(
-			"babbage-test@cushlabs.ai",
-			"completed",
-			1,
-		);
+		await setOnboardingStatus("babbage-test@cushlabs.ai", "completed", 1);
 		await setOnboardingStatus("ada-test@cushlabs.ai", "completed", 1);
 	});
 });
