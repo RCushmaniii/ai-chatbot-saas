@@ -4,6 +4,7 @@ import { SignOutButton, UserButton, useUser } from "@clerk/nextjs";
 import { ChevronUp, LogOut } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,8 +21,16 @@ import type { AuthUser } from "@/lib/auth";
 import { LoaderIcon } from "./icons";
 
 export function SidebarUserNav({ user }: { user: AuthUser }) {
-	const { isLoaded } = useUser();
+	const { isLoaded: isClerkLoaded } = useUser();
 	const { setTheme, resolvedTheme } = useTheme();
+
+	// Defer loaded state to after hydration to prevent mismatch.
+	// Server renders isLoaded=false (skeleton). If Clerk initializes
+	// instantly on the client, isLoaded=true during hydration causes a
+	// mismatch which triggers the Next.js dev overlay, blocking all clicks.
+	const [isHydrated, setIsHydrated] = useState(false);
+	useEffect(() => setIsHydrated(true), []);
+	const isLoaded = isHydrated && isClerkLoaded;
 
 	return (
 		<SidebarMenu>
