@@ -3,6 +3,7 @@ import {
 	getBusinessesForRetraining,
 	updateRetrainingLastRun,
 } from "@/lib/db/queries-retraining";
+import { retrainWebsiteSources } from "@/lib/ingestion/website";
 
 // Vercel Cron configuration
 export const dynamic = "force-dynamic";
@@ -26,16 +27,19 @@ export async function GET(request: Request) {
 
 		for (const { businessId } of businesses) {
 			try {
-				// TODO: Actually run retraining for each business
-				// This would involve:
-				// 1. Re-scraping website sources
-				// 2. Re-processing uploaded documents
-				// 3. Re-generating embeddings
-				// For now, we just update the last run time
-
+				const result = await retrainWebsiteSources({ businessId });
 				await updateRetrainingLastRun({ businessId });
 
-				results.push({ businessId, success: true });
+				console.log(
+					`[Cron] Retrained ${businessId}: ${result.pagesProcessed} pages, ${result.chunksCreated} chunks`,
+				);
+
+				results.push({
+					businessId,
+					success: true,
+					pagesProcessed: result.pagesProcessed,
+					chunksCreated: result.chunksCreated,
+				});
 			} catch (error) {
 				console.error(`[Cron] Error retraining ${businessId}:`, error);
 				results.push({ businessId, success: false, error: String(error) });

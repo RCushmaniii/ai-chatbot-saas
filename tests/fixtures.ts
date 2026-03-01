@@ -22,7 +22,7 @@ export const test = baseTest.extend<
 					"E2E_CLERK_USER_USERNAME not set — skipping authenticated test",
 				);
 			}
-			await use();
+			await use(undefined);
 		},
 		{ auto: false },
 	],

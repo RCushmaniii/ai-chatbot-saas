@@ -172,7 +172,7 @@ const createMockModel = (): LanguageModel => {
  * extractReasoningMiddleware to process.
  */
 const createMockReasoningModel = (): LanguageModel => {
-	const base = createMockModel();
+	const base = createMockModel() as unknown as Record<string, unknown>;
 
 	return {
 		...base,

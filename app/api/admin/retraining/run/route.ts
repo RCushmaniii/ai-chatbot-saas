@@ -3,6 +3,9 @@ import { requirePermission } from "@/lib/auth";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import { updateRetrainingLastRun } from "@/lib/db/queries-retraining";
 import { ChatSDKError } from "@/lib/errors";
+import { retrainWebsiteSources } from "@/lib/ingestion/website";
+
+export const maxDuration = 300; // 5 minutes for retraining
 
 export async function POST(request: Request) {
 	try {
@@ -13,18 +16,20 @@ export async function POST(request: Request) {
 			userId: user.id,
 		});
 
-		// TODO: Trigger actual retraining process
-		// This would involve:
-		// 1. Re-scraping all website sources
-		// 2. Re-processing all documents
-		// 3. Re-generating embeddings
-		// For now, we just update the last run time
+		console.log(`[retrain] Starting retraining for business: ${businessId}`);
 
+		const result = await retrainWebsiteSources({ businessId });
 		await updateRetrainingLastRun({ businessId });
+
+		console.log(
+			`[retrain] Done. Pages: ${result.pagesProcessed}, Chunks: ${result.chunksCreated}`,
+		);
 
 		return NextResponse.json({
 			success: true,
-			message: "Retraining initiated",
+			message: "Retraining complete",
+			pagesProcessed: result.pagesProcessed,
+			chunksCreated: result.chunksCreated,
 		});
 	} catch (error) {
 		console.error("Error in POST /api/admin/retraining/run:", error);

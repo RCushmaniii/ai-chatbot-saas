@@ -59,10 +59,8 @@ export async function GET(request: Request) {
 			if (!source.url) continue;
 
 			try {
-				// Try to find sitemap URL
-				const sitemapUrl = source.url.endsWith("/")
-					? `${source.url}sitemap.xml`
-					: `${source.url}/sitemap.xml`;
+			// source.url already stores the discovered sitemap URL
+				const sitemapUrl = source.url;
 
 				// Fetch current sitemap
 				const currentUrls = await fetchSitemapUrls(sitemapUrl);

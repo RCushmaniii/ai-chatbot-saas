@@ -31,7 +31,6 @@ interface StepKnowledgeProps {
 
 /**
  * Map an API error code to a translated string.
- * Falls back to a generic translated error if the code is unknown.
  */
 function getErrorMessage(
 	errorCode: string | undefined,
@@ -42,6 +41,7 @@ function getErrorMessage(
 		URL_REQUIRED: t.errorUrlRequired,
 		INVALID_URL: t.errorInvalidUrl,
 		NO_SITEMAP_FOUND: t.errorNoSitemap,
+		NO_PAGES_FOUND: t.errorNoSitemap,
 		EMPTY_SITEMAP: t.errorEmptySitemap,
 		INGESTION_FAILED: t.errorIngestionFailed,
 		INGESTION_TIMEOUT: t.errorTimeout,
@@ -59,6 +59,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 	const [status, setStatus] = useState<UploadStatus>("idle");
 	const [errorMsg, setErrorMsg] = useState("");
 	const [importResult, setImportResult] = useState<ImportResult | null>(null);
+	const [progressMsg, setProgressMsg] = useState("");
 
 	// Website fields
 	const [websiteUrl, setWebsiteUrl] = useState("");
@@ -74,24 +75,103 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 		setStatus("loading");
 		setErrorMsg("");
 		setImportResult(null);
+		setProgressMsg(t.progressDiscovering);
+
 		try {
 			const res = await fetch("/api/admin/knowledge/ingest", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ sitemapUrl: websiteUrl.trim() }),
+				body: JSON.stringify({
+					sitemapUrl: websiteUrl.trim(),
+					stream: true,
+				}),
 			});
-			const data = await res.json();
+
 			if (!res.ok) {
+				const data = await res.json();
 				throw { code: data.error, message: data.message || "Import failed" };
 			}
-			setStatus("success");
-			setImportResult({
-				pagesProcessed: data.pagesProcessed,
-				chunksCreated: data.chunksCreated,
-			});
-			onKnowledgeAdded();
+
+			// Read NDJSON stream for progress updates
+			const reader = res.body?.getReader();
+			if (!reader) {
+				throw { code: "INGESTION_FAILED", message: "Stream unavailable" };
+			}
+
+			const decoder = new TextDecoder();
+			let buffer = "";
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+
+				for (const line of lines) {
+					if (!line.trim()) continue;
+					try {
+						const event = JSON.parse(line);
+
+						switch (event.type) {
+							case "discovering":
+								setProgressMsg(t.progressDiscovering);
+								break;
+							case "discovered":
+								setProgressMsg(
+									t.progressFound.replace(
+										"{pages}",
+										String(event.totalPages),
+									),
+								);
+								break;
+							case "scraping":
+								setProgressMsg(
+									t.progressScraping
+										.replace("{current}", String(event.page))
+										.replace("{total}", String(event.total)),
+								);
+								break;
+							case "scraped":
+								setProgressMsg(
+									t.progressScraped.replace(
+										"{title}",
+										event.title || event.url,
+									),
+								);
+								break;
+							case "complete":
+								setStatus("success");
+								setImportResult({
+									pagesProcessed: event.pagesProcessed,
+									chunksCreated: event.chunksCreated,
+								});
+								setProgressMsg("");
+								onKnowledgeAdded();
+								break;
+							case "error":
+								throw {
+									code: event.error,
+									message: event.message,
+								};
+						}
+					} catch (parseErr: any) {
+						if (parseErr.code) throw parseErr;
+						// Skip unparseable lines
+					}
+				}
+			}
+
+			// If we finished reading but didn't get a "complete" event, check status
+			if (status !== "success" && !errorMsg) {
+				// Graceful fallback — treat as success if no error was thrown
+				setStatus("success");
+				onKnowledgeAdded();
+			}
 		} catch (err: any) {
 			setStatus("error");
+			setProgressMsg("");
 			if (err.code) {
 				setErrorMsg(getErrorMessage(err.code, err.message, t));
 			} else {
@@ -238,6 +318,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 							setMode(null);
 							setStatus("idle");
 							setErrorMsg("");
+							setProgressMsg("");
 						}}
 					>
 						&larr;
@@ -267,6 +348,12 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 								{t.websiteUrlHelp}
 							</p>
 						</div>
+						{status === "loading" && progressMsg && (
+							<div className="flex items-center gap-2 text-sm text-muted-foreground">
+								<Loader2 className="w-4 h-4 animate-spin" />
+								<span>{progressMsg}</span>
+							</div>
+						)}
 						<Button
 							onClick={handleWebsiteImport}
 							disabled={!websiteUrl.trim() || status === "loading"}
@@ -275,7 +362,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 							{status === "loading" ? (
 								<>
 									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									{t.importingDetail}
+									{t.importing}
 								</>
 							) : (
 								<>

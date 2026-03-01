@@ -253,11 +253,15 @@ export const translations = {
 				"Paste FAQs, service descriptions, or any business info",
 			websiteUrlPlaceholder: "cushlabs.ai or https://example.com/sitemap.xml",
 			websiteUrlHelp:
-				"Enter your domain — we'll find the sitemap automatically. You can also paste a direct sitemap URL.",
+				"Enter your website address — we'll automatically import your pages.",
 			textContentPlaceholder:
 				"Paste your business information here...\n\nExample:\nOur hours are Monday-Friday 9am-6pm.\nWe offer web design, SEO, and social media services.\nPrices start at $500/month.",
 			importing: "Importing content...",
 			importingDetail: "Discovering sitemap and importing pages...",
+			progressDiscovering: "Discovering pages...",
+			progressFound: "Found {pages} pages",
+			progressScraping: "Importing page {current} of {total}...",
+			progressScraped: "Imported: {title}",
 			uploading: "Uploading...",
 			processing: "Processing...",
 			contentAdded: "Content added successfully!",
@@ -272,7 +276,7 @@ export const translations = {
 			errorInvalidUrl:
 				"Invalid URL. Enter a domain like cushlabs.ai or a full URL.",
 			errorNoSitemap:
-				"No sitemap found for this website. The site needs a sitemap.xml file.",
+				"Could not find any pages to import. Check that the URL is correct and the site is publicly accessible.",
 			errorEmptySitemap: "The sitemap was found but contains no pages.",
 			errorIngestionFailed:
 				"Something went wrong importing the website. Please try again.",
@@ -589,11 +593,15 @@ export const translations = {
 				"Pega FAQs, descripciones de servicios o cualquier info de tu negocio",
 			websiteUrlPlaceholder: "cushlabs.ai o https://ejemplo.com/sitemap.xml",
 			websiteUrlHelp:
-				"Ingresa tu dominio — encontraremos el sitemap automáticamente. También puedes pegar un URL de sitemap directo.",
+				"Ingresa la dirección de tu sitio web — importaremos tus páginas automáticamente.",
 			textContentPlaceholder:
 				"Pega la información de tu negocio aquí...\n\nEjemplo:\nNuestro horario es lunes a viernes de 9am a 6pm.\nOfrecemos diseño web, SEO y redes sociales.\nLos precios comienzan en $500/mes.",
 			importing: "Importando contenido...",
 			importingDetail: "Buscando sitemap e importando páginas...",
+			progressDiscovering: "Descubriendo páginas...",
+			progressFound: "{pages} páginas encontradas",
+			progressScraping: "Importando página {current} de {total}...",
+			progressScraped: "Importado: {title}",
 			uploading: "Subiendo...",
 			processing: "Procesando...",
 			contentAdded: "¡Contenido agregado exitosamente!",
@@ -608,7 +616,7 @@ export const translations = {
 			errorInvalidUrl:
 				"URL inválido. Ingresa un dominio como cushlabs.ai o un URL completo.",
 			errorNoSitemap:
-				"No se encontró sitemap para este sitio web. El sitio necesita un archivo sitemap.xml.",
+				"No se encontraron páginas para importar. Verifica que el URL sea correcto y el sitio sea accesible públicamente.",
 			errorEmptySitemap: "Se encontró el sitemap pero no contiene páginas.",
 			errorIngestionFailed:
 				"Algo salió mal al importar el sitio web. Por favor intenta de nuevo.",

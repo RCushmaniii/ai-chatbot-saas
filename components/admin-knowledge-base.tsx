@@ -30,7 +30,7 @@ type UploadItem = {
 
 export function AdminKnowledgeBase() {
 	const [content, setContent] = useState("");
-	const [url, setUrl] = useState("https://www.nyenglishteacher.com");
+	const [url, setUrl] = useState("");
 	const [type, setType] = useState("general");
 	const [language, setLanguage] = useState("en");
 	const [isLoading, setIsLoading] = useState(false);
@@ -374,12 +374,8 @@ export function AdminKnowledgeBase() {
 										<SelectItem value="services">Services</SelectItem>
 										<SelectItem value="pricing">Pricing</SelectItem>
 										<SelectItem value="faq">FAQ</SelectItem>
-										<SelectItem value="coaching-approach">
-											Coaching Approach
-										</SelectItem>
-										<SelectItem value="target-audience">
-											Target Audience
-										</SelectItem>
+										<SelectItem value="about">About Us</SelectItem>
+										<SelectItem value="policies">Policies</SelectItem>
 										<SelectItem value="testimonial">Testimonial</SelectItem>
 									</SelectContent>
 								</Select>
@@ -404,7 +400,7 @@ export function AdminKnowledgeBase() {
 							<Input
 								id="url"
 								type="url"
-								placeholder="https://www.nyenglishteacher.com"
+								placeholder="https://www.yourbusiness.com"
 								value={url}
 								onChange={(e) => setUrl(e.target.value)}
 							/>
@@ -448,12 +444,8 @@ export function AdminKnowledgeBase() {
 									<SelectItem value="services">Services</SelectItem>
 									<SelectItem value="pricing">Pricing</SelectItem>
 									<SelectItem value="faq">FAQ</SelectItem>
-									<SelectItem value="coaching-approach">
-										Coaching Approach
-									</SelectItem>
-									<SelectItem value="target-audience">
-										Target Audience
-									</SelectItem>
+									<SelectItem value="about">About Us</SelectItem>
+									<SelectItem value="policies">Policies</SelectItem>
 									<SelectItem value="testimonial">Testimonial</SelectItem>
 									<SelectItem value="blog">Blog Article</SelectItem>
 								</SelectContent>
