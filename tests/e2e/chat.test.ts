@@ -42,7 +42,7 @@ test.describe("Chat activity", () => {
 
 		const assistantMessage = await chatPage.getRecentAssistantMessage();
 		expect(assistantMessage.content).toContain(
-			"With Next.js, you can ship fast!",
+			"We offer professional language coaching services!",
 		);
 	});
 
@@ -91,6 +91,10 @@ test.describe("Chat activity", () => {
 	});
 
 	test("Upload file and send image attachment with message", async () => {
+		test.skip(
+			!process.env.BLOB_READ_WRITE_TOKEN,
+			"Requires Vercel Blob storage",
+		);
 		await chatPage.addImageAttachment();
 
 		await chatPage.isElementVisible("attachments-preview");
@@ -150,13 +154,12 @@ test.describe("Chat activity", () => {
 	});
 
 	test("Create message from url query", async ({ adaContext }) => {
-		// Set up response listener BEFORE navigating — the React app
-		// auto-submits the query on mount, which can finish before
-		// isGenerationComplete() starts listening.
+		// Navigate directly to /chat with query param — going to / would
+		// redirect to /chat but lose the query parameter.
 		const responsePromise = adaContext.page.waitForResponse((r) =>
 			r.url().includes("/api/chat"),
 		);
-		await adaContext.page.goto("/?query=Why is the sky blue?");
+		await adaContext.page.goto("/chat?query=Why is the sky blue?");
 
 		const response = await responsePromise;
 		await response.finished();

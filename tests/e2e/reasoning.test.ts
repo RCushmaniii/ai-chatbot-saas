@@ -35,15 +35,21 @@ test.describe("chat activity with reasoning", () => {
 		await chatPage.isGenerationComplete();
 
 		const assistantMessage = await chatPage.getRecentAssistantMessage();
-		const reasoningElement =
-			assistantMessage.element.getByTestId("message-reasoning");
-		expect(reasoningElement).toBeVisible();
+		const reasoningContent = assistantMessage.element.getByTestId(
+			"message-reasoning-content",
+		);
+
+		// Reasoning may have auto-closed — ensure it's open first
+		if (!(await reasoningContent.isVisible())) {
+			await assistantMessage.toggleReasoningVisibility();
+		}
+		await expect(reasoningContent).toBeVisible();
 
 		await assistantMessage.toggleReasoningVisibility();
-		await expect(reasoningElement).not.toBeVisible();
+		await expect(reasoningContent).not.toBeVisible();
 
 		await assistantMessage.toggleReasoningVisibility();
-		await expect(reasoningElement).toBeVisible();
+		await expect(reasoningContent).toBeVisible();
 	});
 
 	test("Curie can edit message and resubmit", async () => {

@@ -33,7 +33,7 @@ function hasToolResult(prompt: MockPrompt): boolean {
 const RESPONSES: Array<[pattern: string, response: string]> = [
 	["grass green", "It's just green duh!"],
 	["sky blue", "It's just blue duh!"],
-	["advantages of", "With Next.js, you can ship fast!"],
+	["services", "We offer professional language coaching services!"],
 	["painted this", "This painting is by Monet!"],
 	["weather", "The current temperature in San Francisco is 17\u00B0C."],
 ];

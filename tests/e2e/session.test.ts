@@ -89,7 +89,7 @@ test.describe("Authentication - Authenticated Users", () => {
 	test("Sign out is available for authenticated users", async ({
 		adaContext,
 	}) => {
-		await adaContext.page.goto("/");
+		await adaContext.page.goto("/chat");
 
 		const sidebarToggleButton = adaContext.page.getByTestId(
 			"sidebar-toggle-button",
@@ -99,6 +99,7 @@ test.describe("Authentication - Authenticated Users", () => {
 		const userNavButton = adaContext.page.getByTestId("user-nav-button");
 		await expect(userNavButton).toBeVisible();
 
+		await userNavButton.scrollIntoViewIfNeeded();
 		await userNavButton.click();
 		const userNavMenu = adaContext.page.getByTestId("user-nav-menu");
 		await expect(userNavMenu).toBeVisible();

@@ -66,9 +66,7 @@ export class ChatPage {
 
 		if (status !== 200) {
 			const body = await response.text().catch(() => "(unreadable)");
-			console.error(
-				`[test] /api/chat returned non-200: ${status}\n${body}`,
-			);
+			console.error(`[test] /api/chat returned non-200: ${status}\n${body}`);
 		}
 
 		await response.finished();
@@ -94,7 +92,9 @@ export class ChatPage {
 			r.url().includes("/api/chat"),
 		);
 		await this.page
-			.getByRole("button", { name: "What are the advantages of" })
+			.getByTestId("suggested-actions")
+			.getByRole("button")
+			.first()
 			.click();
 	}
 
@@ -213,15 +213,8 @@ export class ChatPage {
 			.catch(() => null);
 
 		const reasoningElement = await lastMessageElement
-			.getByTestId("message-reasoning")
-			.isVisible()
-			.then(async (visible) =>
-				visible
-					? await lastMessageElement
-							.getByTestId("message-reasoning")
-							.innerText()
-					: null,
-			)
+			.getByTestId("message-reasoning-content")
+			.textContent()
 			.catch(() => null);
 
 		return {
