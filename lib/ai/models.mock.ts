@@ -66,7 +66,7 @@ function createDelayedStream(
 		async start(controller) {
 			for (const chunk of chunks) {
 				controller.enqueue(chunk);
-				await delay(5);
+				await delay(50);
 			}
 			controller.close();
 		},

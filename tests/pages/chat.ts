@@ -61,6 +61,9 @@ export class ChatPage {
 			: await this.page.waitForResponse((r) => r.url().includes("/api/chat"));
 		this.pendingChatResponse = null;
 		await response.finished();
+		// Allow React to flush its final throttled render batch
+		// (experimental_throttle batches updates every 100ms)
+		await this.page.waitForTimeout(150);
 	}
 
 	async isVoteComplete() {
@@ -150,10 +153,9 @@ export class ChatPage {
 		// Wait for React to commit the assistant message to the DOM.
 		// The stream response may finish before React's state update cycle
 		// (especially with experimental_throttle) renders the element.
-		await this.page.waitForSelector('[data-testid="message-assistant"]', {
-			state: "attached",
-			timeout: 10_000,
-		});
+		await expect(
+			this.page.getByTestId("message-assistant").first(),
+		).toBeAttached({ timeout: 10_000 });
 
 		const messageElements = await this.page
 			.getByTestId("message-assistant")

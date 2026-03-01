@@ -140,6 +140,7 @@ test.describe
 		});
 
 		test("Ada can resume chat generation", async ({ adaContext }) => {
+			test.skip(!process.env.REDIS_URL, "Resumable streams require REDIS_URL");
 			const chatId = generateUUID();
 
 			const firstRequest = adaContext.request.post("/api/chat", {
@@ -194,6 +195,7 @@ test.describe
 		test("Ada can resume chat generation that has ended during request", async ({
 			adaContext,
 		}) => {
+			test.skip(!process.env.REDIS_URL, "Resumable streams require REDIS_URL");
 			const chatId = generateUUID();
 
 			const firstRequest = await adaContext.request.post("/api/chat", {
@@ -244,6 +246,7 @@ test.describe
 		test("Ada cannot resume chat generation that has ended", async ({
 			adaContext,
 		}) => {
+			test.skip(!process.env.REDIS_URL, "Resumable streams require REDIS_URL");
 			const chatId = generateUUID();
 
 			const firstResponse = await adaContext.request.post("/api/chat", {
@@ -287,6 +290,7 @@ test.describe
 			adaContext,
 			babbageContext,
 		}) => {
+			test.skip(!process.env.REDIS_URL, "Resumable streams require REDIS_URL");
 			const chatId = generateUUID();
 
 			const firstRequest = adaContext.request.post("/api/chat", {
