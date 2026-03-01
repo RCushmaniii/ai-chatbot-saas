@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { translations } from "@/lib/i18n/translations";
@@ -9,18 +9,6 @@ import { StepWelcome } from "./step-welcome";
 import { StepKnowledge } from "./step-knowledge";
 import { StepTestChat } from "./step-test-chat";
 import { StepEmbedCode } from "./step-embed-code";
-
-/**
- * Detect locale from browser language, falling back to server-provided locale.
- * Runs once on the client during initial render.
- */
-function detectLocale(serverLocale: "en" | "es"): "en" | "es" {
-	if (typeof window === "undefined") return serverLocale;
-	const browserLang = navigator.language || navigator.languages?.[0] || "";
-	if (browserLang.startsWith("es")) return "es";
-	if (browserLang.startsWith("en")) return "en";
-	return serverLocale;
-}
 
 interface OnboardingWizardProps {
 	initialStep: number;
@@ -33,14 +21,13 @@ interface OnboardingWizardProps {
 
 export function OnboardingWizard({
 	initialStep,
-	locale: serverLocale,
+	locale,
 	businessId,
 	businessName: initialBusinessName,
 	botName: initialBotName,
 	botId,
 }: OnboardingWizardProps) {
 	const router = useRouter();
-	const locale = useMemo(() => detectLocale(serverLocale), [serverLocale]);
 	const t = translations[locale].onboarding;
 
 	const [currentStep, setCurrentStep] = useState(initialStep);
