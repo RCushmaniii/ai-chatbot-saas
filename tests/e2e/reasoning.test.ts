@@ -5,6 +5,15 @@ test.describe("chat activity with reasoning", () => {
 	let chatPage: ChatPage;
 
 	test.beforeEach(async ({ curieContext, requiresAuth }) => {
+		// Set the reasoning model via cookie so the chat page uses it
+		await curieContext.context.addCookies([
+			{
+				name: "chat-model",
+				value: "chat-model-reasoning",
+				domain: "localhost",
+				path: "/",
+			},
+		]);
 		chatPage = new ChatPage(curieContext.page);
 		await chatPage.createNewChat();
 	});

@@ -23,7 +23,10 @@ export const myProvider = isTestEnvironment
 				languageModels: {
 					"chat-model-mini": miniModel || chatModel,
 					"chat-model": chatModel,
-					"chat-model-reasoning": reasoningModel,
+					"chat-model-reasoning": wrapLanguageModel({
+						model: reasoningModel,
+						middleware: extractReasoningMiddleware({ tagName: "think" }),
+					}),
 					"title-model": titleModel,
 					"artifact-model": artifactModel,
 				},

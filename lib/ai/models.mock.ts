@@ -38,12 +38,28 @@ const RESPONSES: Array<[pattern: string, response: string]> = [
 	["weather", "The current temperature in San Francisco is 17\u00B0C."],
 ];
 
+/**
+ * Prompt-specific reasoning text for the reasoning model.
+ */
+const REASONING: Array<[pattern: string, reasoning: string]> = [
+	["sky blue", "The sky is blue because of rayleigh scattering!"],
+	["grass green", "Grass is green because of chlorophyll absorption!"],
+];
+
 function getResponseText(userText: string): string {
 	const lower = userText.toLowerCase();
 	for (const [pattern, response] of RESPONSES) {
 		if (lower.includes(pattern)) return response;
 	}
 	return "Mock response";
+}
+
+function getReasoningText(userText: string): string {
+	const lower = userText.toLowerCase();
+	for (const [pattern, reasoning] of REASONING) {
+		if (lower.includes(pattern)) return reasoning;
+	}
+	return `Thinking about: ${userText}`;
 }
 
 const MOCK_USAGE = {
@@ -163,6 +179,7 @@ const createMockReasoningModel = (): LanguageModel => {
 		doStream: async (options: { prompt: MockPrompt }) => {
 			const userText = getLastUserText(options.prompt);
 			const responseText = getResponseText(userText);
+			const reasoningText = getReasoningText(userText);
 
 			return {
 				stream: createDelayedStream([
@@ -171,7 +188,7 @@ const createMockReasoningModel = (): LanguageModel => {
 					{
 						type: "text-delta",
 						id: "text-1",
-						delta: `<think>Thinking about: ${userText}</think>${responseText}`,
+						delta: `<think>${reasoningText}</think>${responseText}`,
 					},
 					{ type: "text-end", id: "text-1" },
 					{
