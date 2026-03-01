@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 			if (!source.url) continue;
 
 			try {
-			// source.url already stores the discovered sitemap URL
+				// source.url already stores the discovered sitemap URL
 				const sitemapUrl = source.url;
 
 				// Fetch current sitemap

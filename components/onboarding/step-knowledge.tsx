@@ -120,10 +120,7 @@ export function StepKnowledge({ onKnowledgeAdded, t }: StepKnowledgeProps) {
 								break;
 							case "discovered":
 								setProgressMsg(
-									t.progressFound.replace(
-										"{pages}",
-										String(event.totalPages),
-									),
+									t.progressFound.replace("{pages}", String(event.totalPages)),
 								);
 								break;
 							case "scraping":

@@ -353,9 +353,7 @@ export async function POST(request: Request) {
 			const writer = stream.writable.getWriter();
 
 			const send = async (event: ProgressEvent) => {
-				await writer.write(
-					encoder.encode(JSON.stringify(event) + "\n"),
-				);
+				await writer.write(encoder.encode(JSON.stringify(event) + "\n"));
 			};
 
 			// Run the ingestion pipeline in the background
@@ -370,10 +368,7 @@ export async function POST(request: Request) {
 
 					if (sitemapResult) {
 						sitemapUrl = sitemapResult.sitemapUrl;
-						pageUrls = await extractUrlsFromSitemap(
-							sitemapResult.xml,
-							baseUrl,
-						);
+						pageUrls = await extractUrlsFromSitemap(sitemapResult.xml, baseUrl);
 						discoveryMethod = "sitemap";
 					} else {
 						pageUrls = await crawlForLinks(baseUrl);
@@ -438,9 +433,7 @@ export async function POST(request: Request) {
 						for (let ci = 0; ci < chunks.length; ci++) {
 							try {
 								const { embedding } = await embed({
-									model: openai.embedding(
-										"text-embedding-3-small",
-									),
+									model: openai.embedding("text-embedding-3-small"),
 									value: chunks[ci],
 								});
 
@@ -499,8 +492,7 @@ export async function POST(request: Request) {
 					await send({
 						type: "error",
 						error: "INGESTION_FAILED",
-						message:
-							"An unexpected error occurred during ingestion.",
+						message: "An unexpected error occurred during ingestion.",
 					});
 				} finally {
 					await writer.close();
@@ -524,10 +516,7 @@ export async function POST(request: Request) {
 		const sitemapResult = await discoverSitemap(baseUrl, input);
 		if (sitemapResult) {
 			sitemapUrl = sitemapResult.sitemapUrl;
-			pageUrls = await extractUrlsFromSitemap(
-				sitemapResult.xml,
-				baseUrl,
-			);
+			pageUrls = await extractUrlsFromSitemap(sitemapResult.xml, baseUrl);
 			discoveryMethod = "sitemap";
 		} else {
 			pageUrls = await crawlForLinks(baseUrl);
