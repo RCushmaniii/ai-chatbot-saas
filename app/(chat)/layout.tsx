@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Script from "next/script";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
@@ -11,6 +12,11 @@ export default async function Layout({
 	children: React.ReactNode;
 }) {
 	const [user, cookieStore] = await Promise.all([getAuthUser(), cookies()]);
+
+	if (user?.onboardingStatus === "pending") {
+		redirect("/onboarding");
+	}
+
 	const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
 
 	return (
