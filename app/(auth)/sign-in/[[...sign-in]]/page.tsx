@@ -5,6 +5,7 @@ export const metadata: Metadata = {
 	title: "Iniciar Sesión",
 	description:
 		"Inicia sesión en tu cuenta de Converso para administrar tu chatbot bilingüe.",
+	robots: { index: false, follow: false },
 };
 
 export default function SignInPage() {

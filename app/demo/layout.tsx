@@ -4,6 +4,9 @@ export const metadata: Metadata = {
 	title: "Demo",
 	description:
 		"Prueba el chatbot bilingüe de Converso en vivo. Mira cómo la IA atiende a tus clientes en español e inglés.",
+	alternates: {
+		canonical: "https://soyconverso.com/demo",
+	},
 	openGraph: {
 		title: "Demo | Converso",
 		description:

@@ -43,6 +43,13 @@ export const metadata: Metadata = {
 			"Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
 		creator: "@soyconverso",
 	},
+	alternates: {
+		canonical: "https://soyconverso.com",
+		languages: {
+			"es-MX": "https://soyconverso.com",
+			"en-US": "https://soyconverso.com",
+		},
+	},
 	robots: {
 		index: true,
 		follow: true,

@@ -4,6 +4,9 @@ export const metadata: Metadata = {
 	title: "Precios",
 	description:
 		"Planes simples y transparentes para tu chatbot bilingüe. Empieza gratis, escala cuando lo necesites.",
+	alternates: {
+		canonical: "https://soyconverso.com/pricing",
+	},
 	openGraph: {
 		title: "Precios | Converso",
 		description:

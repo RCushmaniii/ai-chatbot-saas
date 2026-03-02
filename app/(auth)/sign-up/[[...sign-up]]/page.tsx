@@ -5,6 +5,7 @@ export const metadata: Metadata = {
 	title: "Crear Cuenta",
 	description:
 		"Crea tu cuenta gratuita en Converso y lanza tu chatbot bilingüe en minutos.",
+	robots: { index: false, follow: false },
 };
 
 export default function SignUpPage() {
