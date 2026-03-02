@@ -4,7 +4,7 @@ import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
 import { LanguageToggle } from "./language-toggle";
 
@@ -181,37 +181,10 @@ export function ConversoLandingPage() {
 	const [isTyping, setIsTyping] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
 	const [mounted, setMounted] = useState(false);
-	const [showVideoModal, setShowVideoModal] = useState(false);
-	const videoRef = useRef<HTMLVideoElement>(null);
 
 	// Handle hydration for theme
 	useEffect(() => {
 		setMounted(true);
-	}, []);
-
-	// Close video modal on Escape key
-	useEffect(() => {
-		if (!showVideoModal) return;
-		const handleKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setShowVideoModal(false);
-		};
-		document.body.style.overflow = "hidden";
-		window.addEventListener("keydown", handleKey);
-		return () => {
-			document.body.style.overflow = "";
-			window.removeEventListener("keydown", handleKey);
-		};
-	}, [showVideoModal]);
-
-	const openVideoModal = useCallback(() => {
-		setShowVideoModal(true);
-		// Auto-play after modal renders
-		setTimeout(() => videoRef.current?.play(), 100);
-	}, []);
-
-	const closeVideoModal = useCallback(() => {
-		videoRef.current?.pause();
-		setShowVideoModal(false);
 	}, []);
 
 	// Scroll detection for navbar
@@ -495,14 +468,13 @@ export function ConversoLandingPage() {
 										{t.nav.dashboard}
 									</Link>
 								</SignedIn>
-								<button
-									type="button"
-									onClick={openVideoModal}
+								<Link
+									href="/demo"
 									className="px-8 py-4 border-2 border-ink/20 dark:border-white/20 rounded-xl font-bold text-lg text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5 dark:hover:bg-brand-cielito/10 transition-all text-center flex items-center gap-2"
 								>
 									<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
 									{t.hero.ctaSecondary}
-								</button>
+								</Link>
 							</div>
 
 							{/* Trust indicators */}
@@ -1139,76 +1111,6 @@ export function ConversoLandingPage() {
 				</div>
 			</footer>
 
-			{/* Video Demo Modal */}
-			{showVideoModal && (
-				<div
-					className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
-					role="dialog"
-					aria-modal="true"
-					aria-label="Demo video"
-				>
-					{/* Backdrop */}
-					<div
-						className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-						onClick={closeVideoModal}
-						onKeyDown={(e) => e.key === "Enter" && closeVideoModal()}
-						role="button"
-						tabIndex={0}
-						aria-label="Close video"
-					/>
-
-					{/* Modal content */}
-					<div className="relative w-full max-w-5xl animate-in zoom-in-95 fade-in duration-300">
-						{/* Close button */}
-						<button
-							type="button"
-							onClick={closeVideoModal}
-							className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium"
-						>
-							{lang === "es" ? "Cerrar" : "Close"}
-							<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-
-						{/* Video */}
-						<div className="rounded-2xl overflow-hidden shadow-2xl bg-black">
-							<video
-								ref={videoRef}
-								src="/video/Video_Generation_With_Spanish_Conversation.mp4"
-								poster="/video/converso-brief-poster.jpg"
-								controls
-								playsInline
-								className="w-full aspect-video"
-							>
-								<track kind="captions" />
-							</video>
-						</div>
-
-						{/* CTA below video */}
-						<div className="mt-6 text-center">
-							<SignedOut>
-								<SignUpButton mode="modal">
-									<button
-										type="button"
-										className="px-8 py-3 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
-									>
-										{t.hero.ctaPrimary}
-									</button>
-								</SignUpButton>
-							</SignedOut>
-							<SignedIn>
-								<Link
-									href="/chat"
-									className="inline-block px-8 py-3 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
-								>
-									{t.nav.dashboard}
-								</Link>
-							</SignedIn>
-						</div>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
