@@ -1175,7 +1175,7 @@ export function ConversoLandingPage() {
 						<div className="rounded-2xl overflow-hidden shadow-2xl bg-black">
 							<video
 								ref={videoRef}
-								src="/video/converso-brief.mp4"
+								src="/video/Video_Generation_With_Spanish_Conversation.mp4"
 								poster="/video/converso-brief-poster.jpg"
 								controls
 								playsInline
