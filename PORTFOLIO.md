@@ -25,7 +25,7 @@ tags:
   - "clerk-auth"
   - "lead-generation"
 
-thumbnail: ""
+thumbnail: "/images/portfolio/ai-chatbot-saas-thumb.jpg"
 hero_images: []
 demo_video_url: ""
 
