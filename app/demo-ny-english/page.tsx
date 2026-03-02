@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Script from "next/script";
+
+export const metadata: Metadata = {
+	title: "Demo — NY English Teacher",
+	description:
+		"Demo en vivo del chatbot de Converso entrenado con el contenido de NY English Teacher.",
+	robots: { index: false, follow: false },
+};
 
 export default function DemoEmbedPage() {
 	return (

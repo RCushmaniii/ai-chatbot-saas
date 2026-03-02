@@ -1,4 +1,11 @@
 import { SignUp } from "@clerk/nextjs";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Crear Cuenta",
+	description:
+		"Crea tu cuenta gratuita en Converso y lanza tu chatbot bilingüe en minutos.",
+};
 
 export default function SignUpPage() {
 	return (

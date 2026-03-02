@@ -15,15 +15,15 @@ export const metadata: Metadata = {
 		template: "%s | Converso",
 	},
 	description:
-		"Converso es la inteligencia artificial que habla tu negocio. Chatbots bilingües para empresas en México y Norteamérica.",
+		"Converso es la inteligencia artificial que atiende a tus clientes en español e inglés, 24/7. Chatbots bilingües para empresas en México y Norteamérica.",
 	keywords: [
-		"chatbot",
-		"AI",
-		"inteligencia artificial",
+		"chatbot bilingüe",
 		"chatbot para empresas",
+		"inteligencia artificial",
 		"chatbot México",
-		"bilingual chatbot",
-		"customer support AI",
+		"atención al cliente AI",
+		"chatbot español inglés",
+		"asistente virtual empresas",
 	],
 	authors: [{ name: "Converso" }],
 	openGraph: {
@@ -34,12 +34,13 @@ export const metadata: Metadata = {
 		siteName: "Converso",
 		title: "Converso | AI que habla tu idioma",
 		description:
-			"Chatbots inteligentes y bilingües para tu negocio. Fácil de integrar, poderoso en resultados.",
+			"Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "Converso | AI que habla tu idioma",
-		description: "Chatbots inteligentes y bilingües para tu negocio.",
+		description:
+			"Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
 		creator: "@soyconverso",
 	},
 	robots: {

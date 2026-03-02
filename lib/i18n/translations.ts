@@ -178,6 +178,21 @@ export const translations = {
 					],
 				},
 			},
+			faq: [
+				{
+					q: "Can I change my plan later?",
+					a: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any charges.",
+				},
+				{
+					q: "What happens if I exceed my limits?",
+					a: "We'll notify you when you're approaching your limits. Your chatbot will continue working, but you may want to upgrade to avoid any service interruptions.",
+				},
+				{
+					q: "Do you offer refunds?",
+					a: "Yes, we offer a 14-day money-back guarantee. If you're not satisfied, contact us for a full refund.",
+				},
+			],
+			loading: "Loading plans...",
 		},
 
 		// FAQ
@@ -518,6 +533,21 @@ export const translations = {
 					],
 				},
 			},
+			faq: [
+				{
+					q: "¿Puedo cambiar de plan después?",
+					a: "Sí, puedes subir o bajar de plan en cualquier momento. Los cambios toman efecto inmediatamente y ajustamos el cobro proporcionalmente.",
+				},
+				{
+					q: "¿Qué pasa si excedo mis límites?",
+					a: "Te notificaremos cuando estés cerca de tus límites. Tu chatbot seguirá funcionando, pero tal vez quieras actualizar tu plan para evitar interrupciones.",
+				},
+				{
+					q: "¿Ofrecen reembolsos?",
+					a: "Sí, ofrecemos una garantía de devolución de 14 días. Si no estás satisfecho, contáctanos para un reembolso completo.",
+				},
+			],
+			loading: "Cargando planes...",
 		},
 
 		// FAQ

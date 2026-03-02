@@ -4,9 +4,9 @@ import type { Metadata } from "next";
 import { Documentation } from "@/components/documentation";
 
 export const metadata: Metadata = {
-	title: "Documentation - NY English Teacher AI Chatbot",
+	title: "Documentación",
 	description:
-		"Complete documentation for the NY English Teacher AI Chatbot with RAG capabilities",
+		"Documentación técnica de Converso: chatbot bilingüe con inteligencia artificial para empresas.",
 };
 
 async function getDocumentation() {

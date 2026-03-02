@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Configuración Inicial",
+	description: "Configura tu chatbot bilingüe de Converso en minutos.",
+};
+
 export default function OnboardingLayout({
 	children,
 }: {

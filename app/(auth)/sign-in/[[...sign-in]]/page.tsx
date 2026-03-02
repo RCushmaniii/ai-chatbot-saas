@@ -1,4 +1,11 @@
 import { SignIn } from "@clerk/nextjs";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Iniciar Sesión",
+	description:
+		"Inicia sesión en tu cuenta de Converso para administrar tu chatbot bilingüe.",
+};
 
 export default function SignInPage() {
 	return (

@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { PricingCard } from "@/components/pricing-card";
 import { PricingToggle } from "@/components/pricing-toggle";
 import type { Plan } from "@/lib/db/schema";
+import { useLanguage } from "@/lib/i18n/use-language";
 
 export default function PricingPage() {
 	const router = useRouter();
+	const { t } = useLanguage();
 	const [plans, setPlans] = useState<Plan[]>([]);
 	const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">(
 		"monthly",
@@ -61,7 +63,7 @@ export default function PricingPage() {
 			} else if (data.error) {
 				// If unauthorized, redirect to sign in
 				if (response.status === 401) {
-					router.push(`/sign-in?redirect=/pricing`);
+					router.push("/sign-in?redirect=/pricing");
 				} else {
 					console.error("Checkout error:", data.error);
 					alert(data.error);
@@ -78,7 +80,7 @@ export default function PricingPage() {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="animate-pulse text-muted-foreground">
-					Loading plans...
+					{t.pricing.loading}
 				</div>
 			</div>
 		);
@@ -88,11 +90,9 @@ export default function PricingPage() {
 		<div className="min-h-screen bg-background">
 			<div className="max-w-6xl mx-auto px-4 py-16">
 				<div className="text-center mb-12">
-					<h1 className="text-4xl font-bold mb-4">
-						Simple, Transparent Pricing
-					</h1>
+					<h1 className="text-4xl font-bold mb-4">{t.pricing.title}</h1>
 					<p className="text-xl text-muted-foreground mb-8">
-						Choose the plan that fits your needs. Upgrade or downgrade anytime.
+						{t.pricing.subtitle}
 					</p>
 					<PricingToggle
 						billingCycle={billingCycle}
@@ -113,34 +113,14 @@ export default function PricingPage() {
 				</div>
 
 				<div className="mt-16 text-center">
-					<h2 className="text-2xl font-semibold mb-4">
-						Frequently Asked Questions
-					</h2>
+					<h2 className="text-2xl font-semibold mb-4">{t.faq.title}</h2>
 					<div className="max-w-2xl mx-auto space-y-6 text-left">
-						<div>
-							<h3 className="font-medium mb-2">Can I change my plan later?</h3>
-							<p className="text-muted-foreground">
-								Yes, you can upgrade or downgrade your plan at any time. Changes
-								take effect immediately, and we'll prorate any charges.
-							</p>
-						</div>
-						<div>
-							<h3 className="font-medium mb-2">
-								What happens if I exceed my limits?
-							</h3>
-							<p className="text-muted-foreground">
-								We'll notify you when you're approaching your limits. Your
-								chatbot will continue working, but you may want to upgrade to
-								avoid any service interruptions.
-							</p>
-						</div>
-						<div>
-							<h3 className="font-medium mb-2">Do you offer refunds?</h3>
-							<p className="text-muted-foreground">
-								Yes, we offer a 14-day money-back guarantee. If you're not
-								satisfied, contact us for a full refund.
-							</p>
-						</div>
+						{t.pricing.faq.map((item) => (
+							<div key={item.q}>
+								<h3 className="font-medium mb-2">{item.q}</h3>
+								<p className="text-muted-foreground">{item.a}</p>
+							</div>
+						))}
 					</div>
 				</div>
 			</div>

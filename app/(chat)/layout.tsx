@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Script from "next/script";
@@ -5,6 +6,12 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getAuthUser } from "@/lib/auth";
+
+export const metadata: Metadata = {
+	title: "Chat",
+	description: "Tu asistente virtual bilingüe de Converso.",
+	robots: { index: false, follow: false },
+};
 
 export default async function Layout({
 	children,
