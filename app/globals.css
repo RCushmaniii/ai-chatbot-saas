@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* Smooth scroll behavior */
+/* Smooth scroll behavior + offset for fixed navbar on anchor links */
 html {
 	scroll-behavior: smooth;
+	scroll-padding-top: 5rem; /* 80px — matches fixed nav height */
 }
 
 /* include utility classes in streamdown */

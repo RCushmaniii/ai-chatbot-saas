@@ -417,11 +417,8 @@ export function ConversoLandingPage() {
 				</div>
 			</nav>
 
-			{/* Spacer for fixed nav */}
-			<div className="h-[72px]" />
-
-			{/* Hero Section */}
-			<section className="relative pt-16 pb-24 px-6 overflow-hidden">
+			{/* Hero Section — pt includes space for fixed nav (≈80px nav + 32px breathing room) */}
+			<section className="relative pt-28 pb-24 px-6 overflow-hidden" style={{ marginTop: 0 }}>
 				{/* Background decorations */}
 				<div className="absolute top-0 right-0 w-96 h-96 bg-brand-cielito/10 dark:bg-brand-cielito/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 				<div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-jade/10 dark:bg-brand-jade/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
