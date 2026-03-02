@@ -26,8 +26,18 @@ tags:
   - "lead-generation"
 
 thumbnail: "/images/portfolio/ai-chatbot-saas-thumb.webp"
-hero_images: []
-demo_video_url: ""
+hero_images:
+  - "/images/portfolio/converso-01.webp"
+  - "/images/portfolio/converso-02.webp"
+  - "/images/portfolio/converso-03.webp"
+  - "/images/portfolio/converso-04.webp"
+  - "/images/portfolio/converso-05.webp"
+  - "/images/portfolio/converso-06.webp"
+  - "/images/portfolio/converso-07.webp"
+  - "/images/portfolio/converso-08.webp"
+  - "/images/portfolio/converso-09.webp"
+demo_video_url: "/video/converso-brief.mp4"
+demo_video_poster: "/video/converso-brief-poster.jpg"
 
 live_url: ""
 demo_url: ""
