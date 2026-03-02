@@ -72,7 +72,7 @@ export default function DemoPage() {
 							className="w-full aspect-video bg-black"
 						>
 							<source
-								src="/video/Video_Generation_With_Spanish_Conversation.mp4"
+								src="/video/converso-bilingual-demo.mp4"
 								type="video/mp4"
 							/>
 							<track kind="captions" />
