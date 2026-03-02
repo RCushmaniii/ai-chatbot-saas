@@ -5,7 +5,7 @@
 portfolio_enabled: true
 portfolio_priority: 1
 portfolio_featured: true
-portfolio_last_reviewed: "2026-02-22"
+portfolio_last_reviewed: "2026-03-02"
 
 title: "Converso AI — Bilingual AI Front Desk & Sales Assistant"
 tagline: "White-label AI chatbot SaaS for service businesses in bilingual markets"
@@ -25,7 +25,7 @@ tags:
   - "clerk-auth"
   - "lead-generation"
 
-thumbnail: "/images/portfolio/ai-chatbot-saas-thumb.jpg"
+thumbnail: "/images/portfolio/ai-chatbot-saas-thumb.webp"
 hero_images: []
 demo_video_url: ""
 
