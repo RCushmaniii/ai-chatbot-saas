@@ -51,7 +51,9 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 			"style-src 'self' 'unsafe-inline'",
 			"img-src 'self' blob: data: https://img.clerk.com https://avatar.vercel.sh https://*.public.blob.vercel-storage.com",
 			"font-src 'self' data:",
-			"connect-src 'self' https://*.clerk.accounts.dev https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com",
+			"media-src 'self' blob:",
+			"worker-src 'self' blob:",
+			"connect-src 'self' https://*.clerk.accounts.dev https://clerk-telemetry.com https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com",
 			"frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://challenges.cloudflare.com",
 			"frame-ancestors 'self'",
 			"base-uri 'self'",
@@ -88,7 +90,7 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
 	matcher: [
 		// Skip Next.js internals and all static files
-		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt)).*)",
+		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|ogg|mp3|wav)).*)",
 		// Always run for API routes
 		"/(api|trpc)(.*)",
 	],
