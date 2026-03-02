@@ -14,12 +14,12 @@ export const translations = {
 		// Hero
 		hero: {
 			badge: "Now with automatic bilingual support",
-			titlePart1: "The chatbot that",
-			titleHighlight: "speaks your language",
+			titlePart1: "One chatbot, two languages,",
+			titleHighlight: "zero missed leads",
 			description:
-				"Converso is the AI that serves your customers in Spanish and English, 24/7. Instant responses based on your business knowledge.",
+				"Converso serves your customers in English and Spanish around the clock — with accurate answers pulled from your own business knowledge.",
 			subtext:
-				"Perfect for businesses in Mexico and North America serving bilingual customers.",
+				"Built for service businesses in bilingual markets across Mexico and North America.",
 			ctaPrimary: "Start Free",
 			ctaSecondary: "See Demo",
 			trustNoCard: "No credit card required",
@@ -42,9 +42,9 @@ export const translations = {
 		// Stats (reframed as capabilities)
 		stats: {
 			resolved: "Of routine questions handled automatically",
-			availability: "Available 24/7, no staffing required",
-			faster: "Customers get answers in seconds",
-			setup: "Go live in under 2 minutes",
+			availability: "Available around the clock, no staffing required",
+			faster: "Faster responses than email or voicemail",
+			setup: "From sign-up to live on your site",
 		},
 
 		// Features
@@ -90,27 +90,28 @@ export const translations = {
 			subtitle: "No code, no complications, no waiting.",
 			step1: {
 				title: "Create your account",
-				description: "Sign up free in seconds. No credit card, no commitments.",
+				description:
+					"Sign up free in 30 seconds. No credit card, no commitments.",
 			},
 			step2: {
 				title: "Train your chatbot",
 				description:
-					"Upload documents, FAQs, or simply write the answers you want to give.",
+					"Paste your website URL and we import your pages automatically. Or upload PDFs, FAQs, anything — takes about 5 minutes.",
 			},
 			step3: {
-				title: "Install on your site",
+				title: "Go live on your website",
 				description:
-					"Copy and paste one line of code. Your chatbot is ready to serve.",
+					"Copy one line of code, paste it on your site. Your bilingual AI assistant is live in under 2 minutes.",
 			},
 		},
 
 		// Founder Story (replaces fake testimonials)
 		founderStory: {
-			title: "Built by someone who gets bilingual business",
+			title: "Why bilingual businesses deserve better tools",
 			quote:
-				"I run a business serving clients in both Mexico and the US. I built Converso because I needed a chatbot that actually understood both markets — not a US tool with a Spanish translation bolted on.",
+				"If you serve customers in both English and Spanish, you know the problem: generic chatbots don't understand your market, and bilingual staff is expensive. I built Converso so any service business can offer 24/7 bilingual support that actually knows their business — without the headcount.",
 			name: "Robert",
-			role: "Founder",
+			role: "Founder, CushLabs AI",
 		},
 
 		// Pricing
@@ -334,7 +335,7 @@ export const translations = {
 		footer: {
 			tagline:
 				"The intelligent, bilingual chatbot for businesses in Mexico and North America.",
-			copyright: "\u00A9 2025 Converso. All rights reserved.",
+			copyright: "\u00A9 2026 Converso. All rights reserved.",
 			product: "PRODUCT",
 			features: "Features",
 			pricing: "Pricing",
@@ -367,12 +368,12 @@ export const translations = {
 		// Hero
 		hero: {
 			badge: "Ahora con soporte bilingüe automático",
-			titlePart1: "El chatbot que",
-			titleHighlight: "habla tu idioma",
+			titlePart1: "Un chatbot, dos idiomas,",
+			titleHighlight: "cero leads perdidos",
 			description:
-				"Converso es la inteligencia artificial que atiende a tus clientes en español e inglés, 24/7. Respuestas instantáneas basadas en tu conocimiento de negocio.",
+				"Converso atiende a tus clientes en español e inglés las 24 horas — con respuestas precisas basadas en el conocimiento real de tu negocio.",
 			subtext:
-				"Perfecto para negocios en México y Norteamérica que atienden clientes bilingües.",
+				"Diseñado para negocios de servicio en mercados bilingües de México y Norteamérica.",
 			ctaPrimary: "Empieza Gratis",
 			ctaSecondary: "Ver Demo",
 			trustNoCard: "Sin tarjeta de crédito",
@@ -395,9 +396,9 @@ export const translations = {
 		// Stats (reframed as capabilities)
 		stats: {
 			resolved: "De preguntas rutinarias resueltas automáticamente",
-			availability: "Disponible 24/7, sin personal adicional",
-			faster: "Tus clientes obtienen respuestas en segundos",
-			setup: "En línea en menos de 2 minutos",
+			availability: "Disponible las 24 horas, sin personal adicional",
+			faster: "Respuestas más rápidas que email o buzón de voz",
+			setup: "De registro a en vivo en tu sitio",
 		},
 
 		// Features
@@ -444,27 +445,27 @@ export const translations = {
 			step1: {
 				title: "Crea tu cuenta",
 				description:
-					"Regístrate gratis en segundos. Sin tarjeta de crédito, sin compromisos.",
+					"Regístrate gratis en 30 segundos. Sin tarjeta de crédito, sin compromisos.",
 			},
 			step2: {
 				title: "Entrena tu chatbot",
 				description:
-					"Sube documentos, FAQs o simplemente escribe las respuestas que quieres dar.",
+					"Pega la URL de tu sitio web y nosotros importamos tus páginas automáticamente. O sube PDFs, FAQs, lo que sea — toma unos 5 minutos.",
 			},
 			step3: {
-				title: "Instala en tu sitio",
+				title: "Actívalo en tu sitio",
 				description:
-					"Copia y pega una línea de código. Tu chatbot está listo para atender.",
+					"Copia una línea de código, pégala en tu sitio. Tu asistente bilingüe con IA está en vivo en menos de 2 minutos.",
 			},
 		},
 
 		// Founder Story (replaces fake testimonials)
 		founderStory: {
-			title: "Creado por alguien que entiende los negocios bilingües",
+			title: "Por qué los negocios bilingües merecen mejores herramientas",
 			quote:
-				"Tengo un negocio que atiende clientes en México y Estados Unidos. Creé Converso porque necesitaba un chatbot que realmente entendiera ambos mercados — no una herramienta americana con una traducción al español pegada.",
+				"Si atiendes clientes en inglés y español, conoces el problema: los chatbots genéricos no entienden tu mercado, y el personal bilingüe es caro. Construí Converso para que cualquier negocio de servicio pueda ofrecer atención bilingüe 24/7 que realmente conozca su negocio — sin el costo de nómina.",
 			name: "Robert",
-			role: "Fundador",
+			role: "Fundador, CushLabs AI",
 		},
 
 		// Pricing
@@ -691,7 +692,7 @@ export const translations = {
 		footer: {
 			tagline:
 				"El chatbot inteligente y bilingüe para negocios en México y Norteamérica.",
-			copyright: "\u00A9 2025 Converso. Todos los derechos reservados.",
+			copyright: "\u00A9 2026 Converso. Todos los derechos reservados.",
 			product: "PRODUCTO",
 			features: "Características",
 			pricing: "Precios",

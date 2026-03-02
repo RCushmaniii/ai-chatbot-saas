@@ -638,7 +638,7 @@ export function ConversoLandingPage() {
 						</div>
 						<div>
 							<div className="text-4xl font-display font-bold text-brand-terracotta mb-2">
-								3x
+								&lt;5s
 							</div>
 							<div className="text-sm text-ink/60 dark:text-white/60">
 								{t.stats.faster}
@@ -1091,14 +1091,20 @@ export function ConversoLandingPage() {
 						<div className="text-sm text-white/40">{t.footer.madeWith}</div>
 						<div className="flex gap-4">
 							<a
-								href="#"
+								href="https://x.com/cushlabsai"
+								target="_blank"
+								rel="noopener noreferrer"
 								className="w-10 h-10 border border-white/20 rounded-lg flex items-center justify-center hover:border-brand-cielito hover:bg-brand-cielito/10 transition-all"
+								aria-label="X (Twitter)"
 							>
 								<span className="text-xs">X</span>
 							</a>
 							<a
-								href="#"
+								href="https://linkedin.com/company/cushlabs"
+								target="_blank"
+								rel="noopener noreferrer"
 								className="w-10 h-10 border border-white/20 rounded-lg flex items-center justify-center hover:border-brand-cielito hover:bg-brand-cielito/10 transition-all"
+								aria-label="LinkedIn"
 							>
 								<span className="text-xs">in</span>
 							</a>
