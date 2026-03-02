@@ -54,3 +54,9 @@ yarn-error.log*
 /playwright-report/
 /blob-report/
 /playwright/*
+
+.vercel
+.env*.local
+
+# clerk configuration (can include secrets)
+/.clerk/
