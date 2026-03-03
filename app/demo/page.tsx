@@ -98,26 +98,20 @@ export default function DemoPage() {
 				<Navbar />
 
 				{/* Header */}
-				<div className="text-center px-6 pt-28 pb-6">
+				<div className="text-center px-6 pt-28 pb-10">
 					<h1 className="text-white font-display font-bold text-2xl sm:text-3xl mb-2">
-						{t.hero.ctaSecondary === "Ver Demo"
-							? "Converso en acción"
-							: "Converso in action"}
+						{t.demoPage.headerTitle}
 					</h1>
 					<p className="text-white/50 text-sm max-w-lg mx-auto">
-						{t.hero.ctaSecondary === "Ver Demo"
-							? "Mira cómo un chatbot bilingüe atiende clientes, cambia de idioma automáticamente y captura leads — todo sin intervención humana."
-							: "Watch a bilingual chatbot serve customers, switch languages automatically, and capture leads — all without human intervention."}
+						{t.demoPage.headerSubtitle}
 					</p>
 				</div>
 
 				{/* Video 1 — Bilingual conversation (autoplay) */}
-				<section className="px-6 pb-6">
+				<section className="px-6 pb-10">
 					<div className="max-w-4xl mx-auto">
 						<h2 className="text-white/70 text-xs font-bold uppercase tracking-wider mb-3 text-center">
-							{t.hero.ctaSecondary === "Ver Demo"
-								? "Conversación bilingüe en vivo"
-								: "Live bilingual conversation"}
+							{t.demoPage.videoLabel1}
 						</h2>
 						<div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10">
 							<video
@@ -164,9 +158,7 @@ export default function DemoPage() {
 				<section className="px-6 pb-12">
 					<div className="max-w-4xl mx-auto">
 						<h2 className="text-white/70 text-xs font-bold uppercase tracking-wider mb-3 text-center">
-							{t.hero.ctaSecondary === "Ver Demo"
-								? "Resumen del producto"
-								: "Product overview"}
+							{t.demoPage.videoLabel2}
 						</h2>
 						<div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10">
 							<video
@@ -187,7 +179,7 @@ export default function DemoPage() {
 				</section>
 
 				{/* Feature Pillars */}
-				<section className="px-6 py-16">
+				<section className="px-6 py-20">
 					<div className="max-w-5xl mx-auto">
 						<h2 className="text-white font-display font-bold text-2xl sm:text-3xl text-center mb-12">
 							{t.demoPage.pillars.title}
@@ -214,13 +206,13 @@ export default function DemoPage() {
 				</section>
 
 				{/* Micro-Testimonial */}
-				<section className="px-6 py-12">
+				<section className="px-6 py-16">
 					<div className="max-w-3xl mx-auto text-center">
 						<div className="relative">
 							<div className="text-5xl text-brand-cielito/20 leading-none mb-4">
 								&ldquo;
 							</div>
-							<blockquote className="text-white/80 text-lg md:text-xl font-medium leading-relaxed mb-6 -mt-6">
+							<blockquote className="text-white/80 text-lg md:text-xl font-medium leading-relaxed mb-6">
 								{t.demoPage.testimonial}
 							</blockquote>
 							<div className="flex items-center justify-center gap-3">
@@ -243,7 +235,7 @@ export default function DemoPage() {
 				</section>
 
 				{/* CTA */}
-				<section className="px-6 pb-16 pt-4 text-center">
+				<section className="px-6 pb-16 pt-8 text-center">
 					<div className="flex flex-col sm:flex-row items-center justify-center gap-4">
 						<SignedOut>
 							<SignUpButton mode="modal">

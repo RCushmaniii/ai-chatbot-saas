@@ -333,6 +333,11 @@ export const translations = {
 
 		// Demo Page
 		demoPage: {
+			headerTitle: "See Converso in action",
+			headerSubtitle:
+				"Watch a bilingual chatbot serve customers, switch languages automatically, and capture leads — all without human intervention.",
+			videoLabel1: "Live bilingual conversation",
+			videoLabel2: "Product overview",
 			pillars: {
 				title: "Why businesses choose Converso",
 				bilingual: {
@@ -378,6 +383,7 @@ export const translations = {
 			privacy: "Privacy",
 			terms: "Terms",
 			security: "Security",
+			faq: "FAQ",
 			madeWith: "Made with love in Mexico and USA",
 		},
 	},
@@ -530,7 +536,7 @@ export const translations = {
 						"1,000 mensajes/mes",
 						"100 páginas de conocimiento",
 						"Widget personalizable",
-						"Analytics básicos",
+						"Análisis básicos",
 						"Soporte prioritario",
 					],
 				},
@@ -542,8 +548,8 @@ export const translations = {
 						"10 chatbots",
 						"5,000 mensajes/mes",
 						"500 páginas de conocimiento",
-						"API access",
-						"Analytics avanzados",
+						"Acceso a la API",
+						"Análisis avanzados",
 						"Integraciones premium",
 						"Soporte 24/7",
 					],
@@ -617,7 +623,7 @@ export const translations = {
 			subtitle:
 				"Comienza con el plan gratuito hoy. Sin tarjeta de crédito, sin compromiso — solo una mejor forma de atender a tus clientes bilingües.",
 			primary: "Empieza Gratis Ahora",
-			secondary: "Hablar con Ventas",
+			secondary: "Contactar Ventas",
 			trust:
 				"Sin tarjeta de crédito \u2022 14 días de prueba en planes de pago \u2022 Configuración en minutos",
 		},
@@ -719,6 +725,11 @@ export const translations = {
 
 		// Demo Page
 		demoPage: {
+			headerTitle: "Mira Converso en acción",
+			headerSubtitle:
+				"Mira cómo un chatbot bilingüe atiende clientes, cambia de idioma automáticamente y captura leads — todo sin intervención humana.",
+			videoLabel1: "Conversación bilingüe en vivo",
+			videoLabel2: "Resumen del producto",
 			pillars: {
 				title: "Por qué los negocios eligen Converso",
 				bilingual: {
@@ -732,7 +743,7 @@ export const translations = {
 						"Cada visitante recibe una respuesta instantánea. Captura nombres, emails e intención las 24 horas — incluso mientras duermes.",
 				},
 				zeroIntervention: {
-					title: "Cero Intervención Humana",
+					title: "Sin Intervención Humana",
 					description:
 						"Entrenado con el conocimiento de tu negocio, Converso maneja preguntas rutinarias para que tu equipo se enfoque en cerrar ventas.",
 				},
@@ -741,9 +752,9 @@ export const translations = {
 				trustedBy: "Usado por negocios de servicio en toda Norteamérica",
 			},
 			testimonial:
-				"Pasamos de perder consultas fuera de horario a capturar cada lead. Converso se pagó solo en la primera semana.",
+				"Pasamos de perder consultas después de horario a capturar cada lead. Converso se pagó solo en la primera semana.",
 			testimonialAuthor: "Maria G.",
-			testimonialRole: "Gerente de Consultorio Dental",
+			testimonialRole: "Gerente de Clínica Dental",
 		},
 
 		// Footer
@@ -764,6 +775,7 @@ export const translations = {
 			privacy: "Privacidad",
 			terms: "Términos",
 			security: "Seguridad",
+			faq: "FAQ",
 			madeWith: "Hecho con amor en México y USA",
 		},
 	},

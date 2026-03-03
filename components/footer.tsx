@@ -95,7 +95,7 @@ export function Footer() {
 									href={link("#faq", "/#faq")}
 									className="hover:text-white transition-colors"
 								>
-									FAQ
+									{t.footer.faq}
 								</a>
 							</li>
 						</ul>
