@@ -331,6 +331,35 @@ export const translations = {
 			finish: "Go to Dashboard",
 		},
 
+		// Demo Page
+		demoPage: {
+			pillars: {
+				title: "Why businesses choose Converso",
+				bilingual: {
+					title: "Native Bilingual Support",
+					description:
+						"Automatically detects and responds in English or Spanish — no configuration, no plugins, just natural conversation.",
+				},
+				leadCapture: {
+					title: "24/7 Lead Capture",
+					description:
+						"Every visitor gets an instant response. Collect names, emails, and intent around the clock — even while you sleep.",
+				},
+				zeroIntervention: {
+					title: "Zero Human Intervention",
+					description:
+						"Trained on your business knowledge, Converso handles routine questions so your team can focus on closing deals.",
+				},
+			},
+			socialProof: {
+				trustedBy: "Trusted by service businesses across North America",
+			},
+			testimonial:
+				"We went from missing after-hours inquiries to capturing every single lead. Converso paid for itself in the first week.",
+			testimonialAuthor: "Maria G.",
+			testimonialRole: "Dental Office Manager",
+		},
+
 		// Footer
 		footer: {
 			tagline:
@@ -686,6 +715,35 @@ export const translations = {
 			back: "Atrás",
 			skip: "Omitir Configuración",
 			finish: "Ir al Panel",
+		},
+
+		// Demo Page
+		demoPage: {
+			pillars: {
+				title: "Por qué los negocios eligen Converso",
+				bilingual: {
+					title: "Soporte Bilingüe Nativo",
+					description:
+						"Detecta y responde automáticamente en inglés o español — sin configuración, sin plugins, solo conversación natural.",
+				},
+				leadCapture: {
+					title: "Captura de Leads 24/7",
+					description:
+						"Cada visitante recibe una respuesta instantánea. Captura nombres, emails e intención las 24 horas — incluso mientras duermes.",
+				},
+				zeroIntervention: {
+					title: "Cero Intervención Humana",
+					description:
+						"Entrenado con el conocimiento de tu negocio, Converso maneja preguntas rutinarias para que tu equipo se enfoque en cerrar ventas.",
+				},
+			},
+			socialProof: {
+				trustedBy: "Usado por negocios de servicio en toda Norteamérica",
+			},
+			testimonial:
+				"Pasamos de perder consultas fuera de horario a capturar cada lead. Converso se pagó solo en la primera semana.",
+			testimonialAuthor: "Maria G.",
+			testimonialRole: "Gerente de Consultorio Dental",
 		},
 
 		// Footer

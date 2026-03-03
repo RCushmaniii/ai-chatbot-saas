@@ -1,12 +1,11 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
-import { Moon, Sun } from "lucide-react";
+import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
-import { LanguageToggle } from "./language-toggle";
+import { Navbar } from "./navbar";
+import { Footer } from "./footer";
 
 // Icons
 const CheckIcon = () => (
@@ -137,64 +136,14 @@ const PlugIcon = () => (
 	</svg>
 );
 
-const MenuIcon = () => (
-	<svg
-		className="w-6 h-6"
-		fill="none"
-		stroke="currentColor"
-		viewBox="0 0 24 24"
-	>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			strokeWidth={2}
-			d="M4 6h16M4 12h16M4 18h16"
-		/>
-	</svg>
-);
-
-const CloseIcon = () => (
-	<svg
-		className="w-6 h-6"
-		fill="none"
-		stroke="currentColor"
-		viewBox="0 0 24 24"
-	>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			strokeWidth={2}
-			d="M6 18L18 6M6 6l12 12"
-		/>
-	</svg>
-);
-
 export function ConversoLandingPage() {
-	const { lang, setLang, t } = useLanguage();
-	const { setTheme, resolvedTheme } = useTheme();
+	const { t } = useLanguage();
 	const [openFaq, setOpenFaq] = useState<number | null>(null);
 	const [isAnnual, setIsAnnual] = useState(true);
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [demoMessages, setDemoMessages] = useState<
 		Array<{ role: string; content: string }>
 	>([]);
 	const [isTyping, setIsTyping] = useState(false);
-	const [isScrolled, setIsScrolled] = useState(false);
-	const [mounted, setMounted] = useState(false);
-
-	// Handle hydration for theme
-	useEffect(() => {
-		setMounted(true);
-	}, []);
-
-	// Scroll detection for navbar
-	useEffect(() => {
-		const handleScroll = () => {
-			setIsScrolled(window.scrollY > 20);
-		};
-		window.addEventListener("scroll", handleScroll);
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
 
 	// Demo chat simulation
 	useEffect(() => {
@@ -214,8 +163,6 @@ export function ConversoLandingPage() {
 		};
 		demoSequence();
 	}, [t.demo.userMessage, t.demo.botResponse]);
-
-	const isDark = mounted && resolvedTheme === "dark";
 
 	const planKeys = ["free", "starter", "pro", "business"] as const;
 	const planPrices = {
@@ -245,177 +192,7 @@ export function ConversoLandingPage() {
 
 	return (
 		<div className="min-h-screen bg-surface-sand dark:bg-ink">
-			{/* Navigation - Fixed positioning for reliable sticky behavior */}
-			<nav
-				className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-					isScrolled
-						? "backdrop-blur-md bg-white/95 dark:bg-zinc-900/95 border-ink/10 dark:border-white/10 shadow-sm"
-						: "bg-white dark:bg-zinc-900 border-ink/10 dark:border-white/10"
-				}`}
-			>
-				<div
-					className={`max-w-7xl mx-auto px-6 transition-all duration-300 ${isScrolled ? "py-2" : "py-4"}`}
-				>
-					<div className="flex items-center justify-between">
-						{/* Logo - shrinks on scroll */}
-						<Link href="/" className="flex items-center gap-3 group">
-							<div
-								className={`bg-gradient-to-br from-brand-cielito to-brand-jade rounded-xl flex items-center justify-center shadow-md transition-all duration-300 ${isScrolled ? "w-8 h-8" : "w-10 h-10"}`}
-							>
-								<span
-									className={`text-white font-bold transition-all duration-300 ${isScrolled ? "text-base" : "text-lg"}`}
-								>
-									C
-								</span>
-							</div>
-							<span
-								className={`font-display font-bold text-ink dark:text-white tracking-tight transition-all duration-300 ${isScrolled ? "text-xl" : "text-2xl"}`}
-							>
-								Converso
-							</span>
-						</Link>
-
-						{/* Center Nav - Desktop */}
-						<div className="hidden lg:flex items-center gap-8 text-sm font-medium">
-							<a
-								href="#features"
-								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-							>
-								{t.nav.features}
-							</a>
-							<a
-								href="#how-it-works"
-								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-							>
-								{t.nav.howItWorks}
-							</a>
-							<a
-								href="#pricing"
-								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-							>
-								{t.nav.pricing}
-							</a>
-							<a
-								href="#faq"
-								className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-							>
-								{t.nav.faq}
-							</a>
-						</div>
-
-						{/* Right CTAs */}
-						<div className="flex items-center gap-3">
-							{/* Language Toggle */}
-							<LanguageToggle lang={lang} onChange={setLang} />
-
-							{/* Theme Toggle */}
-							<button
-								type="button"
-								onClick={() => setTheme(isDark ? "light" : "dark")}
-								className="p-2 rounded-full bg-ink/5 dark:bg-white/10 hover:bg-ink/10 dark:hover:bg-white/20 transition-colors"
-								aria-label="Toggle theme"
-							>
-								{mounted &&
-									(isDark ? (
-										<Sun className="w-5 h-5 text-white" />
-									) : (
-										<Moon className="w-5 h-5 text-ink" />
-									))}
-							</button>
-
-							<SignedOut>
-								<SignInButton mode="modal">
-									<button
-										type="button"
-										className="hidden sm:block text-sm font-medium text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-									>
-										{t.nav.signIn}
-									</button>
-								</SignInButton>
-								<SignUpButton mode="modal">
-									<button
-										type="button"
-										className="hidden sm:block px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
-									>
-										{t.nav.startFree}
-									</button>
-								</SignUpButton>
-							</SignedOut>
-							<SignedIn>
-								<Link
-									href="/chat"
-									className="hidden sm:block px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all"
-								>
-									{t.nav.dashboard}
-								</Link>
-							</SignedIn>
-
-							{/* Mobile menu button */}
-							<button
-								type="button"
-								className="lg:hidden p-2 text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white"
-								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-							>
-								{mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
-							</button>
-						</div>
-					</div>
-
-					{/* Mobile Menu */}
-					{mobileMenuOpen && (
-						<div className="lg:hidden mt-4 pb-4 border-t border-ink/10 dark:border-white/10 pt-4">
-							<div className="flex flex-col gap-4">
-								<a
-									href="#features"
-									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									{t.nav.features}
-								</a>
-								<a
-									href="#how-it-works"
-									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									{t.nav.howItWorks}
-								</a>
-								<a
-									href="#pricing"
-									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									{t.nav.pricing}
-								</a>
-								<a
-									href="#faq"
-									className="text-ink/70 dark:text-white/70 hover:text-ink dark:hover:text-white transition-colors"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									{t.nav.faq}
-								</a>
-								<SignedOut>
-									<SignUpButton mode="modal">
-										<button
-											type="button"
-											className="w-full px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md"
-										>
-											{t.nav.startFree}
-										</button>
-									</SignUpButton>
-								</SignedOut>
-								<SignedIn>
-									<Link
-										href="/chat"
-										className="w-full px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md text-center"
-									>
-										{t.nav.dashboard}
-									</Link>
-								</SignedIn>
-							</div>
-						</div>
-					)}
-				</div>
-			</nav>
+			<Navbar />
 
 			{/* Hero Section — pt includes space for fixed nav (≈80px nav + 32px breathing room) */}
 			<section className="relative pt-28 pb-24 px-6 overflow-hidden" style={{ marginTop: 0 }}>
@@ -736,7 +513,7 @@ export function ConversoLandingPage() {
 
 					<div className="bg-white dark:bg-white/5 rounded-2xl p-10 md:p-12 shadow-lg border border-ink/5 dark:border-white/10 relative">
 						<div className="text-6xl text-brand-cielito/30 absolute top-6 left-8">
-							"
+							&ldquo;
 						</div>
 						<blockquote className="text-xl md:text-2xl text-ink/80 dark:text-white/80 leading-relaxed mb-8 relative z-10 pl-8">
 							{t.founderStory.quote}
@@ -975,142 +752,7 @@ export function ConversoLandingPage() {
 				</div>
 			</section>
 
-			{/* Footer */}
-			<footer className="bg-ink text-white py-16 px-6">
-				<div className="max-w-7xl mx-auto">
-					<div className="grid md:grid-cols-5 gap-12 mb-12">
-						{/* Brand */}
-						<div className="md:col-span-2">
-							<div className="flex items-center gap-3 mb-4">
-								<div className="w-10 h-10 bg-gradient-to-br from-brand-cielito to-brand-jade rounded-xl flex items-center justify-center">
-									<span className="text-white font-bold">C</span>
-								</div>
-								<span className="text-xl font-display font-bold">Converso</span>
-							</div>
-							<p className="text-white/60 text-sm leading-relaxed mb-4">
-								{t.footer.tagline}
-							</p>
-							<p className="text-white/40 text-xs">{t.footer.copyright}</p>
-						</div>
-
-						{/* Product */}
-						<div>
-							<div className="text-sm font-bold mb-4 text-white/50">
-								{t.footer.product}
-							</div>
-							<ul className="space-y-3 text-sm text-white/60">
-								<li>
-									<a
-										href="#features"
-										className="hover:text-white transition-colors"
-									>
-										{t.footer.features}
-									</a>
-								</li>
-								<li>
-									<a
-										href="#pricing"
-										className="hover:text-white transition-colors"
-									>
-										{t.footer.pricing}
-									</a>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.integrations}
-									</a>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.api}
-									</a>
-								</li>
-							</ul>
-						</div>
-
-						{/* Resources */}
-						<div>
-							<div className="text-sm font-bold mb-4 text-white/50">
-								{t.footer.resources}
-							</div>
-							<ul className="space-y-3 text-sm text-white/60">
-								<li>
-									<Link
-										href="/documentation"
-										className="hover:text-white transition-colors"
-									>
-										{t.footer.documentation}
-									</Link>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.blog}
-									</a>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.guides}
-									</a>
-								</li>
-								<li>
-									<a href="#faq" className="hover:text-white transition-colors">
-										FAQ
-									</a>
-								</li>
-							</ul>
-						</div>
-
-						{/* Legal */}
-						<div>
-							<div className="text-sm font-bold mb-4 text-white/50">
-								{t.footer.legal}
-							</div>
-							<ul className="space-y-3 text-sm text-white/60">
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.privacy}
-									</a>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.terms}
-									</a>
-								</li>
-								<li>
-									<a href="#" className="hover:text-white transition-colors">
-										{t.footer.security}
-									</a>
-								</li>
-							</ul>
-						</div>
-					</div>
-
-					<div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-						<div className="text-sm text-white/40">{t.footer.madeWith}</div>
-						<div className="flex gap-4">
-							<a
-								href="https://x.com/cushlabsai"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="w-10 h-10 border border-white/20 rounded-lg flex items-center justify-center hover:border-brand-cielito hover:bg-brand-cielito/10 transition-all"
-								aria-label="X (Twitter)"
-							>
-								<span className="text-xs">X</span>
-							</a>
-							<a
-								href="https://linkedin.com/company/cushlabs"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="w-10 h-10 border border-white/20 rounded-lg flex items-center justify-center hover:border-brand-cielito hover:bg-brand-cielito/10 transition-all"
-								aria-label="LinkedIn"
-							>
-								<span className="text-xs">in</span>
-							</a>
-						</div>
-					</div>
-				</div>
-			</footer>
-
+			<Footer />
 		</div>
 	);
 }

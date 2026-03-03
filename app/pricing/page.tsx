@@ -6,6 +6,8 @@ import { PricingCard } from "@/components/pricing-card";
 import { PricingToggle } from "@/components/pricing-toggle";
 import type { Plan } from "@/lib/db/schema";
 import { useLanguage } from "@/lib/i18n/use-language";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 export default function PricingPage() {
 	const router = useRouter();
@@ -78,9 +80,12 @@ export default function PricingPage() {
 
 	if (isLoading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<div className="animate-pulse text-muted-foreground">
-					{t.pricing.loading}
+			<div className="min-h-screen bg-background">
+				<Navbar />
+				<div className="pt-[72px] flex items-center justify-center min-h-[calc(100vh-72px)]">
+					<div className="animate-pulse text-muted-foreground">
+						{t.pricing.loading}
+					</div>
 				</div>
 			</div>
 		);
@@ -88,42 +93,46 @@ export default function PricingPage() {
 
 	return (
 		<div className="min-h-screen bg-background">
-			<div className="max-w-6xl mx-auto px-4 py-16">
-				<div className="text-center mb-12">
-					<h1 className="text-4xl font-bold mb-4">{t.pricing.title}</h1>
-					<p className="text-xl text-muted-foreground mb-8">
-						{t.pricing.subtitle}
-					</p>
-					<PricingToggle
-						billingCycle={billingCycle}
-						onChange={setBillingCycle}
-					/>
-				</div>
-
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-					{plans.map((plan) => (
-						<PricingCard
-							key={plan.id}
-							plan={plan}
+			<Navbar />
+			<div className="pt-[72px]">
+				<div className="max-w-6xl mx-auto px-4 py-16">
+					<div className="text-center mb-12">
+						<h1 className="text-4xl font-bold mb-4">{t.pricing.title}</h1>
+						<p className="text-xl text-muted-foreground mb-8">
+							{t.pricing.subtitle}
+						</p>
+						<PricingToggle
 							billingCycle={billingCycle}
-							onSelect={handleSelectPlan}
-							isLoading={selectedPlanId === plan.id}
+							onChange={setBillingCycle}
 						/>
-					))}
-				</div>
+					</div>
 
-				<div className="mt-16 text-center">
-					<h2 className="text-2xl font-semibold mb-4">{t.faq.title}</h2>
-					<div className="max-w-2xl mx-auto space-y-6 text-left">
-						{t.pricing.faq.map((item) => (
-							<div key={item.q}>
-								<h3 className="font-medium mb-2">{item.q}</h3>
-								<p className="text-muted-foreground">{item.a}</p>
-							</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+						{plans.map((plan) => (
+							<PricingCard
+								key={plan.id}
+								plan={plan}
+								billingCycle={billingCycle}
+								onSelect={handleSelectPlan}
+								isLoading={selectedPlanId === plan.id}
+							/>
 						))}
+					</div>
+
+					<div className="mt-16 text-center">
+						<h2 className="text-2xl font-semibold mb-4">{t.faq.title}</h2>
+						<div className="max-w-2xl mx-auto space-y-6 text-left">
+							{t.pricing.faq.map((item) => (
+								<div key={item.q}>
+									<h3 className="font-medium mb-2">{item.q}</h3>
+									<p className="text-muted-foreground">{item.a}</p>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>
+			<Footer />
 		</div>
 	);
 }
