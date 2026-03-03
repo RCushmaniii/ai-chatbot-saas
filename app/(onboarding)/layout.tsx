@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
-export const metadata: Metadata = {
-	title: "Configuración Inicial",
-	description: "Configura tu chatbot bilingüe de Converso en minutos.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const cookieStore = await cookies();
+	const lang = cookieStore.get("converso-lang")?.value === "en" ? "en" : "es";
+	const isEn = lang === "en";
+
+	return {
+		title: isEn ? "Initial Setup" : "Configuración Inicial",
+		description: isEn
+			? "Set up your Converso bilingual chatbot in minutes."
+			: "Configura tu chatbot bilingüe de Converso en minutos.",
+	};
+}
 
 export default function OnboardingLayout({
 	children,

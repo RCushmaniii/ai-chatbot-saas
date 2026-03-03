@@ -7,11 +7,18 @@ import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getAuthUser } from "@/lib/auth";
 
-export const metadata: Metadata = {
-	title: "Chat",
-	description: "Tu asistente virtual bilingüe de Converso.",
-	robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const langCookie = (await cookies()).get("converso-lang");
+	const isEn = langCookie?.value === "en";
+
+	return {
+		title: "Chat",
+		description: isEn
+			? "Your bilingual Converso virtual assistant."
+			: "Tu asistente virtual bilingüe de Converso.",
+		robots: { index: false, follow: false },
+	};
+}
 
 export default async function Layout({
 	children,

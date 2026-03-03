@@ -8,53 +8,80 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
-export const metadata: Metadata = {
-	metadataBase: new URL("https://soyconverso.com"),
-	title: {
-		default: "Converso | AI que habla tu idioma",
-		template: "%s | Converso",
-	},
-	description:
-		"Converso es la inteligencia artificial que atiende a tus clientes en español e inglés, 24/7. Chatbots bilingües para empresas en México y Norteamérica.",
-	keywords: [
-		"chatbot bilingüe",
-		"chatbot para empresas",
-		"inteligencia artificial",
-		"chatbot México",
-		"atención al cliente AI",
-		"chatbot español inglés",
-		"asistente virtual empresas",
-	],
-	authors: [{ name: "Converso" }],
-	openGraph: {
-		type: "website",
-		locale: "es_MX",
-		alternateLocale: "en_US",
-		url: "https://soyconverso.com",
-		siteName: "Converso",
-		title: "Converso | AI que habla tu idioma",
-		description:
-			"Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
-	},
-	twitter: {
-		card: "summary_large_image",
-		title: "Converso | AI que habla tu idioma",
-		description:
-			"Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
-		creator: "@soyconverso",
-	},
-	alternates: {
-		canonical: "https://soyconverso.com",
-		languages: {
-			"es-MX": "https://soyconverso.com",
-			"en-US": "https://soyconverso.com",
+export async function generateMetadata(): Promise<Metadata> {
+	const cookieStore = await cookies();
+	const langCookie = cookieStore.get("converso-lang");
+	const lang = langCookie?.value === "en" ? "en" : "es";
+
+	const isEn = lang === "en";
+
+	return {
+		metadataBase: new URL("https://soyconverso.com"),
+		title: {
+			default: isEn
+				? "Converso | AI That Speaks Your Language"
+				: "Converso | AI que habla tu idioma",
+			template: "%s | Converso",
 		},
-	},
-	robots: {
-		index: true,
-		follow: true,
-	},
-};
+		description: isEn
+			? "Converso is the AI that serves your customers in English and Spanish, 24/7. Bilingual chatbots for businesses in Mexico and North America."
+			: "Converso es la inteligencia artificial que atiende a tus clientes en español e inglés, 24/7. Chatbots bilingües para empresas en México y Norteamérica.",
+		keywords: isEn
+			? [
+					"bilingual chatbot",
+					"business chatbot",
+					"artificial intelligence",
+					"chatbot Mexico",
+					"AI customer service",
+					"English Spanish chatbot",
+					"virtual assistant business",
+				]
+			: [
+					"chatbot bilingüe",
+					"chatbot para empresas",
+					"inteligencia artificial",
+					"chatbot México",
+					"atención al cliente AI",
+					"chatbot español inglés",
+					"asistente virtual empresas",
+				],
+		authors: [{ name: "Converso" }],
+		openGraph: {
+			type: "website",
+			locale: isEn ? "en_US" : "es_MX",
+			alternateLocale: isEn ? "es_MX" : "en_US",
+			url: "https://soyconverso.com",
+			siteName: "Converso",
+			title: isEn
+				? "Converso | AI That Speaks Your Language"
+				: "Converso | AI que habla tu idioma",
+			description: isEn
+				? "Smart bilingual chatbots for your business. Customer service in English and Spanish, 24/7."
+				: "Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: isEn
+				? "Converso | AI That Speaks Your Language"
+				: "Converso | AI que habla tu idioma",
+			description: isEn
+				? "Smart bilingual chatbots for your business. Customer service in English and Spanish, 24/7."
+				: "Chatbots inteligentes y bilingües para tu negocio. Atención al cliente en español e inglés, 24/7.",
+			creator: "@soyconverso",
+		},
+		alternates: {
+			canonical: "https://soyconverso.com",
+			languages: {
+				"es-MX": "https://soyconverso.com",
+				"en-US": "https://soyconverso.com",
+			},
+		},
+		robots: {
+			index: true,
+			follow: true,
+		},
+	};
+}
 
 export const viewport = {
 	maximumScale: 1, // Disable auto-zoom on mobile Safari
