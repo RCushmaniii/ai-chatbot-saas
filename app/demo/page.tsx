@@ -2,63 +2,153 @@
 
 import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useLanguage } from "@/lib/i18n/use-language";
-import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
+import { useLanguage } from "@/lib/i18n/use-language";
 
 // Industry icons for social proof strip (greyscale, generic)
 const DentalIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2C9.5 2 7 4 7 7c0 2 .5 3 1 5s1.5 6 2 7c.3.6.6 1 1 1h2c.4 0 .7-.4 1-1 .5-1 1.5-5 2-7s1-3 1-5c0-3-2.5-5-5-5z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 2C9.5 2 7 4 7 7c0 2 .5 3 1 5s1.5 6 2 7c.3.6.6 1 1 1h2c.4 0 .7-.4 1-1 .5-1 1.5-5 2-7s1-3 1-5c0-3-2.5-5-5-5z"
+		/>
 	</svg>
 );
 
 const LegalIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zM18.82 9L12 12.72 5.18 9 12 5.28 18.82 9z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zM18.82 9L12 12.72 5.18 9 12 5.28 18.82 9z"
+		/>
 	</svg>
 );
 
 const HVACIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+		/>
 	</svg>
 );
 
 const RestaurantIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h2v-7h4v7h2V3H9v8H5V3H3zm14 0c-2.2 0-4 1.8-4 4v4h2v12h2V11h2V7c0-2.2-1.8-4-4-4z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M3 3v18h2v-7h4v7h2V3H9v8H5V3H3zm14 0c-2.2 0-4 1.8-4 4v4h2v12h2V11h2V7c0-2.2-1.8-4-4-4z"
+		/>
 	</svg>
 );
 
 const AutoIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M19 17h2l.6-2.4c.2-.7.4-1.3.4-1.6 0-1-.4-1.7-1-2l-2-5h-14l-2 5c-.6.3-1 1-1 2 0 .3.2.9.4 1.6L3 17h2m14 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0M9 17a2 2 0 11-4 0m4 0a2 2 0 10-4 0" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M19 17h2l.6-2.4c.2-.7.4-1.3.4-1.6 0-1-.4-1.7-1-2l-2-5h-14l-2 5c-.6.3-1 1-1 2 0 .3.2.9.4 1.6L3 17h2m14 0a2 2 0 11-4 0m4 0a2 2 0 10-4 0M9 17a2 2 0 11-4 0m4 0a2 2 0 10-4 0"
+		/>
 	</svg>
 );
 
 const SalonIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M14.121 14.121A3 3 0 009.88 9.88m4.242 4.242L18 18m-3.879-3.879A3 3 0 009.88 9.88m0 0L6 6m9 3a6 6 0 11-12 0 6 6 0 0112 0z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.121 14.121A3 3 0 009.88 9.88m4.242 4.242L18 18m-3.879-3.879A3 3 0 009.88 9.88m0 0L6 6m9 3a6 6 0 11-12 0 6 6 0 0112 0z"
+		/>
 	</svg>
 );
 
 // Feature pillar icons
 const BilingualIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+		/>
 	</svg>
 );
 
 const LeadCaptureIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+		/>
 	</svg>
 );
 
 const ZeroInterventionIcon = () => (
-	<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+	<svg
+		className="w-8 h-8"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+		/>
 	</svg>
 );
 
@@ -168,10 +258,7 @@ export default function DemoPage() {
 								poster="/video/converso-brief-poster.jpg"
 								className="w-full aspect-video bg-black"
 							>
-								<source
-									src="/video/converso-brief.mp4"
-									type="video/mp4"
-								/>
+								<source src="/video/converso-brief.mp4" type="video/mp4" />
 								<track kind="captions" />
 							</video>
 						</div>
@@ -262,9 +349,7 @@ export default function DemoPage() {
 							{t.nav.pricing}
 						</Link>
 					</div>
-					<p className="text-white/30 text-xs mt-6">
-						{t.cta.trust}
-					</p>
+					<p className="text-white/30 text-xs mt-6">{t.cta.trust}</p>
 				</section>
 
 				<Footer />

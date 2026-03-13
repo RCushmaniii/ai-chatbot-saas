@@ -4,8 +4,8 @@ import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
-import { Navbar } from "./navbar";
 import { Footer } from "./footer";
+import { Navbar } from "./navbar";
 
 // Icons
 const CheckIcon = () => (
@@ -195,7 +195,10 @@ export function ConversoLandingPage() {
 			<Navbar />
 
 			{/* Hero Section — pt includes space for fixed nav (≈80px nav + 32px breathing room) */}
-			<section className="relative pt-28 pb-24 px-6 overflow-hidden" style={{ marginTop: 0 }}>
+			<section
+				className="relative pt-28 pb-24 px-6 overflow-hidden"
+				style={{ marginTop: 0 }}
+			>
 				{/* Background decorations */}
 				<div className="absolute top-0 right-0 w-96 h-96 bg-brand-cielito/10 dark:bg-brand-cielito/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 				<div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-jade/10 dark:bg-brand-jade/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -249,7 +252,13 @@ export function ConversoLandingPage() {
 									href="/demo"
 									className="px-8 py-4 border-2 border-ink/20 dark:border-white/20 rounded-xl font-bold text-lg text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5 dark:hover:bg-brand-cielito/10 transition-all text-center flex items-center gap-2"
 								>
-									<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+									<svg
+										className="w-5 h-5"
+										fill="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path d="M8 5v14l11-7z" />
+									</svg>
 									{t.hero.ctaSecondary}
 								</Link>
 							</div>

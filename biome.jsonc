@@ -19,7 +19,9 @@
 			"!components/ui",
 			"!lib/utils.ts",
 			"!hooks/use-mobile.ts",
-			"!app/globals.css"
+			"!app/globals.css",
+			"!playwright-report",
+			"!test-results"
 		]
 	},
 	"linter": {

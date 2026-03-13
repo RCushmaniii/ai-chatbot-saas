@@ -149,7 +149,7 @@ async function extractUrlsFromSitemap(
 async function crawlForLinks(baseUrl: string): Promise<string[]> {
 	const origin = new URL(baseUrl).origin;
 	const visited = new Set<string>();
-	const queue: string[] = [origin + "/"];
+	const queue: string[] = [`${origin}/`];
 	const discovered: string[] = [];
 
 	const SKIP_PATTERNS = [
@@ -353,7 +353,7 @@ export async function POST(request: Request) {
 			const writer = stream.writable.getWriter();
 
 			const send = async (event: ProgressEvent) => {
-				await writer.write(encoder.encode(JSON.stringify(event) + "\n"));
+				await writer.write(encoder.encode(`${JSON.stringify(event)}\n`));
 			};
 
 			// Run the ingestion pipeline in the background

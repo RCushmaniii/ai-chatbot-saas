@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
 import { PricingCard } from "@/components/pricing-card";
 import { PricingToggle } from "@/components/pricing-toggle";
 import type { Plan } from "@/lib/db/schema";
 import { useLanguage } from "@/lib/i18n/use-language";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 
 export default function PricingPage() {
 	const router = useRouter();

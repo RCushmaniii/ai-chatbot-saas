@@ -1,6 +1,25 @@
-# Disabled: ultracite has 10k+ errors across the codebase (inherited from template).
-# Re-enable after cleaning up lint errors or switching to a lighter linter config.
-# See: https://github.com/RCushmaniii/ai-chatbot-saas/actions/workflows/lint.yml
 name: Lint
 on:
-  workflow_dispatch: # Manual trigger only — no longer runs on every push
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run lint
+        run: pnpm lint
