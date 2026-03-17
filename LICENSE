@@ -1,44 +1,26 @@
-AI Chatbot SaaS Proprietary License
-Copyright (c) 2025 Robert Cushman. All rights reserved.
+Copyright (c) 2024-2026 CushLabs AI Services (Robert Cushman III). All Rights Reserved.
 
-IMPORTANT: This software is proprietary. No rights are granted to you unless
-you have a separate written license agreement signed by the Licensor.
+PROPRIETARY — PORTFOLIO DEMONSTRATION ONLY
 
-1. No Public License Granted
-   Except where expressly permitted by a separate written agreement, you may
-   not use, copy, modify, merge, publish, distribute, sublicense, sell, or
-   otherwise exploit the Software, in whole or in part.
+This software and all associated documentation files (the "Software") are the
+exclusive intellectual property of CushLabs AI Services.
 
-2. Limited Evaluation Permission
-   If you have lawful access to this repository, you may view the source code
-   and run the Software solely for internal evaluation and development
-   purposes, provided that you do not:
-   - deploy the Software for production use,
-   - provide the Software as a service to third parties,
-   - distribute the Software or any derivative works,
-   - remove or alter copyright or ownership notices.
+PERMITTED:
+  - Viewing and reading this code for professional evaluation of the author's work
+  - Referencing this repository in the context of hiring, partnership, or due diligence
+  - Linking to this repository
 
-3. Ownership
-   The Software is licensed, not sold. All right, title, and interest in and
-   to the Software remain with the Licensor.
+NOT PERMITTED:
+  - Copying, cloning, forking, or reproducing this code for any purpose other than
+    personal review
+  - Using any portion of this code in your own projects, products, or services,
+    whether commercial or non-commercial
+  - Distributing, sublicensing, or publishing derivative works based on this code
+  - Using this code as a template, boilerplate, or starting point for any project
 
-4. No Trademark License
-   This License does not grant permission to use any trademarks, service marks,
-   logos, or branding associated with the Licensor.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
 
-5. No Warranty
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE.
-
-6. Termination
-   Any violation of this License terminates your permission to access or use
-   the Software. Upon termination, you must cease all use and destroy any
-   copies in your possession or control.
-
-For commercial licensing, partnerships, or written permission, contact:
-info@cushlabs.ai
+For licensing inquiries: info@cushlabs.ai
+https://cushlabs.ai
