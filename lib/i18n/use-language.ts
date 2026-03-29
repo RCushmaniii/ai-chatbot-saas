@@ -13,7 +13,9 @@ const COOKIE_KEY = "converso-lang";
 function getBrowserLanguage(): Language {
 	if (typeof window === "undefined") return "es";
 	const browserLang = navigator.language || "";
-	return browserLang.startsWith("es") ? "es" : "en";
+	// English only if explicitly detected; otherwise default to Spanish
+	// (primary market is Mexico/LatAm)
+	return browserLang.startsWith("en") ? "en" : "es";
 }
 
 function getStoredLanguage(): Language | null {
