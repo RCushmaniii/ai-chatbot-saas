@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { entitlementsByPlan } from "@/lib/ai/entitlements";
 import { requirePermission } from "@/lib/auth";
+import { getBusinessPlanEntitlements } from "@/lib/db/queries-billing";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	countPlaybooksByBusinessId,
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
 			userId: user.id,
 		});
 
-		// Check playbook limit (using 'free' plan as default)
+		// Check playbook limit based on actual subscription
 		const currentCount = await countPlaybooksByBusinessId({ businessId });
-		const planLimits = entitlementsByPlan.free; // TODO: Get actual plan
+		const { entitlements: planLimits } = await getBusinessPlanEntitlements({ businessId });
 
 		if (
 			planLimits.playbooksLimit !== -1 &&

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -9,6 +9,25 @@ import { STRIPE_WEBHOOK_SECRET_SNAPSHOT, stripe } from "@/lib/stripe";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+// In-memory set to deduplicate webhook events within the same instance.
+// Stripe retries deliver the same event.id — rejecting duplicates prevents
+// double-writes when the webhook fires twice before the DB reflects the first write.
+const processedEvents = new Set<string>();
+const MAX_PROCESSED_EVENTS = 1000;
+
+function markEventProcessed(eventId: string) {
+	if (processedEvents.size >= MAX_PROCESSED_EVENTS) {
+		// Evict oldest entries (Set iterates in insertion order)
+		const iterator = processedEvents.values();
+		for (let i = 0; i < 200; i++) {
+			const next = iterator.next();
+			if (next.done) break;
+			processedEvents.delete(next.value);
+		}
+	}
+	processedEvents.add(eventId);
+}
 
 export async function POST(request: Request) {
 	const body = await request.text();
@@ -38,6 +57,11 @@ export async function POST(request: Request) {
 			{ error: `Webhook Error: ${message}` },
 			{ status: 400 },
 		);
+	}
+
+	// Idempotency: skip already-processed events
+	if (processedEvents.has(event.id)) {
+		return NextResponse.json({ received: true, deduplicated: true });
 	}
 
 	try {
@@ -73,9 +97,11 @@ export async function POST(request: Request) {
 				console.log(`Unhandled event type: ${event.type}`);
 		}
 
+		markEventProcessed(event.id);
 		return NextResponse.json({ received: true });
 	} catch (error) {
-		console.error("Error processing webhook:", error);
+		console.error(`Webhook processing failed [${event.type}]:`, error);
+		// Return 500 so Stripe retries the webhook
 		return NextResponse.json(
 			{ error: "Webhook handler failed" },
 			{ status: 500 },
@@ -89,21 +115,45 @@ async function handleCheckoutSessionCompleted(
 	const customerId = session.customer as string;
 	const subscriptionId = session.subscription as string;
 	const businessId = session.metadata?.businessId;
+	const planId = session.metadata?.planId;
 
 	if (!businessId) {
 		console.error("No businessId in checkout session metadata");
 		return;
 	}
 
+	// Idempotency: check if this subscription is already recorded
+	if (subscriptionId) {
+		const [existing] = await db
+			.select({ id: subscription.id })
+			.from(subscription)
+			.where(eq(subscription.stripeSubscriptionId, subscriptionId))
+			.limit(1);
+
+		if (existing) {
+			console.log(
+				`Checkout already processed for subscription ${subscriptionId}`,
+			);
+			return;
+		}
+	}
+
 	// Update the subscription record with Stripe IDs
+	const updateData: Record<string, unknown> = {
+		stripeCustomerId: customerId,
+		stripeSubscriptionId: subscriptionId,
+		status: "active",
+		updatedAt: new Date(),
+	};
+
+	// If we have a planId from metadata, update it too
+	if (planId) {
+		updateData.planId = planId;
+	}
+
 	await db
 		.update(subscription)
-		.set({
-			stripeCustomerId: customerId,
-			stripeSubscriptionId: subscriptionId,
-			status: "active",
-			updatedAt: new Date(),
-		})
+		.set(updateData)
 		.where(eq(subscription.businessId, businessId));
 
 	console.log(`Checkout completed for business ${businessId}`);
@@ -116,7 +166,7 @@ async function handleSubscriptionChange(
 	const subscriptionItem = stripeSubscription.items.data[0];
 	const priceId = subscriptionItem?.price.id;
 
-	// Find the subscription by Stripe customer ID
+	// Find the subscription by Stripe customer ID or subscription ID
 	const [existingSubscription] = await db
 		.select()
 		.from(subscription)
@@ -124,26 +174,27 @@ async function handleSubscriptionChange(
 		.limit(1);
 
 	if (!existingSubscription) {
+		// Could be a new subscription created outside our checkout flow
 		console.error(`No subscription found for customer ${customerId}`);
 		return;
 	}
 
-	// Find the plan by price ID
-	const [matchingPlan] = await db
+	// Find the plan by price ID (check monthly first, then annual)
+	const [matchingMonthlyPlan] = await db
 		.select()
 		.from(plan)
 		.where(eq(plan.stripePriceIdMonthly, priceId))
 		.limit(1);
 
-	const [matchingAnnualPlan] = matchingPlan
-		? [matchingPlan]
+	const [matchingAnnualPlan] = matchingMonthlyPlan
+		? [null]
 		: await db
 				.select()
 				.from(plan)
 				.where(eq(plan.stripePriceIdAnnual, priceId))
 				.limit(1);
 
-	const finalPlan = matchingPlan || matchingAnnualPlan;
+	const finalPlan = matchingMonthlyPlan || matchingAnnualPlan;
 
 	// Map Stripe status to our status enum
 	const statusMap: Record<
@@ -173,6 +224,7 @@ async function handleSubscriptionChange(
 		.set({
 			status,
 			billingCycle,
+			stripeSubscriptionId: stripeSubscription.id,
 			planId: finalPlan?.id || existingSubscription.planId,
 			currentPeriodStart: periodStart ? new Date(periodStart * 1000) : null,
 			currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
@@ -206,14 +258,19 @@ async function handleSubscriptionDeleted(
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
 	const customerId = invoice.customer as string;
 
-	// Update subscription status to active if it was past_due
+	// Only update if subscription is past_due (recovering from failed payment)
 	await db
 		.update(subscription)
 		.set({
 			status: "active",
 			updatedAt: new Date(),
 		})
-		.where(eq(subscription.stripeCustomerId, customerId));
+		.where(
+			and(
+				eq(subscription.stripeCustomerId, customerId),
+				eq(subscription.status, "past_due"),
+			),
+		);
 
 	console.log(`Invoice paid for customer ${customerId}`);
 }

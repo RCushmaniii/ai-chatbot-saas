@@ -4,6 +4,10 @@ import { regularPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
 import {
+	checkMessageLimit,
+	incrementMessageCount,
+} from "@/lib/db/queries-billing";
+import {
 	createWidgetConversation,
 	createWidgetMessage,
 	getWidgetConversationBySession,
@@ -39,6 +43,21 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
 		}
 
+		// Check plan-based monthly message limit for the business
+		if (businessId) {
+			const limitCheck = await checkMessageLimit({ businessId });
+			if (!limitCheck.allowed) {
+				return NextResponse.json(
+					{
+						error: "Monthly message limit reached. Please upgrade your plan.",
+						response:
+							"Lo siento, este negocio ha alcanzado su l\u00edmite mensual de mensajes. Por favor, int\u00e9ntalo m\u00e1s tarde.",
+					},
+					{ status: 429 },
+				);
+			}
+		}
+
 		// Get or create conversation for playbook tracking
 		let conversationId = existingConversationId;
 		let isFirstMessage = false;
@@ -63,12 +82,13 @@ export async function POST(request: Request) {
 
 			conversationId = conversation.id;
 
-			// Save user message
+			// Save user message and track usage
 			await createWidgetMessage({
 				conversationId,
 				role: "user",
 				content: message,
 			});
+			await incrementMessageCount({ businessId });
 
 			// Check for active playbook execution
 			const activeExecution =
@@ -151,6 +171,11 @@ export async function POST(request: Request) {
 		}
 
 		// No active playbook - use AI response
+		// Track usage even when no conversation was created
+		if (businessId && !conversationId) {
+			await incrementMessageCount({ businessId });
+		}
+
 		// Search knowledge base
 		const knowledgeResults = await searchKnowledgeDirect(message);
 

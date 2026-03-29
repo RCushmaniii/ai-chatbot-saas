@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { entitlementsByPlan } from "@/lib/ai/entitlements";
 import { requirePermission } from "@/lib/auth";
+import { getBusinessPlanEntitlements } from "@/lib/db/queries-billing";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import {
 	getRetrainingConfig,
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 		const config = await getRetrainingConfig({ businessId });
 
 		// Check if scheduled retraining is available for this plan
-		const planLimits = entitlementsByPlan.free; // TODO: Get actual plan
+		const { entitlements: planLimits } = await getBusinessPlanEntitlements({ businessId });
 		const isAvailable = planLimits.scheduledRetraining;
 
 		return NextResponse.json({
@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
 		});
 
 		// Check if scheduled retraining is available for this plan
-		const planLimits = entitlementsByPlan.free; // TODO: Get actual plan
+		const { entitlements: planLimits } = await getBusinessPlanEntitlements({ businessId });
 		if (!planLimits.scheduledRetraining) {
 			return NextResponse.json(
 				{

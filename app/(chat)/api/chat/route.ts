@@ -31,10 +31,13 @@ import { updateDocument } from "@/lib/ai/tools/update-document";
 import { getAuthUser } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
+	checkMessageLimit,
+	incrementMessageCount,
+} from "@/lib/db/queries-billing";
+import {
 	createStreamId,
 	deleteChatById,
 	getChatById,
-	getMessageCountByUserId,
 	getMessagesByChatId,
 	saveChat,
 	saveMessages,
@@ -121,13 +124,11 @@ export async function POST(request: Request) {
 			return new ChatSDKError("unauthorized:chat").toResponse();
 		}
 
-		const messageCount = await getMessageCountByUserId({
-			id: user.id,
-			differenceInHours: 24,
+		// Check plan-based monthly message limit
+		const limitCheck = await checkMessageLimit({
+			businessId: user.businessId,
 		});
-
-		// Rate limit: 1000 messages per day for authenticated users
-		if (messageCount > 1000) {
+		if (!limitCheck.allowed) {
 			return new ChatSDKError("rate_limit:chat").toResponse();
 		}
 
@@ -249,6 +250,9 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 				},
 			],
 		});
+
+		// Track usage for billing
+		await incrementMessageCount({ businessId: user.businessId });
 
 		const streamId = generateUUID();
 		await createStreamId({ streamId, chatId: id });

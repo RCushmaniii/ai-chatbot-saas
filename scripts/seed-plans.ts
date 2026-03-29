@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { plan } from "../lib/db/schema";
@@ -100,14 +101,26 @@ async function seed() {
 
 	for (const planData of plans) {
 		try {
-			await db
-				.insert(plan)
-				.values({
-					...planData,
-					createdAt: new Date(),
-				})
-				.onConflictDoNothing();
-			console.log(`  Created plan: ${planData.displayName}`);
+			// Use raw SQL to upsert by plan name (handles re-seeding with updated price IDs)
+			await db.execute(
+				sql`INSERT INTO "Plan" (id, name, display_name, description, price_monthly, price_annual, stripe_price_id_monthly, stripe_price_id_annual, messages_per_month, knowledge_base_pages_limit, chatbots_limit, team_members_limit, features, is_active, is_default, sort_order, created_at)
+				VALUES (gen_random_uuid(), ${planData.name}, ${planData.displayName}, ${planData.description}, ${planData.priceMonthly}, ${planData.priceAnnual}, ${planData.stripePriceIdMonthly}, ${planData.stripePriceIdAnnual}, ${planData.messagesPerMonth}, ${planData.knowledgeBasePagesLimit}, ${planData.chatbotsLimit}, ${planData.teamMembersLimit}, ${JSON.stringify(planData.features)}::jsonb, ${planData.isActive}, ${planData.isDefault}, ${planData.sortOrder}, now())
+				ON CONFLICT (name) DO UPDATE SET
+					display_name = EXCLUDED.display_name,
+					description = EXCLUDED.description,
+					price_monthly = EXCLUDED.price_monthly,
+					price_annual = EXCLUDED.price_annual,
+					stripe_price_id_monthly = EXCLUDED.stripe_price_id_monthly,
+					stripe_price_id_annual = EXCLUDED.stripe_price_id_annual,
+					messages_per_month = EXCLUDED.messages_per_month,
+					knowledge_base_pages_limit = EXCLUDED.knowledge_base_pages_limit,
+					chatbots_limit = EXCLUDED.chatbots_limit,
+					team_members_limit = EXCLUDED.team_members_limit,
+					features = EXCLUDED.features,
+					is_active = EXCLUDED.is_active,
+					sort_order = EXCLUDED.sort_order`,
+			);
+			console.log(`  Upserted plan: ${planData.displayName}`);
 		} catch (error) {
 			console.error(`  Error creating plan ${planData.name}:`, error);
 		}
