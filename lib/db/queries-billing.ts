@@ -4,8 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
-	type PlanEntitlements,
 	entitlementsByPlan,
+	type PlanEntitlements,
 } from "@/lib/ai/entitlements";
 import { plan, subscription, usageRecord } from "./schema";
 
@@ -97,8 +97,7 @@ export async function checkMessageLimit({
 }: {
 	businessId: string;
 }): Promise<
-	| { allowed: true }
-	| { allowed: false; limit: number; used: number }
+	{ allowed: true } | { allowed: false; limit: number; used: number }
 > {
 	const [{ entitlements }, messageCount] = await Promise.all([
 		getBusinessPlanEntitlements({ businessId }),
