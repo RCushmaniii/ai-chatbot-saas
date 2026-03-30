@@ -31,10 +31,6 @@ import { updateDocument } from "@/lib/ai/tools/update-document";
 import { getAuthUser } from "@/lib/auth";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
-	checkMessageLimit,
-	incrementMessageCount,
-} from "@/lib/db/queries-billing";
-import {
 	createStreamId,
 	deleteChatById,
 	getChatById,
@@ -43,6 +39,10 @@ import {
 	saveMessages,
 	updateChatLastContextById,
 } from "@/lib/db/queries";
+import {
+	checkMessageLimit,
+	incrementMessageCount,
+} from "@/lib/db/queries-billing";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";

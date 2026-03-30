@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth";
-import { getBusinessPlanEntitlements } from "@/lib/db/queries-billing";
 import { ensureDefaultTenantForUser } from "@/lib/db/queries";
+import { getBusinessPlanEntitlements } from "@/lib/db/queries-billing";
 import {
 	countPlaybookSteps,
 	createPlaybookStep,
@@ -159,7 +159,9 @@ export async function POST(
 
 		// Check step limit
 		const currentCount = await countPlaybookSteps({ playbookId });
-		const { entitlements: planLimits } = await getBusinessPlanEntitlements({ businessId });
+		const { entitlements: planLimits } = await getBusinessPlanEntitlements({
+			businessId,
+		});
 
 		if (
 			planLimits.playbookStepsLimit !== -1 &&
