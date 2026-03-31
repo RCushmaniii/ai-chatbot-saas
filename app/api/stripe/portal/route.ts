@@ -46,7 +46,7 @@ export async function POST() {
 		}
 
 		const baseUrl =
-			process.env.NEXT_PUBLIC_APP_URL || "https://botfoundry.online";
+			process.env.NEXT_PUBLIC_APP_URL || "https://www.soyconverso.com";
 
 		// Create Stripe billing portal session
 		const portalSession = await stripe.billingPortal.sessions.create({
