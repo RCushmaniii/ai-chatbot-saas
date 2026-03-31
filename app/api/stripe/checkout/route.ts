@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 			.limit(1);
 
 		const baseUrl =
-			process.env.NEXT_PUBLIC_APP_URL || "https://botfoundry.online";
+			process.env.NEXT_PUBLIC_APP_URL || "https://www.soyconverso.com";
 
 		// Create Stripe checkout session
 		const checkoutSession = await stripe.checkout.sessions.create({
