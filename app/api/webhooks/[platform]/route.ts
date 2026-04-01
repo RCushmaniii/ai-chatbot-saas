@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { bot } from "@/lib/channels/bot";
+import { getBot } from "@/lib/channels/bot";
 
 /**
  * POST handler for incoming webhook messages (WhatsApp, Slack, etc.)
@@ -10,6 +10,7 @@ export async function POST(
 	{ params }: { params: Promise<{ platform: string }> },
 ) {
 	const { platform } = await params;
+	const bot = getBot();
 
 	const handler = bot.webhooks[platform as keyof typeof bot.webhooks];
 	if (!handler) {
@@ -29,6 +30,7 @@ export async function GET(
 	{ params }: { params: Promise<{ platform: string }> },
 ) {
 	const { platform } = await params;
+	const bot = getBot();
 
 	const handler = bot.webhooks[platform as keyof typeof bot.webhooks];
 	if (!handler) {
