@@ -38,11 +38,13 @@ app/
   api/embed/                # Widget embed endpoints
   api/stripe/               # Checkout + portal
   api/webhooks/stripe/      # Stripe webhook handler
+  api/webhooks/[platform]/  # Chat SDK webhook handler (WhatsApp, Slack, etc.)
   api/clerk/webhook/        # Clerk webhook handler
   api/cron/                 # Scheduled retrain + sitemap scan
 components/                 # 99 components (admin-*, elements/*, ui/*)
 lib/
   ai/                       # Models, prompts, providers, tools (search-knowledge.ts)
+  channels/                  # Multi-channel bot (Chat SDK): bot.ts, whatsapp-handler.ts
   db/                       # schema.ts, queries.ts, queries-contacts.ts, queries-playbooks.ts, etc.
   db/migrations/            # Drizzle-generated SQL migrations
   auth.ts                   # getAuthUser(), requirePermission()
@@ -90,6 +92,10 @@ Don't just implement what's asked — think like a product designer:
 - Challenge requirements: if something seems over-engineered, say so and propose simpler alternatives
 - Think like a user: would a non-technical business owner understand this UI?
 
+## Active Initiatives
+
+- **WhatsApp / Chat SDK Integration** — Adding multi-channel support via Vercel Chat SDK, starting with WhatsApp. Strategic differentiator for Mexico market. Progress tracked in [`docs/WHATSAPP_INTEGRATION_LOG.md`](docs/WHATSAPP_INTEGRATION_LOG.md). Branch: `feat/whatsapp-chat-sdk`.
+
 ## Lessons Learned
 
 **Read [`docs/LESSONS_LEARNED.md`](docs/LESSONS_LEARNED.md) before making changes.** It contains critical build process info, common pitfalls, and solutions to problems encountered during development.
@@ -122,3 +128,7 @@ Required environment variables (see `.env.local`):
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhooks settings |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe dashboard |
 | `NEXT_PUBLIC_APP_URL` | Your deployment URL |
+| `WHATSAPP_ACCESS_TOKEN` | Meta Graph API system user token |
+| `WHATSAPP_APP_SECRET` | Meta app secret (webhook signature verification) |
+| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Business phone number ID |
+| `WHATSAPP_VERIFY_TOKEN` | Arbitrary string for webhook challenge-response |
