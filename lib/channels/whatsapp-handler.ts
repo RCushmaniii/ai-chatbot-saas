@@ -8,6 +8,7 @@ import { myProvider } from "@/lib/ai/providers";
 import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
 import {
 	checkMessageLimit,
+	getBusinessPlanEntitlements,
 	incrementMessageCount,
 } from "@/lib/db/queries-billing";
 import {
@@ -128,7 +129,16 @@ export async function handleWhatsAppMessage(
 	const { businessId } = resolved;
 	const userPhone = extractUserPhone(threadId);
 
-	// 2. Check plan-based message limits
+	// 2. Check WhatsApp plan entitlement
+	const { entitlements } = await getBusinessPlanEntitlements({ businessId });
+	if (!entitlements.whatsappEnabled) {
+		await thread.post(
+			"WhatsApp no está habilitado en el plan actual de este negocio. / WhatsApp is not enabled on this business's current plan.",
+		);
+		return;
+	}
+
+	// 3. Check plan-based message limits
 	const limitCheck = await checkMessageLimit({ businessId });
 	if (!limitCheck.allowed) {
 		await thread.post(
@@ -137,14 +147,14 @@ export async function handleWhatsAppMessage(
 		return;
 	}
 
-	// 3. Get or create conversation
+	// 4. Get or create conversation
 	const { conversationId, isFirstMessage } = await getOrCreateConversation(
 		businessId,
 		userPhone,
 		(message as { user?: { name?: string } }).user?.name,
 	);
 
-	// 4. Save user message and track usage
+	// 5. Save user message and track usage
 	await createWidgetMessage({
 		conversationId,
 		role: "user",
@@ -153,7 +163,7 @@ export async function handleWhatsAppMessage(
 	});
 	await incrementMessageCount({ businessId });
 
-	// 5. Check for active playbook execution
+	// 6. Check for active playbook execution
 	const activeExecution =
 		await playbookEngine.getActiveExecution(conversationId);
 
@@ -186,7 +196,7 @@ export async function handleWhatsAppMessage(
 		return;
 	}
 
-	// 6. Check for playbook triggers
+	// 7. Check for playbook triggers
 	const triggeredPlaybook = await playbookEngine.checkTriggers(userText, {
 		businessId,
 		conversationId,
@@ -214,7 +224,7 @@ export async function handleWhatsAppMessage(
 		return;
 	}
 
-	// 7. No active playbook — use AI response (same as embed chat)
+	// 8. No active playbook — use AI response (same as embed chat)
 	const knowledgeResults = await searchKnowledgeDirect(userText);
 	const detectedLang = detectLanguage(userText);
 	const learnMoreText = getLearnMoreText(detectedLang);
@@ -240,22 +250,30 @@ export async function handleWhatsAppMessage(
 	}
 
 	// Generate response
-	const model = myProvider.languageModel("chat-model");
-	const { text } = await generateText({
-		model,
-		messages: [
-			{ role: "system", content: context },
-			{ role: "user", content: userText },
-		],
-	});
+	try {
+		const model = myProvider.languageModel("chat-model");
+		const { text } = await generateText({
+			model,
+			messages: [
+				{ role: "system", content: context },
+				{ role: "user", content: userText },
+			],
+		});
 
-	// Save and send response
-	await createWidgetMessage({
-		conversationId,
-		role: "assistant",
-		content: text,
-		metadata: { channel: "whatsapp" },
-	});
+		await createWidgetMessage({
+			conversationId,
+			role: "assistant",
+			content: text,
+			metadata: { channel: "whatsapp" },
+		});
 
-	await thread.post(text);
+		await thread.post(text);
+	} catch (error) {
+		console.error("WhatsApp AI generation failed:", error);
+		const fallback =
+			detectedLang === "en"
+				? "Sorry, I'm having trouble responding right now. Please try again in a moment."
+				: "Lo siento, tengo problemas para responder en este momento. Por favor, inténtalo de nuevo en un momento.";
+		await thread.post(fallback);
+	}
 }
