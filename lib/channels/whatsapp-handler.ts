@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { Actions, Button, Card, CardText } from "chat";
 import type { Message, Thread } from "chat";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -105,6 +106,71 @@ async function getOrCreateConversation(
 }
 
 /**
+ * Handle interactive button clicks from playbook cards.
+ * The actionId format is: playbook_option:{conversationId}
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Chat SDK ActionEvent has complex generics
+export async function handlePlaybookAction(event: any): Promise<void> {
+	if (!event.thread) return;
+	const thread = event.thread;
+	const conversationId = event.actionId.replace("playbook_option:", "");
+	const userChoice = event.value || "";
+
+	try {
+		const activeExecution =
+			await playbookEngine.getActiveExecution(conversationId);
+		if (!activeExecution) return;
+
+		const stepResult = await playbookEngine.processStep(
+			activeExecution.id,
+			userChoice,
+		);
+
+		if (stepResult.content) {
+			await createWidgetMessage({
+				conversationId,
+				role: "user",
+				content: userChoice,
+				metadata: { channel: "whatsapp", source: "button_click" },
+			});
+			await createWidgetMessage({
+				conversationId,
+				role: "assistant",
+				content: stepResult.content,
+				playbookStepId: activeExecution.currentStepId || undefined,
+			});
+			await thread.post(stepResult.content);
+		}
+
+		// Send follow-up buttons if next step has options
+		if (
+			stepResult.options &&
+			stepResult.options.length > 0 &&
+			stepResult.options.length <= 3
+		) {
+			await thread.post(
+				Card({
+					children: [
+						CardText(stepResult.content || ""),
+						Actions(
+							stepResult.options.map((opt) =>
+								Button({
+									id: `playbook_option:${conversationId}`,
+									value: opt.value,
+									label: opt.label.slice(0, 20),
+								}),
+							),
+						),
+					],
+				}),
+			);
+		}
+	} catch (error) {
+		console.error("WhatsApp playbook action failed:", error);
+	}
+}
+
+/**
  * Main handler for incoming WhatsApp messages.
  * Mirrors the embed chat route logic: playbook engine → AI fallback.
  */
@@ -189,8 +255,22 @@ export async function handleWhatsAppMessage(
 			stepResult.options.length > 0 &&
 			stepResult.options.length <= 3
 		) {
-			// WhatsApp supports up to 3 interactive reply buttons
-			// TODO: Use Chat SDK cards/actions for interactive buttons
+			await thread.post(
+				Card({
+					children: [
+						CardText(stepResult.content || ""),
+						Actions(
+							stepResult.options.map((opt) =>
+								Button({
+									id: `playbook_option:${conversationId}`,
+									value: opt.value,
+									label: opt.label.slice(0, 20),
+								}),
+							),
+						),
+					],
+				}),
+			);
 		}
 
 		return;

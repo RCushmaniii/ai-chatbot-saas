@@ -1,7 +1,10 @@
 import { createPostgresState } from "@chat-adapter/state-pg";
 import { createWhatsAppAdapter } from "@chat-adapter/whatsapp";
 import { Chat } from "chat";
-import { handleWhatsAppMessage } from "./whatsapp-handler";
+import {
+	handleWhatsAppMessage,
+	handlePlaybookAction,
+} from "./whatsapp-handler";
 
 let _bot: Chat | null = null;
 
@@ -18,9 +21,12 @@ export function getBot(): Chat {
 		_bot.onDirectMessage(async (thread, message) => {
 			await handleWhatsAppMessage(thread, message);
 		});
+
+		_bot.onAction(async (event) => {
+			if (event.actionId.startsWith("playbook_option:")) {
+				await handlePlaybookAction(event);
+			}
+		});
 	}
 	return _bot;
 }
-
-// TODO: Handle button/list interactions from playbook steps via bot.onAction()
-// This will be wired up when interactive WhatsApp buttons are implemented.
