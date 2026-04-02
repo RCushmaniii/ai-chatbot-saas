@@ -29,13 +29,36 @@ Integrating Vercel Chat SDK to add WhatsApp (and future multi-channel) support t
   - `app/api/webhooks/[platform]/route.ts` — Dynamic webhook route (GET verification + POST messages)
 - Updated CLAUDE.md with new structure, env vars, and active initiative pointer
 
+### 2026-04-01 — Admin UI, Plan Gating, Interactive Buttons, Error Handling
+- Fixed Vercel preview build failures (Stripe + Chat SDK throwing at module load)
+  - `lib/stripe.ts` now uses lazy Proxy pattern
+  - `lib/channels/bot.ts` uses `getBot()` singleton with deferred init
+- **Plan entitlements:** Added `whatsappEnabled` flag — free/starter = false, pro/business = true
+- **Admin API:** Created `/api/admin/whatsapp` with full CRUD (GET, POST, DELETE)
+  - Zod validation, multi-tenant isolation, plan gate check
+- **Admin UI:** New "WhatsApp" tab in admin dashboard
+  - Phone number management form (phoneNumberId, display number, name, access token)
+  - Webhook configuration display (URL, subscribed fields, verify token)
+  - Upgrade prompt for free/starter plans
+- **Plan gating in handler:** WhatsApp messages now checked against `whatsappEnabled` entitlement
+- **Interactive buttons:** Playbook steps with ≤3 options now render as native WhatsApp reply buttons via Chat SDK `Card`/`Actions`/`Button`
+- **onAction handler:** `bot.onAction()` wired to process button clicks and advance playbook execution
+- **Error handling:** AI generation failures now return bilingual fallback message instead of silent failure
+
 ## Architecture Notes
 - Chat SDK sits alongside Vercel AI SDK (already in use) — handles messaging transport, not LLM calls
 - WhatsApp adapter: webhook-based, supports text/media/interactive buttons, no streaming (messages buffer and send complete)
 - Multi-tenant: each client business will need their own WABA + phone number
 - Existing pipeline (knowledge search, playbooks, lead capture) stays the same — Chat SDK adds a new transport layer
 
-## Pricing Tier Strategy (Proposed)
-- **Starter:** Web widget only
-- **Pro:** Web widget + WhatsApp
-- **Business:** Web widget + WhatsApp + Slack/Teams + priority support
+## Pricing Tier Strategy (Implemented)
+- **Free/Starter:** Web widget only (`whatsappEnabled: false`)
+- **Pro:** Web widget + WhatsApp (`whatsappEnabled: true`)
+- **Business:** Web widget + WhatsApp + Slack/Teams + priority support (`whatsappEnabled: true`)
+
+## Remaining Work
+- **Media/file messages:** Handler only processes text; images, docs, and audio are ignored
+- **Template messages:** WhatsApp Business API templates for outbound marketing/notifications
+- **Delivery receipts:** Status webhooks not processed (delivered/read tracking)
+- **E2E tests:** No Playwright tests for WhatsApp webhook flow
+- **Meta Business verification:** Requires Meta Business Manager setup for production access
