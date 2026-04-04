@@ -89,6 +89,8 @@ test.describe("Authentication - Authenticated Users", () => {
 	test("Sign out is available for authenticated users", async ({
 		adaContext,
 	}) => {
+		// Use a tall viewport to prevent sidebar elements from being off-screen
+		await adaContext.page.setViewportSize({ width: 1280, height: 900 });
 		await adaContext.page.goto("/chat");
 
 		const sidebarToggleButton = adaContext.page.getByTestId(
@@ -99,8 +101,16 @@ test.describe("Authentication - Authenticated Users", () => {
 		const userNavButton = adaContext.page.getByTestId("user-nav-button");
 		await expect(userNavButton).toBeVisible();
 
-		await userNavButton.scrollIntoViewIfNeeded();
-		await userNavButton.click({ force: true });
+		// Dispatch pointerdown — Radix UI DropdownMenu listens on pointer events
+		await userNavButton.dispatchEvent("pointerdown", {
+			button: 0,
+			pointerType: "mouse",
+		});
+		await userNavButton.dispatchEvent("pointerup", {
+			button: 0,
+			pointerType: "mouse",
+		});
+
 		const userNavMenu = adaContext.page.getByTestId("user-nav-menu");
 		await expect(userNavMenu).toBeVisible();
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { translations } from "@/lib/i18n/translations";
@@ -27,7 +26,6 @@ export function OnboardingWizard({
 	botName: initialBotName,
 	botId,
 }: OnboardingWizardProps) {
-	const router = useRouter();
 	const t = translations[locale].onboarding;
 
 	const [currentStep, setCurrentStep] = useState(initialStep);
@@ -88,12 +86,11 @@ export function OnboardingWizard({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ status }),
 			});
-			router.push(status === "completed" ? "/admin" : "/chat");
-			router.refresh();
+			// Full page navigation bypasses Next.js Router Cache, ensuring the
+			// (chat) layout re-reads the updated onboarding status from the DB.
+			window.location.href = "/chat";
 		} catch {
-			// If complete fails, still try to navigate
-			router.push("/chat");
-			router.refresh();
+			window.location.href = "/chat";
 		} finally {
 			setIsSaving(false);
 		}
