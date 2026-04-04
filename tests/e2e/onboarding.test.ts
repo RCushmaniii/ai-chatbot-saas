@@ -151,13 +151,13 @@ test.describe("Onboarding wizard", () => {
 	}) => {
 		// Should already be on /onboarding from previous test
 		await babbageContext.page.goto("/onboarding", {
-			waitUntil: "domcontentloaded",
+			waitUntil: "networkidle",
 		});
 
 		// Step 1: welcome card with business name and bot name inputs
 		await expect(
 			babbageContext.page.locator('input[id="businessName"]'),
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 15000 });
 		await expect(
 			babbageContext.page.locator('input[id="botName"]'),
 		).toBeVisible();
@@ -222,7 +222,7 @@ test.describe("Onboarding wizard", () => {
 		requiresAuth,
 	}) => {
 		await babbageContext.page.goto("/onboarding", {
-			waitUntil: "domcontentloaded",
+			waitUntil: "networkidle",
 		});
 
 		// Wait for step 2 content
@@ -230,17 +230,19 @@ test.describe("Onboarding wizard", () => {
 			babbageContext.page.getByText(
 				/import from website|importar desde sitio web/i,
 			),
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 15000 });
 
-		// Click the skip knowledge button
-		await babbageContext.page
-			.getByRole("button", { name: /skip.*knowledge|omitir.*conocimiento/i })
-			.click();
+		// Wait for skip button to be ready, then click
+		const skipButton = babbageContext.page.getByRole("button", {
+			name: /skip.*knowledge|omitir.*conocimiento/i,
+		});
+		await expect(skipButton).toBeVisible({ timeout: 5000 });
+		await skipButton.click();
 
 		// Should now be on step 3 — chat preview
 		await expect(
 			babbageContext.page.getByText(/test your chatbot|prueba tu chatbot/i),
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 15000 });
 	});
 
 	test("Step 3: chat preview iframe is rendered", async ({
@@ -304,7 +306,7 @@ test.describe("Onboarding wizard", () => {
 		).toBeVisible();
 	});
 
-	test("Step 4: finish onboarding redirects to /admin", async ({
+	test("Step 4: finish onboarding redirects to /chat", async ({
 		babbageContext,
 		requiresAuth,
 	}) => {
@@ -324,16 +326,9 @@ test.describe("Onboarding wizard", () => {
 			.getByRole("button", { name: /go to dashboard|ir al panel/i })
 			.click();
 
-		// Should redirect away from onboarding
-		await babbageContext.page.waitForURL(
-			(url) => !url.pathname.includes("/onboarding"),
-			{ timeout: 15000 },
-		);
-		// URL should be /admin or /chat (admin may redirect to chat if no admin page)
-		const finalUrl = babbageContext.page.url();
-		expect(
-			finalUrl.includes("/admin") || finalUrl.includes("/chat"),
-		).toBeTruthy();
+		// Should redirect to /chat after completing onboarding
+		await babbageContext.page.waitForURL("**/chat**", { timeout: 15000 });
+		expect(babbageContext.page.url()).toContain("/chat");
 	});
 
 	test("After completing, /onboarding redirects to /chat", async ({

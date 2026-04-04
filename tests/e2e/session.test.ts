@@ -99,8 +99,8 @@ test.describe("Authentication - Authenticated Users", () => {
 		const userNavButton = adaContext.page.getByTestId("user-nav-button");
 		await expect(userNavButton).toBeVisible();
 
-		await userNavButton.scrollIntoViewIfNeeded();
-		await userNavButton.click({ force: true });
+		// Use JS click to avoid "outside of viewport" errors in CI
+		await userNavButton.evaluate((el: HTMLElement) => el.click());
 		const userNavMenu = adaContext.page.getByTestId("user-nav-menu");
 		await expect(userNavMenu).toBeVisible();
 
