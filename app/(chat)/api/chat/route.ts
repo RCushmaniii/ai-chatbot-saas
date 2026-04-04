@@ -29,7 +29,7 @@ import {
 } from "@/lib/ai/tools/search-knowledge";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { getAuthUser } from "@/lib/auth";
-import { isProductionEnvironment } from "@/lib/constants";
+import { isProductionEnvironment, isTestEnvironment } from "@/lib/constants";
 import {
 	createStreamId,
 	deleteChatById,
@@ -124,12 +124,15 @@ export async function POST(request: Request) {
 			return new ChatSDKError("unauthorized:chat").toResponse();
 		}
 
-		// Check plan-based monthly message limit
-		const limitCheck = await checkMessageLimit({
-			businessId: user.businessId,
-		});
-		if (!limitCheck.allowed) {
-			return new ChatSDKError("rate_limit:chat").toResponse();
+		// Check plan-based monthly message limit (skip in test env to avoid
+		// accumulated usage from prior CI runs hitting the free-plan cap)
+		if (!isTestEnvironment) {
+			const limitCheck = await checkMessageLimit({
+				businessId: user.businessId,
+			});
+			if (!limitCheck.allowed) {
+				return new ChatSDKError("rate_limit:chat").toResponse();
+			}
 		}
 
 		const chat = await getChatById({ id });
