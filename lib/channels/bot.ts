@@ -2,8 +2,8 @@ import { createPostgresState } from "@chat-adapter/state-pg";
 import { createWhatsAppAdapter } from "@chat-adapter/whatsapp";
 import { Chat } from "chat";
 import {
-	handleWhatsAppMessage,
 	handlePlaybookAction,
+	handleWhatsAppMessage,
 } from "./whatsapp-handler";
 
 let _bot: Chat | null = null;

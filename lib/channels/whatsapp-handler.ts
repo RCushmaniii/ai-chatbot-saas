@@ -1,6 +1,6 @@
 import { generateText } from "ai";
-import { Actions, Button, Card, CardText } from "chat";
 import type { Message, Thread } from "chat";
+import { Actions, Button, Card, CardText } from "chat";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -109,7 +109,6 @@ async function getOrCreateConversation(
  * Handle interactive button clicks from playbook cards.
  * The actionId format is: playbook_option:{conversationId}
  */
-// biome-ignore lint/suspicious/noExplicitAny: Chat SDK ActionEvent has complex generics
 export async function handlePlaybookAction(event: any): Promise<void> {
 	if (!event.thread) return;
 	const thread = event.thread;
