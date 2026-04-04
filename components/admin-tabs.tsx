@@ -21,8 +21,8 @@ import { AdminPlaybooksTab } from "@/components/admin-playbooks/admin-playbooks-
 import { AdminRetrainingTab } from "@/components/admin-retraining/admin-retraining-tab";
 import { AdminStarterQuestions } from "@/components/admin-starter-questions";
 import { AdminSystemInstructions } from "@/components/admin-system-instructions";
-import { AdminWhatsAppTab } from "@/components/admin-whatsapp/admin-whatsapp-tab";
 import { AdminWebsiteScraping } from "@/components/admin-website-scraping";
+import { AdminWhatsAppTab } from "@/components/admin-whatsapp/admin-whatsapp-tab";
 import { BillingSection } from "@/components/billing-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 

@@ -212,9 +212,7 @@ export function AdminWhatsAppTab() {
 								<form onSubmit={handleSubmit} className="space-y-4">
 									<div className="grid gap-4 sm:grid-cols-2">
 										<div className="space-y-2">
-											<Label htmlFor="phoneNumberId">
-												Phone Number ID
-											</Label>
+											<Label htmlFor="phoneNumberId">Phone Number ID</Label>
 											<Input
 												id="phoneNumberId"
 												value={phoneNumberId}
@@ -234,9 +232,7 @@ export function AdminWhatsAppTab() {
 											<Input
 												id="displayPhoneNumber"
 												value={displayPhoneNumber}
-												onChange={(e) =>
-													setDisplayPhoneNumber(e.target.value)
-												}
+												onChange={(e) => setDisplayPhoneNumber(e.target.value)}
 												placeholder="e.g. +52 55 1234 5678"
 												required
 											/>
@@ -254,9 +250,7 @@ export function AdminWhatsAppTab() {
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="accessToken">
-											WhatsApp Access Token
-										</Label>
+										<Label htmlFor="accessToken">WhatsApp Access Token</Label>
 										<Input
 											id="accessToken"
 											type="password"
@@ -266,8 +260,8 @@ export function AdminWhatsAppTab() {
 											required
 										/>
 										<p className="text-xs text-muted-foreground">
-											System user permanent token with whatsapp_business_messaging
-											permission.
+											System user permanent token with
+											whatsapp_business_messaging permission.
 										</p>
 									</div>
 									<div className="flex gap-2">

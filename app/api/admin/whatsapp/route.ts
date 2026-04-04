@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { NextResponse } from "next/server";
 import postgres from "postgres";
@@ -13,10 +13,7 @@ const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
 const createPhoneMappingSchema = z.object({
-	phoneNumberId: z
-		.string()
-		.min(1, "Phone number ID is required")
-		.max(50),
+	phoneNumberId: z.string().min(1, "Phone number ID is required").max(50),
 	displayPhoneNumber: z
 		.string()
 		.min(1, "Display phone number is required")
@@ -66,7 +63,10 @@ export async function POST(request: Request) {
 		const { entitlements } = await getBusinessPlanEntitlements({ businessId });
 		if (!entitlements.whatsappEnabled) {
 			return NextResponse.json(
-				{ error: "WhatsApp is not available on your current plan. Upgrade to Pro or Business." },
+				{
+					error:
+						"WhatsApp is not available on your current plan. Upgrade to Pro or Business.",
+				},
 				{ status: 403 },
 			);
 		}
