@@ -321,13 +321,22 @@ test.describe("Onboarding wizard", () => {
 			),
 		).toBeVisible({ timeout: 10000 });
 
-		// Click "Go to Dashboard" / "Ir al Panel"
-		await babbageContext.page
-			.getByRole("button", { name: /go to dashboard|ir al panel/i })
-			.click();
+		// Intercept the API call and click simultaneously
+		const [completeResponse] = await Promise.all([
+			babbageContext.page.waitForResponse((r) =>
+				r.url().includes("/api/onboarding/complete"),
+			),
+			babbageContext.page
+				.getByRole("button", { name: /go to dashboard|ir al panel/i })
+				.click(),
+		]);
 
-		// Should redirect to /chat after completing onboarding
-		await babbageContext.page.waitForURL("**/chat**", { timeout: 15000 });
+		// Verify the API call succeeded before expecting navigation
+		expect(completeResponse.status()).toBe(200);
+
+		// window.location.href = "/chat" triggers a full page reload — give CI
+		// runners enough time for the server to read the updated DB status
+		await babbageContext.page.waitForURL("**/chat**", { timeout: 30000 });
 		expect(babbageContext.page.url()).toContain("/chat");
 	});
 
