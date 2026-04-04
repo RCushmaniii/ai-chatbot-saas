@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
+import { Show, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/use-language";
@@ -230,7 +230,7 @@ export function ConversoLandingPage() {
 							</p>
 
 							<div className="flex flex-col sm:flex-row gap-4 mb-12">
-								<SignedOut>
+								<Show when="signed-out">
 									<SignUpButton mode="modal">
 										<button
 											type="button"
@@ -239,15 +239,15 @@ export function ConversoLandingPage() {
 											{t.hero.ctaPrimary}
 										</button>
 									</SignUpButton>
-								</SignedOut>
-								<SignedIn>
+								</Show>
+								<Show when="signed-in">
 									<Link
 										href="/chat"
 										className="px-8 py-4 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-lg text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-center"
 									>
 										{t.nav.dashboard}
 									</Link>
-								</SignedIn>
+								</Show>
 								<Link
 									href="/demo"
 									className="px-8 py-4 border-2 border-ink/20 dark:border-white/20 rounded-xl font-bold text-lg text-ink dark:text-white hover:border-brand-cielito hover:bg-brand-cielito/5 dark:hover:bg-brand-cielito/10 transition-all text-center flex items-center gap-2"
@@ -631,7 +631,7 @@ export function ConversoLandingPage() {
 										))}
 									</ul>
 
-									<SignedOut>
+									<Show when="signed-out">
 										<SignUpButton mode="modal">
 											<button
 												type="button"
@@ -644,8 +644,8 @@ export function ConversoLandingPage() {
 												{plan.cta}
 											</button>
 										</SignUpButton>
-									</SignedOut>
-									<SignedIn>
+									</Show>
+									<Show when="signed-in">
 										<Link
 											href="/chat"
 											className={`block w-full py-3 rounded-xl font-bold text-center transition-all ${
@@ -656,7 +656,7 @@ export function ConversoLandingPage() {
 										>
 											{t.nav.dashboard}
 										</Link>
-									</SignedIn>
+									</Show>
 								</div>
 							);
 						})}
@@ -731,7 +731,7 @@ export function ConversoLandingPage() {
 					</p>
 
 					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-						<SignedOut>
+						<Show when="signed-out">
 							<SignUpButton mode="modal">
 								<button
 									type="button"
@@ -740,15 +740,15 @@ export function ConversoLandingPage() {
 									{t.cta.primary}
 								</button>
 							</SignUpButton>
-						</SignedOut>
-						<SignedIn>
+						</Show>
+						<Show when="signed-in">
 							<Link
 								href="/chat"
 								className="px-10 py-5 bg-white rounded-xl font-bold text-lg text-brand-cielito shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
 							>
 								{t.nav.dashboard}
 							</Link>
-						</SignedIn>
+						</Show>
 						<a
 							href="mailto:hola@soyconverso.com"
 							className="px-10 py-5 border-2 border-white/30 rounded-xl font-bold text-lg text-white hover:bg-white/10 transition-all"

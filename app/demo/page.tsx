@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
+import { Show, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
@@ -324,7 +324,7 @@ export default function DemoPage() {
 				{/* CTA */}
 				<section className="px-6 pb-16 pt-8 text-center">
 					<div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-						<SignedOut>
+						<Show when="signed-out">
 							<SignUpButton mode="modal">
 								<button
 									type="button"
@@ -333,15 +333,15 @@ export default function DemoPage() {
 									{t.nav.startFree}
 								</button>
 							</SignUpButton>
-						</SignedOut>
-						<SignedIn>
+						</Show>
+						<Show when="signed-in">
 							<Link
 								href="/chat"
 								className="px-8 py-3.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
 							>
 								{t.nav.dashboard}
 							</Link>
-						</SignedIn>
+						</Show>
 						<Link
 							href="/pricing"
 							className="px-8 py-3.5 border border-white/20 rounded-xl font-bold text-white hover:bg-white/5 transition-all"

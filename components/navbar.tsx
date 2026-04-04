@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -138,7 +138,7 @@ export function Navbar() {
 								))}
 						</button>
 
-						<SignedOut>
+						<Show when="signed-out">
 							<SignInButton mode="modal">
 								<button
 									type="button"
@@ -155,15 +155,15 @@ export function Navbar() {
 									{t.nav.startFree}
 								</button>
 							</SignUpButton>
-						</SignedOut>
-						<SignedIn>
+						</Show>
+						<Show when="signed-in">
 							<Link
 								href="/chat"
 								className="hidden sm:block px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg transition-all"
 							>
 								{t.nav.dashboard}
 							</Link>
-						</SignedIn>
+						</Show>
 
 						{/* Mobile menu button */}
 						<button
@@ -190,7 +190,7 @@ export function Navbar() {
 									{link.label}
 								</a>
 							))}
-							<SignedOut>
+							<Show when="signed-out">
 								<SignUpButton mode="modal">
 									<button
 										type="button"
@@ -199,15 +199,15 @@ export function Navbar() {
 										{t.nav.startFree}
 									</button>
 								</SignUpButton>
-							</SignedOut>
-							<SignedIn>
+							</Show>
+							<Show when="signed-in">
 								<Link
 									href="/chat"
 									className="w-full px-6 py-2.5 bg-gradient-to-r from-brand-cielito to-brand-jade rounded-xl text-sm font-bold text-white shadow-md text-center"
 								>
 									{t.nav.dashboard}
 								</Link>
-							</SignedIn>
+							</Show>
 						</div>
 					</div>
 				)}
