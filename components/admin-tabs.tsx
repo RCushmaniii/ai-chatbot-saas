@@ -7,6 +7,7 @@ import {
 	Globe,
 	Headphones,
 	MessageSquare,
+	Phone,
 	RefreshCw,
 	Settings,
 	Users,
@@ -20,6 +21,7 @@ import { AdminPlaybooksTab } from "@/components/admin-playbooks/admin-playbooks-
 import { AdminRetrainingTab } from "@/components/admin-retraining/admin-retraining-tab";
 import { AdminStarterQuestions } from "@/components/admin-starter-questions";
 import { AdminSystemInstructions } from "@/components/admin-system-instructions";
+import { AdminWhatsAppTab } from "@/components/admin-whatsapp/admin-whatsapp-tab";
 import { AdminWebsiteScraping } from "@/components/admin-website-scraping";
 import { BillingSection } from "@/components/billing-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,6 +66,10 @@ export function AdminTabs() {
 					<Code className="h-4 w-4" />
 					<span className="hidden sm:inline">Embed</span>
 				</TabsTrigger>
+				<TabsTrigger value="whatsapp" className="flex items-center gap-2">
+					<Phone className="h-4 w-4" />
+					<span className="hidden sm:inline">WhatsApp</span>
+				</TabsTrigger>
 				<TabsTrigger value="billing" className="flex items-center gap-2">
 					<CreditCard className="h-4 w-4" />
 					<span className="hidden sm:inline">Billing</span>
@@ -104,6 +110,10 @@ export function AdminTabs() {
 
 			<TabsContent value="embed" className="mt-6">
 				<AdminEmbedCode />
+			</TabsContent>
+
+			<TabsContent value="whatsapp" className="mt-6">
+				<AdminWhatsAppTab />
 			</TabsContent>
 
 			<TabsContent value="billing" className="mt-6">

@@ -495,6 +495,13 @@ export const contactActivity = pgTable("ContactActivity", {
 
 export type ContactActivity = InferSelectModel<typeof contactActivity>;
 
+export const conversationChannelEnum = pgEnum("conversation_channel", [
+	"web",
+	"whatsapp",
+	"slack",
+	"teams",
+]);
+
 export const widgetConversationStatusEnum = pgEnum(
 	"widget_conversation_status",
 	["active", "closed", "handed_off"],
@@ -506,8 +513,10 @@ export const widgetConversation = pgTable("WidgetConversation", {
 		.notNull()
 		.references(() => business.id),
 	botId: uuid("bot_id").references(() => bot.id),
-	visitorId: varchar("visitor_id", { length: 100 }).notNull(),
-	sessionId: varchar("session_id", { length: 100 }).notNull(),
+	channel: conversationChannelEnum("channel").notNull().default("web"),
+	visitorId: varchar("visitor_id", { length: 100 }),
+	sessionId: varchar("session_id", { length: 100 }),
+	phoneNumber: varchar("phone_number", { length: 20 }),
 	contactId: uuid("contact_id").references(() => contact.id),
 	status: widgetConversationStatusEnum("status").notNull().default("active"),
 	metadata: jsonb("metadata").$type<{
@@ -515,6 +524,7 @@ export const widgetConversation = pgTable("WidgetConversation", {
 		referrer?: string;
 		pageUrl?: string;
 		ip?: string;
+		whatsappName?: string;
 	}>(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -785,3 +795,25 @@ export const trainingSuggestion = pgTable("TrainingSuggestion", {
 });
 
 export type TrainingSuggestion = InferSelectModel<typeof trainingSuggestion>;
+
+// ===========================================
+// WHATSAPP / MULTI-CHANNEL
+// ===========================================
+
+export const whatsappPhoneMapping = pgTable("WhatsappPhoneMapping", {
+	id: uuid("id").primaryKey().notNull().defaultRandom(),
+	businessId: uuid("business_id")
+		.notNull()
+		.references(() => business.id),
+	phoneNumberId: varchar("phone_number_id", { length: 50 }).notNull().unique(),
+	displayPhoneNumber: varchar("display_phone_number", { length: 20 }).notNull(),
+	displayName: varchar("display_name", { length: 255 }),
+	accessToken: text("access_token"),
+	isActive: boolean("is_active").notNull().default(true),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type WhatsappPhoneMapping = InferSelectModel<
+	typeof whatsappPhoneMapping
+>;

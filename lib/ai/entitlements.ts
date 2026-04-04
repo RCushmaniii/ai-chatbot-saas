@@ -15,6 +15,7 @@ export type PlanEntitlements = {
 	playbookStepsLimit: number;
 	liveChat: boolean;
 	scheduledRetraining: boolean;
+	whatsappEnabled: boolean;
 };
 
 export const entitlementsByPlan: Record<string, PlanEntitlements> = {
@@ -30,6 +31,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 		playbookStepsLimit: 5,
 		liveChat: false,
 		scheduledRetraining: false,
+		whatsappEnabled: false,
 		features: [
 			"1 chatbot",
 			"50 páginas de conocimiento",
@@ -50,6 +52,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 		playbookStepsLimit: 15,
 		liveChat: false,
 		scheduledRetraining: false,
+		whatsappEnabled: false,
 		features: [
 			"2 chatbots",
 			"200 páginas de conocimiento",
@@ -71,6 +74,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 		playbookStepsLimit: 50,
 		liveChat: true,
 		scheduledRetraining: true,
+		whatsappEnabled: true,
 		features: [
 			"5 chatbots",
 			"1,000 páginas de conocimiento",
@@ -79,6 +83,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 			"Chat en vivo con agentes",
 			"Reentrenamiento programado",
 			"Analíticas avanzadas",
+			"WhatsApp Business",
 			"Integraciones API",
 			"Soporte prioritario",
 		],
@@ -99,6 +104,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 		playbookStepsLimit: -1, // Unlimited
 		liveChat: true,
 		scheduledRetraining: true,
+		whatsappEnabled: true,
 		features: [
 			"Chatbots ilimitados",
 			"10,000+ páginas de conocimiento",
@@ -107,6 +113,7 @@ export const entitlementsByPlan: Record<string, PlanEntitlements> = {
 			"Chat en vivo con agentes",
 			"Reentrenamiento programado",
 			"Razonamiento profundo (IA premium)",
+			"WhatsApp Business",
 			"SSO empresarial",
 			"SLA garantizado",
 			"Gerente de cuenta dedicado",
