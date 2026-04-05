@@ -1,11 +1,13 @@
 # Converso AI — Bilingual AI Front Desk & Sales Assistant
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
+![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?logo=postgresql)
 ![Vercel AI SDK](https://img.shields.io/badge/AI_SDK-5.0-black?logo=vercel)
 ![Clerk](https://img.shields.io/badge/Auth-Clerk-6C47FF?logo=clerk)
 ![Stripe](https://img.shields.io/badge/Billing-Stripe-635BFF?logo=stripe)
+![Sentry](https://img.shields.io/badge/Monitoring-Sentry-362D59?logo=sentry)
 
 > Multi-tenant SaaS platform for service businesses to deploy a bilingual (EN/ES), on-brand AI assistant that answers questions, qualifies leads, captures booking intent, and escalates high-intent prospects to live agents.
 
@@ -47,6 +49,11 @@ The platform needed to solve three things simultaneously:
 - **Visual playbook builder** using React Flow — business owners design multi-step conversation flows with conditional branching, data capture, and live agent handoff
 - **Webhook-driven billing** — Stripe checkout sessions, subscription lifecycle events, and usage tracking all handled via verified webhooks
 - **Security headers in proxy.ts** — CSP, HSTS, X-Frame-Options applied at the edge via Next.js 16's proxy layer (replaces middleware.ts)
+- **Sentry error monitoring** — client, server, and edge runtime error tracking with source map uploads and `/monitoring` tunnel route
+- **Upstash Redis rate limiting** — distributed sliding-window rate limiter that works across Vercel serverless instances (in-memory fallback for dev)
+- **Runtime env validation** — Zod schema validates all required environment variables at startup, fails fast in production
+- **Vercel Analytics + Speed Insights** — page view tracking and Core Web Vitals monitoring
+- **Bundle optimization** — admin tab content lazy-loaded with `next/dynamic`, presentational components converted to server components
 
 ## Getting Started
 
@@ -79,7 +86,7 @@ pnpm dev
 
 ### Environment Variables
 
-Create a `.env.local` file at the project root:
+Create a `.env.local` file at the project root. See `.env.example` for the full template.
 
 | Variable | Description |
 |----------|-------------|
@@ -92,6 +99,9 @@ Create a `.env.local` file at the project root:
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
 | `NEXT_PUBLIC_APP_URL` | Public app URL (e.g., `https://yourdomain.com`) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (rate limiting) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
+| `SENTRY_DSN` | Sentry error reporting DSN |
 
 ## Security
 
@@ -99,12 +109,31 @@ Create a `.env.local` file at the project root:
 - [x] RBAC: owner/admin/member roles enforced on every admin API route
 - [x] Parameterized SQL queries throughout (Drizzle ORM + postgres.js template literals)
 - [x] Stripe and Clerk webhook signature verification
-- [x] Security headers via proxy.ts (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+- [x] Security headers via proxy.ts (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Permissions-Policy)
 - [x] PDF upload validation (magic bytes + file size limits)
 - [x] Multi-tenant data isolation via `businessId` scoping on all queries
 - [x] Zod schema validation on all API request bodies
 - [x] CSV formula injection sanitization on contact exports
-- [x] Rate limiting on embed chat endpoints (per-IP)
+- [x] Distributed rate limiting on embed chat endpoints (Upstash Redis, per-IP)
+- [x] Runtime environment validation at startup (fail-fast in production)
+- [x] Sentry error monitoring across client, server, and edge runtimes
+
+## Testing
+
+Playwright E2E and route tests cover:
+
+- **Chat API** — message creation, streaming, cross-user isolation, resume streams
+- **Onboarding** — full wizard flow (steps 1-4), API validation, redirect logic
+- **Session** — auth state, sign-in/sign-up redirects, sign-out
+- **Admin Settings** — CRUD, partial updates, cross-tenant isolation
+- **Admin Contacts** — create, list, search, filter, pagination, tenant isolation
+- **Admin Knowledge** — list, input validation, tenant isolation
+- **Embed Widget** — script generation, CORS, capture/chat validation, rate limiting
+- **Health** — endpoint availability
+
+```powershell
+pnpm test          # Run all tests
+```
 
 ## Project Structure
 
@@ -119,21 +148,28 @@ ai-chatbot-saas/
 │   │   ├── admin/              # 15+ admin CRUD endpoints
 │   │   ├── embed/              # Widget embed endpoints
 │   │   ├── stripe/             # Checkout + portal
-│   │   ├── webhooks/           # Stripe webhook handler
+│   │   ├── webhooks/           # Stripe + WhatsApp webhook handlers
 │   │   └── clerk/              # Clerk webhook handler
 │   └── embed/chat/             # Embeddable widget page
-├── components/                 # 99 React components
+├── components/                 # React components
 │   ├── admin-*/                # Admin panel modules
 │   ├── elements/               # Chat message primitives
 │   └── ui/                     # shadcn/ui component library
 ├── lib/
 │   ├── ai/                     # Models, prompts, providers, tools
+│   ├── channels/               # Multi-channel bot (WhatsApp via Chat SDK)
 │   ├── db/                     # Drizzle schema, queries, migrations
 │   ├── i18n/                   # Translations and language hooks
 │   ├── ingestion/              # CSV and DOCX processors
-│   └── playbook/               # Playbook execution engine
+│   ├── playbook/               # Playbook execution engine
+│   ├── env.ts                  # Runtime env validation (Zod)
+│   └── rate-limit.ts           # Upstash Redis rate limiter
+├── sentry.*.config.ts          # Sentry client/server/edge configs
+├── instrumentation.ts          # OpenTelemetry + Sentry + env validation
+├── proxy.ts                    # Security headers + Clerk auth (Next.js 16)
 ├── migrations/                 # Custom SQL migrations
 ├── scripts/                    # Seed, ingest, and maintenance scripts
+├── tests/                      # Playwright E2E + route tests
 └── docs/                       # Architecture and planning docs
 ```
 
@@ -160,6 +196,9 @@ This platform demonstrates end-to-end SaaS product architecture — from multi-t
 | Live chat | Agent queue with priority routing and AI summaries |
 | Billing | Stripe subscriptions with usage-based metering |
 | Widget | One-tag embed with configurable appearance |
+| Multi-channel | WhatsApp support via Vercel Chat SDK |
+| Monitoring | Sentry error tracking, Vercel Analytics, Speed Insights |
+| Rate limiting | Upstash Redis distributed limiter |
 
 ## Contact
 
@@ -176,4 +215,4 @@ info@cushlabs.ai
 
 ---
 
-*Last Updated: 2026-02-22*
+*Last Updated: 2026-04-05*
