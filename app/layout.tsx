@@ -1,5 +1,7 @@
 import { enUS, esES } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
@@ -168,6 +170,8 @@ export default async function RootLayout({
 						<Toaster position="top-center" />
 						{children}
 					</ThemeProvider>
+					<Analytics />
+					<SpeedInsights />
 				</body>
 			</html>
 		</ClerkProvider>
