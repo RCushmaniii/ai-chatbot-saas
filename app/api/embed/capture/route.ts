@@ -21,7 +21,7 @@ const captureSchema = z.object({
 
 export async function POST(request: Request) {
 	// Rate limit: 10 captures per minute per IP
-	const rateLimitResponse = rateLimit(request, "embed-capture", {
+	const rateLimitResponse = await rateLimit(request, "embed-capture", {
 		maxRequests: 10,
 		windowSeconds: 60,
 	});
