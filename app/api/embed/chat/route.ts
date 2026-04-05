@@ -22,7 +22,7 @@ import {
 
 export async function POST(request: Request) {
 	// Rate limit: 30 messages per minute per IP
-	const rateLimitResponse = rateLimit(request, "embed-chat", {
+	const rateLimitResponse = await rateLimit(request, "embed-chat", {
 		maxRequests: 30,
 		windowSeconds: 60,
 	});
