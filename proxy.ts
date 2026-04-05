@@ -53,7 +53,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 			"font-src 'self' data:",
 			"media-src 'self' blob:",
 			"worker-src 'self' blob:",
-			"connect-src 'self' https://*.clerk.accounts.dev https://clerk-telemetry.com https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com",
+			"connect-src 'self' https://*.clerk.accounts.dev https://clerk-telemetry.com https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com https://*.ingest.us.sentry.io",
 			"frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://challenges.cloudflare.com",
 			"frame-ancestors 'self'",
 			"base-uri 'self'",
