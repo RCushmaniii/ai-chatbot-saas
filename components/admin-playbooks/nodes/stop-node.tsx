@@ -1,5 +1,3 @@
-"use client";
-
 import { Handle, Position } from "@xyflow/react";
 import { StopCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
