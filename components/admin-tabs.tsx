@@ -13,18 +13,78 @@ import {
 	Users,
 	Workflow,
 } from "lucide-react";
-import { AdminContactsTab } from "@/components/admin-contacts/admin-contacts-tab";
-import { AdminEmbedCode } from "@/components/admin-embed-code";
+import dynamic from "next/dynamic";
 import { AdminKnowledgeBase } from "@/components/admin-knowledge-base";
-import { AdminLiveChatTab } from "@/components/admin-live-chat/admin-live-chat-tab";
-import { AdminPlaybooksTab } from "@/components/admin-playbooks/admin-playbooks-tab";
-import { AdminRetrainingTab } from "@/components/admin-retraining/admin-retraining-tab";
-import { AdminStarterQuestions } from "@/components/admin-starter-questions";
-import { AdminSystemInstructions } from "@/components/admin-system-instructions";
-import { AdminWebsiteScraping } from "@/components/admin-website-scraping";
-import { AdminWhatsAppTab } from "@/components/admin-whatsapp/admin-whatsapp-tab";
-import { BillingSection } from "@/components/billing-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Lazy-load tab content — only the default "Knowledge" tab is eagerly loaded.
+// Each tab's code is fetched on-demand when the user clicks the tab.
+const AdminWebsiteScraping = dynamic(
+	() =>
+		import("@/components/admin-website-scraping").then(
+			(m) => m.AdminWebsiteScraping,
+		),
+	{ ssr: false },
+);
+const AdminContactsTab = dynamic(
+	() =>
+		import("@/components/admin-contacts/admin-contacts-tab").then(
+			(m) => m.AdminContactsTab,
+		),
+	{ ssr: false },
+);
+const AdminPlaybooksTab = dynamic(
+	() =>
+		import("@/components/admin-playbooks/admin-playbooks-tab").then(
+			(m) => m.AdminPlaybooksTab,
+		),
+	{ ssr: false },
+);
+const AdminLiveChatTab = dynamic(
+	() =>
+		import("@/components/admin-live-chat/admin-live-chat-tab").then(
+			(m) => m.AdminLiveChatTab,
+		),
+	{ ssr: false },
+);
+const AdminRetrainingTab = dynamic(
+	() =>
+		import("@/components/admin-retraining/admin-retraining-tab").then(
+			(m) => m.AdminRetrainingTab,
+		),
+	{ ssr: false },
+);
+const AdminStarterQuestions = dynamic(
+	() =>
+		import("@/components/admin-starter-questions").then(
+			(m) => m.AdminStarterQuestions,
+		),
+	{ ssr: false },
+);
+const AdminSystemInstructions = dynamic(
+	() =>
+		import("@/components/admin-system-instructions").then(
+			(m) => m.AdminSystemInstructions,
+		),
+	{ ssr: false },
+);
+const AdminEmbedCode = dynamic(
+	() =>
+		import("@/components/admin-embed-code").then((m) => m.AdminEmbedCode),
+	{ ssr: false },
+);
+const AdminWhatsAppTab = dynamic(
+	() =>
+		import("@/components/admin-whatsapp/admin-whatsapp-tab").then(
+			(m) => m.AdminWhatsAppTab,
+		),
+	{ ssr: false },
+);
+const BillingSection = dynamic(
+	() =>
+		import("@/components/billing-section").then((m) => m.BillingSection),
+	{ ssr: false },
+);
 
 export function AdminTabs() {
 	return (

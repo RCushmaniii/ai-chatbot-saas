@@ -1,5 +1,3 @@
-"use client";
-
 import { Handle, Position } from "@xyflow/react";
 import { Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
