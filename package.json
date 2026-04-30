@@ -31,7 +31,7 @@
 		"@chat-adapter/state-pg": "^4.23.0",
 		"@chat-adapter/whatsapp": "^4.23.0",
 		"@clerk/localizations": "^4.3.0",
-		"@clerk/nextjs": "^7.0.8",
+		"@clerk/nextjs": "^7.2.4",
 		"@codemirror/lang-javascript": "^6.2.2",
 		"@codemirror/lang-python": "^6.1.6",
 		"@codemirror/state": "^6.5.0",
