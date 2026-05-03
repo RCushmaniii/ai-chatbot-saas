@@ -20,6 +20,7 @@ import type { VisibilityType } from "@/components/visibility-selector";
 import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
+import { checkInput } from "@/lib/ai/safety/input-guard";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
@@ -171,6 +172,18 @@ export async function POST(request: Request) {
 
 		// Build knowledge context from vector DB for the latest user message.
 		const latestUserText = getTextFromMessage(message) ?? "";
+
+		// Input safety: refuse prompt-injection attempts before any DB writes
+		// or AI calls. Authenticated users get a 400 (more direct than the
+		// embed widget where we wrap rejection as a normal chat reply).
+		const inputCheck = checkInput(latestUserText);
+		if (!inputCheck.ok) {
+			console.warn(
+				`[chat] input rejected (${inputCheck.reason}) user=${user.id}`,
+			);
+			return new ChatSDKError("bad_request:chat").toResponse();
+		}
+
 		const knowledgeResults = await searchKnowledgeDirect(latestUserText, {
 			businessId: user.businessId,
 		});
@@ -270,6 +283,7 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 					model: myProvider.languageModel(selectedChatModel),
 					system: `${systemPrompt({ selectedChatModel, requestHints })}${knowledgeContext}`,
 					messages: convertToModelMessages(uiMessages),
+					maxRetries: 3,
 					stopWhen: stepCountIs(5),
 					experimental_activeTools:
 						selectedChatModel === "chat-model-reasoning"

@@ -3,23 +3,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	async headers() {
+		// Security headers (X-Frame-Options, HSTS, CSP, etc.) live in proxy.ts
+		// as a single source of truth so embeddable routes can be exempted.
+		// Only headers that don't interact with embed exemptions live here.
 		return [
 			{
 				source: "/(.*)",
-				headers: [
-					{ key: "X-DNS-Prefetch-Control", value: "on" },
-					{
-						key: "Strict-Transport-Security",
-						value: "max-age=63072000; includeSubDomains; preload",
-					},
-					{ key: "X-Frame-Options", value: "DENY" },
-					{ key: "X-Content-Type-Options", value: "nosniff" },
-					{ key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-					{
-						key: "Permissions-Policy",
-						value: "camera=(), microphone=(), geolocation=()",
-					},
-				],
+				headers: [{ key: "X-DNS-Prefetch-Control", value: "on" }],
 			},
 		];
 	},
@@ -55,6 +45,10 @@ export default withSentryConfig(nextConfig, {
 	org: process.env.SENTRY_ORG,
 	project: process.env.SENTRY_PROJECT,
 	silent: !process.env.CI,
+	// Source-map upload is on automatically when SENTRY_AUTH_TOKEN is set
+	// (production CI/Vercel build). widenClientFileUpload extends coverage
+	// to chunks that wouldn't otherwise be referenced by uploaded artifacts.
+	sourcemaps: { disable: false },
 	widenClientFileUpload: true,
 	tunnelRoute: "/monitoring",
 });
