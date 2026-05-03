@@ -66,9 +66,22 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 	}
 }
 
+const UUID_RE =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUuid(value: unknown): value is string {
+	return typeof value === "string" && UUID_RE.test(value);
+}
+
 /**
- * Search knowledge base with tenant isolation
- * CRITICAL: Every query MUST filter by businessId for multi-tenant safety
+ * Search knowledge base with tenant isolation.
+ *
+ * SECURITY:
+ *   - businessId is REQUIRED. Without it the function returns []
+ *     (no cross-tenant fallback to legacy tables).
+ *   - businessId and botId must be valid UUIDs; invalid values return [].
+ *   - All values are passed as bound parameters via postgres.js tagged
+ *     templates — no string interpolation, no SQL injection surface.
  */
 export async function searchKnowledgeDirect(
 	query: string,
@@ -85,6 +98,10 @@ export async function searchKnowledgeDirect(
 			similarityThreshold = 0.5,
 		} = options;
 
+		// Tenant isolation gate: refuse to query without a valid businessId.
+		if (!isUuid(businessId)) return [];
+		if (botId !== undefined && !isUuid(botId)) return [];
+
 		// 1. Generate embedding for the query
 		const embedding = await generateEmbedding(trimmed);
 		if (!embedding) return [];
@@ -93,56 +110,51 @@ export async function searchKnowledgeDirect(
 		const results: KnowledgeSearchResult[] = [];
 
 		// 2. Search new KnowledgeChunk table (tenant-isolated)
-		if (businessId) {
-			const tenantFilter = botId
-				? `business_id = '${businessId}' AND (bot_id = '${botId}' OR bot_id IS NULL)`
-				: `business_id = '${businessId}'`;
+		const botFilter = botId
+			? client`AND (bot_id = ${botId} OR bot_id IS NULL)`
+			: client``;
 
-			const chunkResults = await client.unsafe(`
-        SELECT content, metadata,
-          1 - (embedding <=> '${embeddingStr}'::vector) as similarity
-        FROM "KnowledgeChunk"
-        WHERE ${tenantFilter}
-          AND embedding IS NOT NULL
-          AND 1 - (embedding <=> '${embeddingStr}'::vector) > ${similarityThreshold}
-        ORDER BY similarity DESC
-        LIMIT ${maxChunks}
-      `);
+		const chunkResults = await client`
+			SELECT content, metadata,
+				1 - (embedding <=> ${embeddingStr}::vector) AS similarity
+			FROM "KnowledgeChunk"
+			WHERE business_id = ${businessId}
+				${botFilter}
+				AND embedding IS NOT NULL
+				AND 1 - (embedding <=> ${embeddingStr}::vector) > ${similarityThreshold}
+			ORDER BY similarity DESC
+			LIMIT ${maxChunks}
+		`;
 
-			for (const row of chunkResults) {
-				const meta =
-					typeof row.metadata === "string"
-						? JSON.parse(row.metadata)
-						: row.metadata || {};
-				results.push({
-					content: row.content as string,
-					url: meta.url ?? null,
-					similarity: Number(row.similarity),
-					metadata: meta,
-				});
-			}
+		for (const row of chunkResults) {
+			const meta =
+				typeof row.metadata === "string"
+					? JSON.parse(row.metadata)
+					: row.metadata || {};
+			results.push({
+				content: row.content as string,
+				url: meta.url ?? null,
+				similarity: Number(row.similarity),
+				metadata: meta,
+			});
 		}
 
-		// 3. Also search legacy tables if no tenant-specific results
-		// This maintains backwards compatibility during migration
+		// 3. Search legacy Document_Knowledge for backwards compatibility.
+		// Tenant-scoped only — rows with NULL business_id are excluded to prevent
+		// cross-tenant data leakage during the legacy → KnowledgeChunk migration.
 		if (results.length < maxChunks) {
 			const remaining = maxChunks - results.length;
 
-			// Search legacy Document_Knowledge (with optional tenant filter)
-			const legacyFilter = businessId
-				? `(business_id = '${businessId}' OR business_id IS NULL)`
-				: "1=1";
-
-			const legacyResults = await client.unsafe(`
-        SELECT content, url, metadata,
-          1 - (embedding <=> '${embeddingStr}'::vector) as similarity
-        FROM "Document_Knowledge"
-        WHERE ${legacyFilter}
-          AND embedding IS NOT NULL
-          AND 1 - (embedding <=> '${embeddingStr}'::vector) > ${similarityThreshold}
-        ORDER BY similarity DESC
-        LIMIT ${remaining}
-      `);
+			const legacyResults = await client`
+				SELECT content, url, metadata,
+					1 - (embedding <=> ${embeddingStr}::vector) AS similarity
+				FROM "Document_Knowledge"
+				WHERE business_id = ${businessId}
+					AND embedding IS NOT NULL
+					AND 1 - (embedding <=> ${embeddingStr}::vector) > ${similarityThreshold}
+				ORDER BY similarity DESC
+				LIMIT ${remaining}
+			`;
 
 			for (const row of legacyResults) {
 				results.push({
@@ -154,7 +166,6 @@ export async function searchKnowledgeDirect(
 			}
 		}
 
-		// Sort by similarity and return
 		return results
 			.sort((a, b) => b.similarity - a.similarity)
 			.slice(0, maxChunks);
@@ -215,40 +226,3 @@ export function createKnowledgeSearchTool(context: {
 		},
 	});
 }
-
-// Legacy: non-tenant-isolated search tool (for backwards compatibility)
-export const searchKnowledgeTool = tool({
-	description:
-		"Search the knowledge base for information. Use this when users ask questions that might be answered by uploaded content. ALWAYS include the source URL in your response when referencing information.",
-
-	inputSchema: z.object({
-		query: z.string().describe("The search query to find relevant information"),
-	}),
-
-	execute: async (input) => {
-		const { query } = input;
-		const results = await searchKnowledgeDirect(query);
-
-		if (!results.length) {
-			return {
-				results: [],
-				message:
-					"No relevant information found in the knowledge base. Please provide a general answer or ask the user to contact the business directly.",
-			};
-		}
-
-		// Format results with clear source attribution
-		const formattedResults = results.map((r) => ({
-			content: r.content,
-			source_url: r.url,
-			page_title: r.metadata?.title || "Source",
-			similarity_score: r.similarity,
-		}));
-
-		return {
-			results: formattedResults,
-			instruction:
-				"When answering, include the source URL(s) so users can learn more. Format as: 'Learn more: [URL]' or 'Read more about this: [URL]'",
-		};
-	},
-});

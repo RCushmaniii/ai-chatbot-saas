@@ -40,9 +40,7 @@ test.describe
 			adaContactId = body.id;
 		});
 
-		test("Ada can create a contact with phone only", async ({
-			adaContext,
-		}) => {
+		test("Ada can create a contact with phone only", async ({ adaContext }) => {
 			const response = await adaContext.request.post("/api/admin/contacts", {
 				data: {
 					phone: "+1234567890",
@@ -114,9 +112,7 @@ test.describe
 		// Cross-Tenant Isolation
 		// =========================================
 
-		test("Babbage cannot see Ada's contacts", async ({
-			babbageContext,
-		}) => {
+		test("Babbage cannot see Ada's contacts", async ({ babbageContext }) => {
 			const response = await babbageContext.request.get("/api/admin/contacts");
 			expect(response.status()).toBe(200);
 

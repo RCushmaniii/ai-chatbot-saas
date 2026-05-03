@@ -24,7 +24,9 @@ const serverSchema = z.object({
 	STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY is required"),
 
 	// App
-	NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL"),
+	NEXT_PUBLIC_APP_URL: z
+		.string()
+		.url("NEXT_PUBLIC_APP_URL must be a valid URL"),
 
 	// Optional — features degrade gracefully without these
 	STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -40,6 +42,7 @@ const serverSchema = z.object({
 	WHATSAPP_APP_SECRET: z.string().optional(),
 	WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
 	WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+	NEXT_PUBLIC_WHATSAPP_ENABLED: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

@@ -8,9 +8,20 @@ import { ensureDefaultTenantForUser } from "@/lib/db/queries";
 import { getBusinessPlanEntitlements } from "@/lib/db/queries-billing";
 import { whatsappPhoneMapping } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+function whatsappDisabledResponse() {
+	return NextResponse.json(
+		{
+			error: "WhatsApp integration is not yet available. Coming soon.",
+			featureFlag: "WHATSAPP_ENABLED",
+		},
+		{ status: 503 },
+	);
+}
 
 const createPhoneMappingSchema = z.object({
 	phoneNumberId: z.string().min(1, "Phone number ID is required").max(50),
@@ -24,6 +35,8 @@ const createPhoneMappingSchema = z.object({
 
 export async function GET() {
 	try {
+		if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
 		const { user, error } = await requirePermission("bot:configure");
 		if (error) return error;
 
@@ -53,6 +66,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
 	try {
+		if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
 		const { user, error } = await requirePermission("bot:configure");
 		if (error) return error;
 
@@ -118,6 +133,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
 	try {
+		if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
 		const { user, error } = await requirePermission("bot:configure");
 		if (error) return error;
 

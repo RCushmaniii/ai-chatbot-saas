@@ -28,6 +28,12 @@ export async function POST(request: Request) {
 	});
 	if (rateLimitResponse) return rateLimitResponse;
 
+	// Capture the embedding origin so abuse can be traced back to a host site.
+	// Validating against a per-business allowlist requires a schema change and
+	// is deferred to post-launch; logging is the launch-day mitigation.
+	const origin =
+		request.headers.get("origin") || request.headers.get("referer") || null;
+
 	try {
 		const {
 			message,
@@ -75,7 +81,7 @@ export async function POST(request: Request) {
 					botId,
 					visitorId,
 					sessionId,
-					metadata: { pageUrl: currentUrl },
+					metadata: { pageUrl: currentUrl, origin },
 				});
 				isFirstMessage = true;
 			}
@@ -176,8 +182,10 @@ export async function POST(request: Request) {
 			await incrementMessageCount({ businessId });
 		}
 
-		// Search knowledge base
-		const knowledgeResults = await searchKnowledgeDirect(message);
+		// Search knowledge base (tenant-isolated by businessId)
+		const knowledgeResults = businessId
+			? await searchKnowledgeDirect(message, { businessId, botId })
+			: [];
 
 		// Detect language
 		const detectedLang = detectLanguage(message);

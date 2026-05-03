@@ -24,8 +24,8 @@ import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import {
+	createKnowledgeSearchTool,
 	searchKnowledgeDirect,
-	searchKnowledgeTool,
 } from "@/lib/ai/tools/search-knowledge";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { getAuthUser } from "@/lib/auth";
@@ -171,7 +171,9 @@ export async function POST(request: Request) {
 
 		// Build knowledge context from vector DB for the latest user message.
 		const latestUserText = getTextFromMessage(message) ?? "";
-		const knowledgeResults = await searchKnowledgeDirect(latestUserText);
+		const knowledgeResults = await searchKnowledgeDirect(latestUserText, {
+			businessId: user.businessId,
+		});
 
 		// Detect language from user's message (with error handling)
 		let detectedLang: "en" | "es" = "en";
@@ -281,7 +283,9 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 								],
 					experimental_transform: smoothStream({ chunking: "word" }),
 					tools: {
-						searchKnowledge: searchKnowledgeTool,
+						searchKnowledge: createKnowledgeSearchTool({
+							businessId: user.businessId,
+						}),
 						getWeather,
 						createDocument: createDocument({ user, dataStream }),
 						updateDocument: updateDocument({ user, dataStream }),
