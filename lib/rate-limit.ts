@@ -7,6 +7,7 @@
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { isTestEnvironment } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // In-memory fallback (single-instance only — dev / testing)
@@ -107,6 +108,10 @@ export async function rateLimit(
 	routeKey: string,
 	config: RateLimitConfig,
 ): Promise<Response | null> {
+	// Bypass in test env so a Playwright suite making many sequential requests
+	// from the same CI runner IP doesn't burn the per-IP budget mid-suite.
+	if (isTestEnvironment) return null;
+
 	const ip =
 		request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
 		request.headers.get("x-real-ip") ||
