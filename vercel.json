@@ -1,0 +1,17 @@
+{
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"crons": [
+		{
+			"path": "/api/cron/retrain",
+			"schedule": "0 6 * * *"
+		},
+		{
+			"path": "/api/cron/scan-sitemaps",
+			"schedule": "0 7 * * *"
+		},
+		{
+			"path": "/api/cron/purge-old-messages",
+			"schedule": "0 8 * * *"
+		}
+	]
+}

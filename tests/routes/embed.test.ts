@@ -111,7 +111,6 @@ test.describe("/api/embed", () => {
 
 		// At least one should be rate limited (429) if Redis is running,
 		// or all could pass if using in-memory limiter on fresh instance
-		const has429 = statuses.includes(429);
 		const allValid = statuses.every((s) => [200, 201, 400, 429].includes(s));
 		expect(allValid).toBe(true);
 	});

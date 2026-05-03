@@ -24,14 +24,33 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 /**
+ * Routes that must be embeddable as iframes on third-party customer sites.
+ * The widget loader (`/api/embed`) injects an iframe pointing at `/embed/chat`
+ * from any customer domain, so frame-ancestors must allow `*` and
+ * X-Frame-Options must not be set.
+ */
+function isEmbeddableRoute(pathname: string): boolean {
+	return pathname.startsWith("/embed");
+}
+
+/**
  * Security headers applied to all responses.
  */
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(
+	response: NextResponse,
+	pathname: string,
+): NextResponse {
+	const embeddable = isEmbeddableRoute(pathname);
+
 	// Prevent MIME type sniffing
 	response.headers.set("X-Content-Type-Options", "nosniff");
 
-	// Prevent clickjacking (allow iframes only from same origin)
-	response.headers.set("X-Frame-Options", "SAMEORIGIN");
+	// Clickjacking protection. Embeddable routes intentionally omit X-Frame-Options
+	// so customer sites can iframe the widget. CSP frame-ancestors below carries
+	// the same intent for browsers that honor CSP.
+	if (!embeddable) {
+		response.headers.set("X-Frame-Options", "SAMEORIGIN");
+	}
 
 	// Control referrer information
 	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -42,7 +61,12 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 		"camera=(), microphone=(), geolocation=(), browsing-topics=()",
 	);
 
-	// Content Security Policy
+	// Content Security Policy. Embeddable routes allow any frame-ancestor so the
+	// widget renders on customer sites; everything else stays locked to self.
+	const frameAncestors = embeddable
+		? "frame-ancestors *"
+		: "frame-ancestors 'self'";
+
 	response.headers.set(
 		"Content-Security-Policy",
 		[
@@ -55,7 +79,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 			"worker-src 'self' blob:",
 			"connect-src 'self' https://*.clerk.accounts.dev https://clerk-telemetry.com https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com https://*.ingest.us.sentry.io",
 			"frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://challenges.cloudflare.com",
-			"frame-ancestors 'self'",
+			frameAncestors,
 			"base-uri 'self'",
 			"form-action 'self'",
 		].join("; "),
@@ -72,9 +96,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 
 export default clerkMiddleware(async (auth, request) => {
 	const response = NextResponse.next();
+	const { pathname } = new URL(request.url);
 
 	// Apply security headers to all responses
-	applySecurityHeaders(response);
+	applySecurityHeaders(response, pathname);
 
 	// Allow public routes without authentication
 	if (isPublicRoute(request)) {

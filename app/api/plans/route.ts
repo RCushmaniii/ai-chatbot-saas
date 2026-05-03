@@ -3,11 +3,18 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { plan } from "@/lib/db/schema";
+import { rateLimit } from "@/lib/rate-limit";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
-export async function GET() {
+export async function GET(request: Request) {
+	const limited = await rateLimit(request, "plans", {
+		maxRequests: 60,
+		windowSeconds: 60,
+	});
+	if (limited) return limited;
+
 	try {
 		const plans = await db
 			.select()

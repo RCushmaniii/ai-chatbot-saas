@@ -50,9 +50,7 @@ function memoryRateLimit(
 			{
 				status: 429,
 				headers: {
-					"Retry-After": String(
-						Math.ceil((entry.resetAt - now) / 1000),
-					),
+					"Retry-After": String(Math.ceil((entry.resetAt - now) / 1000)),
 				},
 			},
 		);

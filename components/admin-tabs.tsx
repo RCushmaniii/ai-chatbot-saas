@@ -16,6 +16,7 @@ import {
 import dynamic from "next/dynamic";
 import { AdminKnowledgeBase } from "@/components/admin-knowledge-base";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 // Lazy-load tab content — only the default "Knowledge" tab is eagerly loaded.
 // Each tab's code is fetched on-demand when the user clicks the tab.
@@ -69,8 +70,7 @@ const AdminSystemInstructions = dynamic(
 	{ ssr: false },
 );
 const AdminEmbedCode = dynamic(
-	() =>
-		import("@/components/admin-embed-code").then((m) => m.AdminEmbedCode),
+	() => import("@/components/admin-embed-code").then((m) => m.AdminEmbedCode),
 	{ ssr: false },
 );
 const AdminWhatsAppTab = dynamic(
@@ -81,8 +81,7 @@ const AdminWhatsAppTab = dynamic(
 	{ ssr: false },
 );
 const BillingSection = dynamic(
-	() =>
-		import("@/components/billing-section").then((m) => m.BillingSection),
+	() => import("@/components/billing-section").then((m) => m.BillingSection),
 	{ ssr: false },
 );
 
@@ -126,10 +125,12 @@ export function AdminTabs() {
 					<Code className="h-4 w-4" />
 					<span className="hidden sm:inline">Embed</span>
 				</TabsTrigger>
-				<TabsTrigger value="whatsapp" className="flex items-center gap-2">
-					<Phone className="h-4 w-4" />
-					<span className="hidden sm:inline">WhatsApp</span>
-				</TabsTrigger>
+				{WHATSAPP_ENABLED && (
+					<TabsTrigger value="whatsapp" className="flex items-center gap-2">
+						<Phone className="h-4 w-4" />
+						<span className="hidden sm:inline">WhatsApp</span>
+					</TabsTrigger>
+				)}
 				<TabsTrigger value="billing" className="flex items-center gap-2">
 					<CreditCard className="h-4 w-4" />
 					<span className="hidden sm:inline">Billing</span>
@@ -172,9 +173,11 @@ export function AdminTabs() {
 				<AdminEmbedCode />
 			</TabsContent>
 
-			<TabsContent value="whatsapp" className="mt-6">
-				<AdminWhatsAppTab />
-			</TabsContent>
+			{WHATSAPP_ENABLED && (
+				<TabsContent value="whatsapp" className="mt-6">
+					<AdminWhatsAppTab />
+				</TabsContent>
+			)}
 
 			<TabsContent value="billing" className="mt-6">
 				<BillingSection />

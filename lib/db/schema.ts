@@ -525,6 +525,7 @@ export const widgetConversation = pgTable("WidgetConversation", {
 		pageUrl?: string;
 		ip?: string;
 		whatsappName?: string;
+		origin?: string | null;
 	}>(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),

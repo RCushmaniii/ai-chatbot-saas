@@ -2,6 +2,16 @@ import { generateText } from "ai";
 import { NextResponse } from "next/server";
 import { regularPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
+import { withRetry } from "@/lib/ai/retry";
+import { routeModel } from "@/lib/ai/router";
+import {
+	checkInput,
+	SAFE_REJECTION_MESSAGES,
+} from "@/lib/ai/safety/input-guard";
+import {
+	checkOutput,
+	SAFE_OUTPUT_FALLBACK,
+} from "@/lib/ai/safety/output-guard";
 import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
 import {
 	checkMessageLimit,
@@ -28,6 +38,12 @@ export async function POST(request: Request) {
 	});
 	if (rateLimitResponse) return rateLimitResponse;
 
+	// Capture the embedding origin so abuse can be traced back to a host site.
+	// Validating against a per-business allowlist requires a schema change and
+	// is deferred to post-launch; logging is the launch-day mitigation.
+	const origin =
+		request.headers.get("origin") || request.headers.get("referer") || null;
+
 	try {
 		const {
 			message,
@@ -41,6 +57,24 @@ export async function POST(request: Request) {
 
 		if (!message || typeof message !== "string") {
 			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+		}
+
+		// Input safety: refuse prompt-injection attempts before they reach the model.
+		const inputCheck = checkInput(message);
+		if (!inputCheck.ok) {
+			const lang = detectLanguage(message);
+			const reason = inputCheck.reason ?? "injection";
+			const safeReply = SAFE_REJECTION_MESSAGES[reason][lang];
+			console.warn(
+				`[embed-chat] input rejected (${reason})${
+					inputCheck.pattern ? ` pattern=${inputCheck.pattern}` : ""
+				}`,
+			);
+			return NextResponse.json({
+				response: safeReply,
+				conversationId: existingConversationId,
+				playbook: { active: false },
+			});
 		}
 
 		// Check plan-based monthly message limit for the business
@@ -75,7 +109,7 @@ export async function POST(request: Request) {
 					botId,
 					visitorId,
 					sessionId,
-					metadata: { pageUrl: currentUrl },
+					metadata: { pageUrl: currentUrl, origin },
 				});
 				isFirstMessage = true;
 			}
@@ -176,8 +210,10 @@ export async function POST(request: Request) {
 			await incrementMessageCount({ businessId });
 		}
 
-		// Search knowledge base
-		const knowledgeResults = await searchKnowledgeDirect(message);
+		// Search knowledge base (tenant-isolated by businessId)
+		const knowledgeResults = businessId
+			? await searchKnowledgeDirect(message, { businessId, botId })
+			: [];
 
 		// Detect language
 		const detectedLang = detectLanguage(message);
@@ -200,27 +236,45 @@ export async function POST(request: Request) {
 			}
 		}
 
-		// Generate response
-		const model = myProvider.languageModel("chat-model");
-		const { text } = await generateText({
-			model,
-			messages: [
-				{ role: "system", content: context },
-				{ role: "user", content: message },
-			],
-		});
+		// Generate response (with retry on 429/5xx — single 4xx other than
+		// 429 is NOT retried since the payload won't get better).
+		// Two-model routing: pleasantries → gpt-4o-mini, knowledge → gpt-4o.
+		const modelKey = routeModel(message);
+		const model = myProvider.languageModel(modelKey);
+		const { text } = await withRetry(
+			() =>
+				generateText({
+					model,
+					messages: [
+						{ role: "system", content: context },
+						{ role: "user", content: message },
+					],
+				}),
+			{ label: "embed-chat:generateText" },
+		);
+
+		// Output safety: refuse to surface system-prompt leakage or scaffolding.
+		const outputCheck = checkOutput(text);
+		const safeText = outputCheck.ok ? text : SAFE_OUTPUT_FALLBACK[detectedLang];
+		if (!outputCheck.ok) {
+			console.warn(
+				`[embed-chat] output rejected (${outputCheck.reason})${
+					outputCheck.matched ? ` matched=${outputCheck.matched}` : ""
+				}`,
+			);
+		}
 
 		// Save bot response
 		if (conversationId) {
 			await createWidgetMessage({
 				conversationId,
 				role: "assistant",
-				content: text,
+				content: safeText,
 			});
 		}
 
 		return NextResponse.json({
-			response: text,
+			response: safeText,
 			conversationId,
 			playbook: { active: false },
 		});

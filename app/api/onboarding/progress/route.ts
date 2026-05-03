@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { z } from "zod";
 import { getAuthUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -11,6 +12,12 @@ const progressSchema = z.object({
 });
 
 export async function POST(request: Request) {
+	const limited = await rateLimit(request, "onboarding-progress", {
+		maxRequests: 30,
+		windowSeconds: 60,
+	});
+	if (limited) return limited;
+
 	const user = await getAuthUser();
 	if (!user) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });

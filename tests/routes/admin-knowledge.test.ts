@@ -46,15 +46,11 @@ test.describe
 		});
 
 		test("DELETE without ID returns 400", async ({ adaContext }) => {
-			const response = await adaContext.request.delete(
-				"/api/admin/knowledge",
-			);
+			const response = await adaContext.request.delete("/api/admin/knowledge");
 			expect(response.status()).toBe(400);
 		});
 
-		test("DELETE with non-numeric ID returns 400", async ({
-			adaContext,
-		}) => {
+		test("DELETE with non-numeric ID returns 400", async ({ adaContext }) => {
 			const response = await adaContext.request.delete(
 				"/api/admin/knowledge?id=not-a-number",
 			);
@@ -68,9 +64,7 @@ test.describe
 		test("Babbage cannot see Ada's knowledge documents", async ({
 			babbageContext,
 		}) => {
-			const response = await babbageContext.request.get(
-				"/api/admin/knowledge",
-			);
+			const response = await babbageContext.request.get("/api/admin/knowledge");
 			expect(response.status()).toBe(200);
 
 			const body = await response.json();

@@ -8,7 +8,7 @@ portfolio_featured: true
 portfolio_last_reviewed: "2026-03-02"
 
 title: "Converso AI — Bilingual AI Front Desk & Sales Assistant"
-tagline: "White-label AI chatbot SaaS for service businesses in bilingual markets"
+tagline: "Bilingual AI chatbot platform for service businesses — handles front desk and sales conversations 24/7"
 slug: "converso-ai-chatbot-saas"
 
 category: "AI Automation"
@@ -84,19 +84,6 @@ health_status:
   security_headers: "Y"
   rate_limiting: "Y"
   env_validation: "Y"
-  analytics: "DEFERRED"
-  structured_logging: "-"
-  dependabot: "Y"
-  secret_scanning: "Y"
-  db_backup: "-"
-health_status:
-  sentry: "-"
-  testing: "partial"
-  ci_cd: "Y"
-  health_endpoint: "Y"
-  security_headers: "Y"
-  rate_limiting: "-"
-  env_validation: "-"
   analytics: "DEFERRED"
   structured_logging: "-"
   dependabot: "Y"
