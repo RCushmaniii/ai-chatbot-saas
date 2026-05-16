@@ -27,8 +27,8 @@ const PLEASANTRY_PATTERNS: readonly RegExp[] = [
 	/^\s*(hola|buenas|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches)[!.\s]*$/i,
 	/^\s*(adi[óo]s|chao|hasta\s+luego|hasta\s+pronto|nos\s+vemos)[!.\s]*$/i,
 
-	// Spanish affirmations + thanks
-	/^\s*(s[íi]|claro|por\s+supuesto|de\s+acuerdo|vale|ok)[!.\s]*$/i,
+	// Spanish affirmations + thanks (Mexican; "vale" is Iberian, deliberately excluded)
+	/^\s*(s[íi]|claro|por\s+supuesto|de\s+acuerdo|est[áa]\s+bien|ok|[óo]rale|[áa]ndale)[!.\s]*$/i,
 	/^\s*(gracias|muchas\s+gracias|mil\s+gracias|te\s+agradezco)[!.\s]*$/i,
 	/^\s*(no|para\s+nada|gracias\s+no|no\s+gracias)[!.\s]*$/i,
 
