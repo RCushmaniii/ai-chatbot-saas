@@ -95,7 +95,7 @@ export async function searchKnowledgeDirect(
 			businessId,
 			botId,
 			maxChunks = 5,
-			similarityThreshold = 0.5,
+			similarityThreshold = 0.4,
 		} = options;
 
 		// Tenant isolation gate: refuse to query without a valid businessId.
