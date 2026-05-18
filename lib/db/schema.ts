@@ -1,8 +1,10 @@
 import type { InferSelectModel } from "drizzle-orm";
 import {
+	bigserial,
 	boolean,
 	customType,
 	foreignKey,
+	index,
 	integer,
 	json,
 	jsonb,
@@ -818,3 +820,21 @@ export const whatsappPhoneMapping = pgTable("WhatsappPhoneMapping", {
 export type WhatsappPhoneMapping = InferSelectModel<
 	typeof whatsappPhoneMapping
 >;
+
+// ===========================================
+// RATE LIMITING (replaces Upstash Redis)
+// ===========================================
+
+export const rateLimit = pgTable(
+	"RateLimit",
+	{
+		id: bigserial("id", { mode: "number" }).primaryKey(),
+		key: text("key").notNull(),
+		ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(t) => ({
+		keyTsIdx: index("rate_limit_key_ts_idx").on(t.key, t.ts),
+	}),
+);
+
+export type RateLimit = InferSelectModel<typeof rateLimit>;
