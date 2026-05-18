@@ -57,9 +57,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Set up Clerk test users
+        if: env.CLERK_SECRET_KEY != ''
         run: pnpm test:setup
 
       - name: Generate Clerk testing token
+        if: env.CLERK_SECRET_KEY != ''
         id: clerk-token
         run: |
           TOKEN=$(curl -s -X POST https://api.clerk.com/v1/testing_tokens \
@@ -78,8 +80,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Playwright tests
+      - name: Run all Playwright tests (with secrets)
+        if: env.CLERK_SECRET_KEY != ''
         run: pnpm test
+
+      - name: Run mocked Playwright tests only (no secrets — Dependabot/fork PRs)
+        if: env.CLERK_SECRET_KEY == ''
+        run: pnpm test:mocked
 
       - uses: actions/upload-artifact@v4
         if: always() && !cancelled()
