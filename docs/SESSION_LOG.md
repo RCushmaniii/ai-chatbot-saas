@@ -6,6 +6,42 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 <!-- New entries go above this line -->
 
+## Session: 2026-05-18
+
+### Accomplished
+
+- Merged PR #33 (`c50fc41`) — rate limiter fail-closed (produced in previous session)
+- Triggered `@dependabot rebase` on 9 stale-lockfile PRs (#10–#12, #16–#17, #25, #30, #34–#35); CI actions bumps (#10–#12) rebased by Dependabot
+- Created PR #36 — three ny-ai-chatbot lessons applied:
+  - Output guard wired into authenticated `streamText` (`app/(chat)/api/chat/route.ts`): `checkOutput` in `onFinish`, Sentry-logged, leaked content redacted from DB before save
+  - RAG similarity threshold lowered 0.5 → 0.4 (`lib/ai/tools/search-knowledge.ts`): fixes "I don't know" responses to conversational queries that score 0.4–0.49
+  - Redis dual-credential constructor in `lib/rate-limit.ts`: `getRedisClient()` tries `UPSTASH_*` then `KV_*` — fixes silent in-memory fallback for Vercel marketplace Upstash installs
+
+### Decisions Made
+
+- Output guard on streaming: detect-and-log in `onFinish` (can't abort mid-stream); redact from DB so history doesn't replay the leak — right trade-off for authenticated channel
+- RAG threshold: 0.4 across both `KnowledgeChunk` and `Document_Knowledge` tables — conversational NL queries consistently score lower than keyword queries
+- Redis constructor: dual-credential pattern from ny-ai-chatbot; `Redis.fromEnv()` is unsafe on Vercel marketplace installs
+
+### Immediate Next Steps
+
+- [ ] Merge PR #36 once CI passes (build should be green; Playwright is pre-existing CI env issue)
+- [ ] Confirm which Redis env var naming Vercel is using for this project (`UPSTASH_*` vs `KV_*`) — check Vercel dashboard env vars
+- [ ] Merge drizzle-orm PR #25 once Dependabot rebase lands (security fix: CWE-89 SQL injection in `sql.identifier()`)
+- [ ] Merge remaining safe Dependabot patches (#16, #17, #30, #34, #35) once rebases complete
+- [ ] Robert: Stripe `sk_live_*` switch + re-seed plans (launch gate)
+
+### Technical Debt
+
+- ny-ai-chatbot lesson #2 (incremental ingest scoped to businessId) not yet assessed for Converso scripts/
+- ny-ai-chatbot lesson #4 (tenant-scoped cache prefix for response cache) — Converso embed chat has no response cache yet; deferred
+
+### Open Questions / Blockers
+
+- Which Upstash credential naming does the Vercel project use? Determines whether PR #36 changes active rate-limit behavior or was already working
+
+---
+
 ## Session: 2026-05-17
 
 ### Accomplished

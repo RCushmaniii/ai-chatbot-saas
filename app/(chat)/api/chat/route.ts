@@ -21,6 +21,10 @@ import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { checkInput } from "@/lib/ai/safety/input-guard";
+import {
+	checkOutput,
+	SAFE_OUTPUT_FALLBACK,
+} from "@/lib/ai/safety/output-guard";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
@@ -276,6 +280,8 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 		await createStreamId({ streamId, chatId: id });
 
 		let finalMergedUsage: AppUsage | undefined;
+		let outputGuardViolation: { reason: string; matched?: string } | null =
+			null;
 
 		const stream = createUIMessageStream({
 			execute: ({ writer: dataStream }) => {
@@ -312,7 +318,25 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 						isEnabled: isProductionEnvironment,
 						functionId: "stream-text",
 					},
-					onFinish: async ({ usage }) => {
+					onFinish: async ({ usage, text }) => {
+						// Output guard: detect system-prompt leakage in the completed response.
+						// The stream is already delivered to the client at this point, but we
+						// log the violation so Sentry captures it, and set the flag so the
+						// DB save below can redact the leaked content from chat history.
+						const outputCheck = checkOutput(text);
+						if (!outputCheck.ok) {
+							outputGuardViolation = {
+								reason: outputCheck.reason ?? "unknown",
+								matched: outputCheck.matched,
+							};
+							console.error(
+								`[chat] output guard violation (${outputCheck.reason}) user=${user.id}` +
+									(outputCheck.matched
+										? ` matched="${outputCheck.matched}"`
+										: ""),
+							);
+						}
+
 						try {
 							const providers = await getTokenlensCatalog();
 							const modelId =
@@ -356,8 +380,25 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 			},
 			generateId: generateUUID,
 			onFinish: async ({ messages }) => {
+				// If the output guard flagged a violation, replace the assistant message
+				// text in the DB with the safe fallback so chat history doesn't persist
+				// the leaked content. The client already received the streamed response,
+				// but at least future loads of this chat won't replay the leak.
+				const safeMessages = outputGuardViolation
+					? messages.map((currentMessage) => {
+							if (currentMessage.role !== "assistant") return currentMessage;
+							const fallback = SAFE_OUTPUT_FALLBACK[detectedLang];
+							return {
+								...currentMessage,
+								parts: currentMessage.parts.map((part) =>
+									part.type === "text" ? { ...part, text: fallback } : part,
+								),
+							};
+						})
+					: messages;
+
 				await saveMessages({
-					messages: messages.map((currentMessage) => ({
+					messages: safeMessages.map((currentMessage) => ({
 						id: currentMessage.id,
 						role: currentMessage.role,
 						parts: currentMessage.parts,

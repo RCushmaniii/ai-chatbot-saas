@@ -58,9 +58,24 @@ function memoryRateLimit(
 // Upstash Redis rate limiter (production)
 // ---------------------------------------------------------------------------
 
-const redisAvailable = Boolean(
-	process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
-);
+// Accept both UPSTASH_* (native SDK default) and KV_* (Vercel marketplace
+// Upstash integration). Redis.fromEnv() only reads UPSTASH_*; projects using
+// the Vercel marketplace get KV_* injected instead and would silently fall back
+// to in-memory without this dual-credential check.
+function getRedisClient(): Redis | null {
+	const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+	const token =
+		process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+	if (!url || !token) return null;
+	try {
+		return new Redis({ url, token });
+	} catch {
+		return null;
+	}
+}
+
+const redisClient = getRedisClient();
+const redisAvailable = redisClient !== null;
 
 const limiters = new Map<string, Ratelimit>();
 
@@ -73,7 +88,7 @@ function getOrCreateLimiter(
 	let limiter = limiters.get(cacheKey);
 	if (!limiter) {
 		limiter = new Ratelimit({
-			redis: Redis.fromEnv(),
+			redis: redisClient!,
 			limiter: Ratelimit.slidingWindow(maxRequests, `${windowSeconds} s`),
 			prefix: `rl:${routeKey}`,
 		});
