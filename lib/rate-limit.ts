@@ -1,13 +1,6 @@
-/**
- * Rate limiter for API routes.
- *
- * Production: Uses Upstash Redis (works across Vercel serverless instances).
- * Development: Falls back to in-memory if UPSTASH_REDIS_REST_URL is not set.
- */
-
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { isTestEnvironment } from "@/lib/constants";
+import { isProductionEnvironment, isTestEnvironment } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // In-memory fallback (single-instance only — dev / testing)
@@ -119,8 +112,21 @@ export async function rateLimit(
 
 	const key = `${routeKey}:${ip}`;
 
-	// Fall back to in-memory when Redis is not configured
 	if (!redisAvailable) {
+		if (isProductionEnvironment) {
+			// Fail closed: Redis must be available in production. A missing
+			// UPSTASH_REDIS_REST_URL/TOKEN is a misconfiguration, not a transient
+			// failure — returning 503 is safer than silently allowing unlimited traffic.
+			console.error(
+				"[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN not set in production. " +
+					"Failing closed to prevent cost overrun.",
+			);
+			return Response.json(
+				{ error: "Service temporarily unavailable. Please try again shortly." },
+				{ status: 503, headers: { "Retry-After": "30" } },
+			);
+		}
+		// Development: in-memory fallback is acceptable for single-instance local dev
 		return memoryRateLimit(key, config.maxRequests, config.windowSeconds);
 	}
 
@@ -130,7 +136,20 @@ export async function rateLimit(
 		config.windowSeconds,
 	);
 
-	const { success, reset } = await limiter.limit(key);
+	let success: boolean;
+	let reset: number;
+
+	try {
+		({ success, reset } = await limiter.limit(key));
+	} catch (err) {
+		// Transient Redis failure in production: fail closed rather than allow
+		// unlimited traffic. Log the error so Sentry captures it.
+		console.error("[rate-limit] Redis error during limit check:", err);
+		return Response.json(
+			{ error: "Service temporarily unavailable. Please try again shortly." },
+			{ status: 503, headers: { "Retry-After": "10" } },
+		);
+	}
 
 	if (!success) {
 		return Response.json(
