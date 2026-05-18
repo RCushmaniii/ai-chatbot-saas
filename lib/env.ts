@@ -31,8 +31,6 @@ const serverSchema = z.object({
 	// Optional — features degrade gracefully without these
 	STRIPE_WEBHOOK_SECRET: z.string().optional(),
 	ADMIN_EMAIL: z.string().email().optional(),
-	UPSTASH_REDIS_REST_URL: z.string().optional(),
-	UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 	SENTRY_DSN: z.string().optional(),
 	SENTRY_ORG: z.string().optional(),
 	SENTRY_PROJECT: z.string().optional(),

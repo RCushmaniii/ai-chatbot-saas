@@ -5,10 +5,12 @@ Critical information about build processes, common pitfalls, and solutions encou
 ## Build & Deployment
 
 ### Vercel Deployment
+
 - This project deploys on Vercel - always test builds locally with `pnpm build` before pushing
 - Environment variables must be configured in Vercel dashboard, not just `.env.local`
 
 ### Database (Drizzle ORM)
+
 - Run `pnpm db:push` after schema changes to sync with PostgreSQL
 - Never modify the database directly - always use Drizzle migrations
 - Custom migrations live in `/migrations/` and must be applied manually
@@ -25,35 +27,39 @@ Critical information about build processes, common pitfalls, and solutions encou
 ## Common Pitfalls
 
 ### API Routes
+
 - App Router API routes use `route.ts` files, not `pages/api`
 - Always handle authentication in API routes - don't assume proxy catches everything
 - All admin routes must use `requirePermission()` for RBAC enforcement
 
 ### AI/LLM Integration
+
 - Vercel AI SDK is used for streaming responses
 - Token limits and rate limiting should be handled gracefully
 - Never expose API keys client-side
-- Rate limiting is currently in-memory (`lib/rate-limit.ts`) - does NOT work across Vercel serverless instances. Migrate to Upstash Redis for production at scale.
+- Rate limiting uses Postgres sliding window (`lib/rate-limit.ts`) — shared state across all serverless instances via the existing `POSTGRES_URL`. The previous in-memory limiter did NOT work across Vercel instances; the original migration target was Upstash Redis, but we use Postgres directly to keep the vendor surface small.
 
 ### Widget Embedding
+
 - The embeddable widget must work cross-origin
 - Test widget in incognito mode to catch auth/cookie issues
 
 ### Multi-Tenancy
+
 - ALL database queries must filter by `businessId` for tenant isolation
 - `website_content` and `Document_Knowledge` tables both have `business_id` - always filter by it
 - The `User.password` column was removed (Clerk handles auth)
 
 ## Things That Broke (And How We Fixed Them)
 
-| Date | Issue | Root Cause | Solution |
-|------|-------|------------|----------|
-| 2025-02 | memo() never memoized Messages component | Comparison function returned `false` at end instead of `true` | Fixed final return to `return true` in both Messages and PreviewMessage |
-| 2025-02 | Monthly retraining drifted over time | Used fixed 30-day interval instead of calendar month | Replaced with `setMonth(getMonth() + 1)` |
-| 2026-03 | 16 E2E tests failing in CI | Zod schema missing `chat-model-mini` — all chat requests got 400 | Added `"chat-model-mini"` to `postRequestBodySchema` enum |
-| 2026-03 | All 9 chat tests timeout after test refactor | `textContent()` auto-waits 30s for missing elements | Use instant `count()` before `textContent()` |
-| 2026-03 | Session test click blocked by `<nextjs-portal>` | Hydration mismatch in SidebarUserNav triggered dev overlay | Deferred Clerk `isLoaded` to after hydration with useState+useEffect |
-| 2026-03 | Reasoning toggle test fails with `forceMount` | Radix keeps element with full dimensions when force-mounted | Removed `forceMount`, let element unmount naturally |
+| Date    | Issue                                           | Root Cause                                                       | Solution                                                                |
+| ------- | ----------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 2025-02 | memo() never memoized Messages component        | Comparison function returned `false` at end instead of `true`    | Fixed final return to `return true` in both Messages and PreviewMessage |
+| 2025-02 | Monthly retraining drifted over time            | Used fixed 30-day interval instead of calendar month             | Replaced with `setMonth(getMonth() + 1)`                                |
+| 2026-03 | 16 E2E tests failing in CI                      | Zod schema missing `chat-model-mini` — all chat requests got 400 | Added `"chat-model-mini"` to `postRequestBodySchema` enum               |
+| 2026-03 | All 9 chat tests timeout after test refactor    | `textContent()` auto-waits 30s for missing elements              | Use instant `count()` before `textContent()`                            |
+| 2026-03 | Session test click blocked by `<nextjs-portal>` | Hydration mismatch in SidebarUserNav triggered dev overlay       | Deferred Clerk `isLoaded` to after hydration with useState+useEffect    |
+| 2026-03 | Reasoning toggle test fails with `forceMount`   | Radix keeps element with full dimensions when force-mounted      | Removed `forceMount`, let element unmount naturally                     |
 
 ## Performance Notes
 
@@ -73,11 +79,13 @@ Critical information about build processes, common pitfalls, and solutions encou
 The E2E test suite uses mock AI models (`lib/ai/models.mock.ts`) in CI. The `isTestEnvironment` flag in `lib/constants.ts` switches between mock and real providers. This is controlled by `PLAYWRIGHT=True` env var.
 
 **Test fixtures** (`tests/fixtures.ts`):
+
 - `adaContext`, `babbageContext`, `curieContext` — worker-scoped Clerk-authenticated browser contexts
 - Worker-scoped means shared across all tests in the same Playwright worker
 - If one test corrupts a context, all subsequent tests in that worker fail with "Target page, context or browser has been closed"
 
 **Page objects** (`tests/pages/chat.ts`):
+
 - `ChatPage` wraps common chat interactions
 - `sendUserMessage()` sets up the response listener BEFORE clicking send (critical — mock streams are fast enough to finish before a separate listener starts)
 - `isGenerationComplete()` waits for the `/api/chat` response + 150ms for React to flush its throttled render batch
@@ -86,23 +94,28 @@ The E2E test suite uses mock AI models (`lib/ai/models.mock.ts`) in CI. The `isT
 
 #### 1. Playwright auto-wait behavior varies by method
 
-| Method | Auto-waits? | Timeout |
-|--------|-------------|---------|
-| `locator.textContent()` | Yes — waits for element to attach | Default action timeout (30s) |
-| `locator.innerText()` | Yes — waits for element to attach | Default action timeout (30s) |
-| `locator.isVisible()` | **No** — returns immediately | Instant |
-| `locator.count()` | **No** — returns immediately | Instant |
-| `expect(loc).toBeVisible()` | Yes — retries assertion | Assert timeout (30s) |
+| Method                      | Auto-waits?                       | Timeout                      |
+| --------------------------- | --------------------------------- | ---------------------------- |
+| `locator.textContent()`     | Yes — waits for element to attach | Default action timeout (30s) |
+| `locator.innerText()`       | Yes — waits for element to attach | Default action timeout (30s) |
+| `locator.isVisible()`       | **No** — returns immediately      | Instant                      |
+| `locator.count()`           | **No** — returns immediately      | Instant                      |
+| `expect(loc).toBeVisible()` | Yes — retries assertion           | Assert timeout (30s)         |
 
 **Trap:** Using `textContent()` or `innerText()` on an element that may not exist will silently wait 30 seconds before the `.catch()` fires. Use instant `count()` or `isVisible()` first to check existence.
 
 ```typescript
 // BAD — waits 30s if element doesn't exist
-const text = await locator.getByTestId("maybe-missing").textContent().catch(() => null);
+const text = await locator
+  .getByTestId("maybe-missing")
+  .textContent()
+  .catch(() => null);
 
 // GOOD — instant check, then read
 const exists = (await locator.getByTestId("maybe-missing").count()) > 0;
-const text = exists ? await locator.getByTestId("maybe-missing").textContent() : null;
+const text = exists
+  ? await locator.getByTestId("maybe-missing").textContent()
+  : null;
 ```
 
 #### 2. `experimental_throttle` delays React renders
@@ -148,10 +161,10 @@ The upload endpoint (`/api/files/upload`) uses `@vercel/blob`. Without `BLOB_REA
 
 ### CI Environment Differences
 
-| Resource | Local | CI |
-|----------|-------|----|
-| OpenAI `text-embedding-3-small` | Works (if key has access) | May return 403 (project-level access) |
-| Vercel Blob (`BLOB_READ_WRITE_TOKEN`) | Optional | Usually not set |
-| Redis (`REDIS_URL`) | Optional | Not set — resumable streams disabled |
-| Clerk auth | Real users | Test users via `@clerk/testing` |
-| AI models | Real OpenAI models | Mock models (`lib/ai/models.mock.ts`) |
+| Resource                              | Local                     | CI                                    |
+| ------------------------------------- | ------------------------- | ------------------------------------- |
+| OpenAI `text-embedding-3-small`       | Works (if key has access) | May return 403 (project-level access) |
+| Vercel Blob (`BLOB_READ_WRITE_TOKEN`) | Optional                  | Usually not set                       |
+| Redis (`REDIS_URL`)                   | Optional                  | Not set — resumable streams disabled  |
+| Clerk auth                            | Real users                | Test users via `@clerk/testing`       |
+| AI models                             | Real OpenAI models        | Mock models (`lib/ai/models.mock.ts`) |

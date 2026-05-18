@@ -7,6 +7,7 @@ Multi-tenant AI chatbot SaaS built with Next.js 16. Service businesses deploy bi
 ## User Role
 
 The user is an IT Project Manager, NOT a developer. Never ask the user to:
+
 - Write or modify code
 - Run development commands
 - Test functionality manually
@@ -49,7 +50,7 @@ lib/
   db/migrations/            # Drizzle-generated SQL migrations
   auth.ts                   # getAuthUser(), requirePermission()
   permissions.ts            # RBAC roles and permission definitions
-  rate-limit.ts             # In-memory rate limiter (needs Redis migration for prod)
+  rate-limit.ts             # Postgres-backed sliding-window rate limiter (shared state across serverless instances)
   stripe.ts                 # Stripe client setup
 hooks/                      # 6 custom React hooks
 scripts/                    # Seed, ingest, and maintenance scripts
@@ -87,6 +88,7 @@ pnpm format               # Auto-format with ultracite/biome
 ## Proactive Product Advisor
 
 Don't just implement what's asked — think like a product designer:
+
 - Simplify UX: if a feature adds complexity users don't need, suggest removing it
 - "It Just Works": modern apps don't ask users to configure things that should be automatic
 - Challenge requirements: if something seems over-engineered, say so and propose simpler alternatives
@@ -101,14 +103,14 @@ Don't just implement what's asked — think like a product designer:
 **Read [`docs/LESSONS_LEARNED.md`](docs/LESSONS_LEARNED.md) before making changes.** It contains critical build process info, common pitfalls, and solutions to problems encountered during development.
 
 Key gotchas:
+
 - `proxy.ts` replaces `middleware.ts` in Next.js 16 — both cannot coexist
-- Rate limiter is in-memory — does NOT work across Vercel serverless instances
+- Rate limiter uses Postgres sliding window (`lib/rate-limit.ts`) — shared state across all Vercel serverless instances, no Redis/Upstash required
 - `memo()` comparison functions must return `true` when props are equal (skip re-render)
 - Monthly schedule calculations must use `setMonth()`, not fixed 30-day intervals
 
 ## Known Issues
 
-- Rate limiting is in-memory (`lib/rate-limit.ts`) — needs migration to Upstash Redis for multi-instance Vercel deployment
 - All ~89 components use `"use client"` directive — many static components should be server components for bundle size optimization
 - No dynamic imports (`next/dynamic`) used anywhere — admin and artifact code is eagerly loaded for all users
 - React 19 RC version in use (not stable release)
@@ -117,22 +119,21 @@ Key gotchas:
 
 Required environment variables (see `.env.local`):
 
-| Variable | Source |
-|----------|--------|
-| `POSTGRES_URL` | PostgreSQL connection string (needs pgvector extension) |
-| `OPENAI_API_KEY` | OpenAI dashboard |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard |
-| `CLERK_SECRET_KEY` | Clerk dashboard |
-| `CLERK_WEBHOOK_SECRET` | Clerk webhooks settings |
-| `STRIPE_SECRET_KEY` | Stripe dashboard |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhooks settings |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe dashboard |
-| `NEXT_PUBLIC_APP_URL` | Your deployment URL |
-| `WHATSAPP_ACCESS_TOKEN` | Meta Graph API system user token |
-| `WHATSAPP_APP_SECRET` | Meta app secret (webhook signature verification) |
-| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Business phone number ID |
-| `WHATSAPP_VERIFY_TOKEN` | Arbitrary string for webhook challenge-response |
-
+| Variable                             | Source                                                  |
+| ------------------------------------ | ------------------------------------------------------- |
+| `POSTGRES_URL`                       | PostgreSQL connection string (needs pgvector extension) |
+| `OPENAI_API_KEY`                     | OpenAI dashboard                                        |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`  | Clerk dashboard                                         |
+| `CLERK_SECRET_KEY`                   | Clerk dashboard                                         |
+| `CLERK_WEBHOOK_SECRET`               | Clerk webhooks settings                                 |
+| `STRIPE_SECRET_KEY`                  | Stripe dashboard                                        |
+| `STRIPE_WEBHOOK_SECRET`              | Stripe webhooks settings                                |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe dashboard                                        |
+| `NEXT_PUBLIC_APP_URL`                | Your deployment URL                                     |
+| `WHATSAPP_ACCESS_TOKEN`              | Meta Graph API system user token                        |
+| `WHATSAPP_APP_SECRET`                | Meta app secret (webhook signature verification)        |
+| `WHATSAPP_PHONE_NUMBER_ID`           | WhatsApp Business phone number ID                       |
+| `WHATSAPP_VERIFY_TOKEN`              | Arbitrary string for webhook challenge-response         |
 
 ## Session Log
 
