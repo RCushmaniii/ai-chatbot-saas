@@ -297,27 +297,41 @@ export const contentSource = pgTable("ContentSource", {
 export type ContentSource = InferSelectModel<typeof contentSource>;
 
 // Knowledge chunks (tenant-isolated embeddings)
-export const knowledgeChunk = pgTable("KnowledgeChunk", {
-	id: uuid("id").primaryKey().notNull().defaultRandom(),
-	businessId: uuid("business_id")
-		.notNull()
-		.references(() => business.id),
-	botId: uuid("bot_id").references(() => bot.id), // Optional: specific bot or all bots
-	sourceId: uuid("source_id")
-		.notNull()
-		.references(() => contentSource.id),
-	content: text("content").notNull(),
-	embedding: vector("embedding"), // OpenAI text-embedding-3-small (1536 dimensions)
-	metadata: jsonb("metadata").$type<{
-		url?: string;
-		title?: string;
-		page?: number;
-		section?: string;
-		language?: string;
-	}>(),
-	tokenCount: integer("token_count"),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const knowledgeChunk = pgTable(
+	"KnowledgeChunk",
+	{
+		id: uuid("id").primaryKey().notNull().defaultRandom(),
+		businessId: uuid("business_id")
+			.notNull()
+			.references(() => business.id),
+		botId: uuid("bot_id").references(() => bot.id), // Optional: specific bot or all bots
+		sourceId: uuid("source_id")
+			.notNull()
+			.references(() => contentSource.id),
+		content: text("content").notNull(),
+		// SHA-256 hex digest of `content` — used for incremental re-ingestion so
+		// unchanged chunks skip the embed step (saves OpenAI cost and time when a
+		// large source is re-ingested after a small edit).
+		contentHash: varchar("content_hash", { length: 64 }),
+		embedding: vector("embedding"), // OpenAI text-embedding-3-small (1536 dimensions)
+		metadata: jsonb("metadata").$type<{
+			url?: string;
+			title?: string;
+			page?: number;
+			section?: string;
+			language?: string;
+		}>(),
+		tokenCount: integer("token_count"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(t) => ({
+		// Fast lookup for "does this exact chunk already exist for this tenant?"
+		businessHashIdx: index("knowledge_chunk_business_hash_idx").on(
+			t.businessId,
+			t.contentHash,
+		),
+	}),
+);
 
 export type KnowledgeChunk = InferSelectModel<typeof knowledgeChunk>;
 
