@@ -6,6 +6,48 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 <!-- New entries go above this line -->
 
+## Session: 2026-05-19
+
+### Accomplished
+
+- Continued from prior-day session; cleared the open-PR backlog and finished the ny-ai-chatbot lessons:
+  - PR #40 — playbook cancel keywords + 2-attempt validation cap (lesson #7)
+  - PR #41 — content_hash incremental ingest + duplicate chunk detection (lessons #2 + #5 bundled)
+- Merged 6 PRs in a coordinated cleanup round: #10 actions/cache, #12 actions/checkout, #16 @codemirror/state, #17 nanoid, #25 drizzle-orm (CWE-89 SQL injection fix), #41
+- Confirmed all 8 ny-ai-chatbot lessons addressed: 6 shipped (#1 output guard, #2 incremental ingest, #3 RAG threshold, #5 dup detection, #6 Playwright mocks, #7 handoff cap), 2 N/A (#4 no response cache yet, #8 already correct)
+- Triggered `@dependabot rebase` on remaining PRs after lockfile cascading conflicts: #11, #13, #14, #15, #34, #35, #37
+
+### Decisions Made
+
+- Bundle lessons #2 + #5 into one PR (#41) since both pivot on `content_hash` — splitting would double the migration churn and leave a column unused for a release
+- Cancel-keyword set kept strict (exact-match `cancel`/`cancelar`/etc.) rather than broad (`no`, `nope`) to avoid false-positives inside playbook yes/no flows
+- Drizzle 0.34→0.45 merged despite major-bump risk because the CWE-89 fix outweighs API drift; grep confirmed no `@neondatabase/serverless` or `DrizzleQueryError` catches in the codebase
+- Defer `@ai-sdk/provider` 2→3 major (#15) — peer-dep cascade through every `@ai-sdk/*` runtime package; needs a real smoke test before merge
+
+### Immediate Next Steps
+
+- [ ] **CRITICAL: Robert rotate the Anthropic API key** (ending `…fABNAgAA`) pasted in chat → console.anthropic.com/settings/keys
+- [ ] Fix `.env.local` mis-naming: `OPENAI_API_KEY=sk-ant-…` is wrong; split into `ANTHROPIC_API_KEY=sk-ant-…` and a real `OPENAI_API_KEY=sk-…`
+- [ ] Investigate lint failure on main (commit `0d1bbaf`) — regression from the merge wave
+- [ ] Re-attempt merge on rebased Dependabot PRs (#11, #13, #14, #34, #35, #37) once their fresh CI completes
+- [ ] Smoke-test content_hash incremental ingest on Vercel preview: ingest a site → re-ingest → expect `chunksReused > 0`
+- [ ] Robert: Stripe `sk_live_*` switch + re-seed plans (launch gate)
+
+### Technical Debt
+
+- `@ai-sdk/provider` 3.0 deferred (PR #15) — should bump all `@ai-sdk/*` together with a smoke test
+- `scripts/ingest.ts` legacy hardcoded ingest script still uses `TRUNCATE` pattern; not used in production but should be deleted or rewritten as tenant-aware
+- 89 components all use `"use client"` — bundle size optimization opportunity
+- No `next/dynamic` usage — admin/artifact code eagerly loaded for all users
+- React 19 RC in use (not stable)
+
+### Open Questions / Blockers
+
+- Lint failure on `main` (`0d1bbaf`) — needs investigation; could be from any of the 6 merges this session
+- Stripe live-mode switch remains the only true launch gate (Robert action)
+
+---
+
 ## Session: 2026-05-18
 
 ### Accomplished
