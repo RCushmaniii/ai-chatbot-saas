@@ -1,9 +1,16 @@
+import { createHash } from "node:crypto";
 import { openai } from "@ai-sdk/openai";
 import { embed } from "ai";
 import * as cheerio from "cheerio";
 import postgres from "postgres";
 import { parseStringPromise } from "xml2js";
 import { requirePermission } from "@/lib/auth";
+
+// SHA-256 of chunk content; used to skip embedding chunks we've already seen
+// (incremental re-ingest). 64-char hex matches the schema column width.
+function hashContent(content: string): string {
+	return createHash("sha256").update(content).digest("hex");
+}
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -310,7 +317,12 @@ type ProgressEvent =
 	| {
 			type: "complete";
 			pagesProcessed: number;
+			/** Chunks freshly embedded this run (incurred OpenAI cost). */
 			chunksCreated: number;
+			/** Chunks whose content_hash matched an existing row — skipped, no cost. */
+			chunksReused?: number;
+			/** Stale chunks deleted because their content no longer appears in the new crawl. */
+			orphansDeleted?: number;
 			sitemapUrl: string | null;
 			discoveryMethod: "sitemap" | "crawl";
 	  }
@@ -391,27 +403,50 @@ export async function POST(request: Request) {
 						method: discoveryMethod,
 					});
 
-					// Deduplicate
+					// Reuse the source row if this URL was ingested before, instead of
+					// deleting and recreating. Combined with the content_hash check below,
+					// this turns re-ingest into an incremental operation: only NEW or
+					// CHANGED chunks pay the OpenAI embedding cost. A 1000-page site
+					// where one page changed only embeds the new chunks from that page.
 					const existingSources = await sql`
 						SELECT id FROM "ContentSource"
 						WHERE business_id = ${user.businessId}
 						  AND type = 'website'
 						  AND name = ${baseUrl}
+						LIMIT 1
 					`;
 
+					let sourceId: string;
 					if (existingSources.length > 0) {
-						const sourceIds = existingSources.map((s) => s.id);
-						await sql`DELETE FROM "KnowledgeChunk" WHERE source_id = ANY(${sourceIds})`;
-						await sql`DELETE FROM "ContentSource" WHERE id = ANY(${sourceIds})`;
+						sourceId = existingSources[0].id;
+						await sql`
+							UPDATE "ContentSource"
+							SET status = 'processing', url = ${sitemapUrl || baseUrl}
+							WHERE id = ${sourceId}
+						`;
+					} else {
+						const [source] = await sql`
+							INSERT INTO "ContentSource" (business_id, type, name, url, status)
+							VALUES (${user.businessId}, 'website', ${baseUrl}, ${sitemapUrl || baseUrl}, 'processing')
+							RETURNING id
+						`;
+						sourceId = source.id;
 					}
 
-					const [source] = await sql`
-						INSERT INTO "ContentSource" (business_id, type, name, url, status)
-						VALUES (${user.businessId}, 'website', ${baseUrl}, ${sitemapUrl || baseUrl}, 'processing')
-						RETURNING id
+					// Snapshot existing chunk hashes for this source so we can both
+					// (a) skip re-embedding chunks whose content hasn't changed and
+					// (b) delete chunks whose content no longer appears in the new crawl.
+					const existingChunkRows = await sql`
+						SELECT content_hash FROM "KnowledgeChunk"
+						WHERE source_id = ${sourceId} AND content_hash IS NOT NULL
 					`;
+					const existingHashes = new Set(
+						existingChunkRows.map((r) => r.content_hash as string),
+					);
 
-					let totalChunks = 0;
+					const seenHashes = new Set<string>();
+					let chunksEmbedded = 0;
+					let chunksReused = 0;
 					let pagesProcessed = 0;
 
 					for (let i = 0; i < pageUrls.length; i++) {
@@ -431,6 +466,24 @@ export async function POST(request: Request) {
 						let pageChunks = 0;
 
 						for (let ci = 0; ci < chunks.length; ci++) {
+							const chunkHash = hashContent(chunks[ci]);
+
+							// Already embedded for this source — skip the OpenAI call and the
+							// INSERT. Marking it as "seen" keeps it safe from orphan cleanup.
+							if (existingHashes.has(chunkHash)) {
+								seenHashes.add(chunkHash);
+								chunksReused++;
+								pageChunks++;
+								continue;
+							}
+
+							// Same hash already produced earlier in THIS run (e.g. duplicate
+							// content across two pages of the same site). Skip the second one
+							// to avoid wasting an embed call on identical text.
+							if (seenHashes.has(chunkHash)) {
+								continue;
+							}
+
 							try {
 								const { embedding } = await embed({
 									model: openai.embedding("text-embedding-3-small"),
@@ -439,12 +492,13 @@ export async function POST(request: Request) {
 
 								await sql`
 									INSERT INTO "KnowledgeChunk" (
-										business_id, bot_id, source_id, content, embedding, metadata
+										business_id, bot_id, source_id, content, content_hash, embedding, metadata
 									) VALUES (
 										${user.businessId},
 										${user.botId},
-										${source.id},
+										${sourceId},
 										${chunks[ci]},
+										${chunkHash},
 										${JSON.stringify(embedding)},
 										${JSON.stringify({
 											url: pageUrl,
@@ -454,7 +508,8 @@ export async function POST(request: Request) {
 										})}
 									)
 								`;
-								totalChunks++;
+								seenHashes.add(chunkHash);
+								chunksEmbedded++;
 								pageChunks++;
 							} catch (embedErr) {
 								console.error(
@@ -474,16 +529,33 @@ export async function POST(request: Request) {
 						});
 					}
 
+					// Orphan cleanup: any chunks under this source whose hash is no longer
+					// present in the new crawl are stale (page deleted, content removed).
+					const orphanHashes = [...existingHashes].filter(
+						(h) => !seenHashes.has(h),
+					);
+					let orphansDeleted = 0;
+					if (orphanHashes.length > 0) {
+						await sql`
+							DELETE FROM "KnowledgeChunk"
+							WHERE source_id = ${sourceId}
+							  AND content_hash = ANY(${orphanHashes})
+						`;
+						orphansDeleted = orphanHashes.length;
+					}
+
 					await sql`
 						UPDATE "ContentSource"
 						SET status = 'processed', page_count = ${pagesProcessed}, processed_at = NOW()
-						WHERE id = ${source.id}
+						WHERE id = ${sourceId}
 					`;
 
 					await send({
 						type: "complete",
 						pagesProcessed,
-						chunksCreated: totalChunks,
+						chunksCreated: chunksEmbedded,
+						chunksReused,
+						orphansDeleted,
 						sitemapUrl,
 						discoveryMethod,
 					});
@@ -533,27 +605,45 @@ export async function POST(request: Request) {
 			);
 		}
 
-		// Deduplicate
+		// Reuse the source row instead of delete+recreate — same incremental
+		// ingest path as the streaming branch above. See that path for full
+		// comments on why content_hash makes re-ingest cheap.
 		const existingSources = await sql`
 			SELECT id FROM "ContentSource"
 			WHERE business_id = ${user.businessId}
 			  AND type = 'website'
 			  AND name = ${baseUrl}
+			LIMIT 1
 		`;
 
+		let sourceId: string;
 		if (existingSources.length > 0) {
-			const sourceIds = existingSources.map((s) => s.id);
-			await sql`DELETE FROM "KnowledgeChunk" WHERE source_id = ANY(${sourceIds})`;
-			await sql`DELETE FROM "ContentSource" WHERE id = ANY(${sourceIds})`;
+			sourceId = existingSources[0].id;
+			await sql`
+				UPDATE "ContentSource"
+				SET status = 'processing', url = ${sitemapUrl || baseUrl}
+				WHERE id = ${sourceId}
+			`;
+		} else {
+			const [source] = await sql`
+				INSERT INTO "ContentSource" (business_id, type, name, url, status)
+				VALUES (${user.businessId}, 'website', ${baseUrl}, ${sitemapUrl || baseUrl}, 'processing')
+				RETURNING id
+			`;
+			sourceId = source.id;
 		}
 
-		const [source] = await sql`
-			INSERT INTO "ContentSource" (business_id, type, name, url, status)
-			VALUES (${user.businessId}, 'website', ${baseUrl}, ${sitemapUrl || baseUrl}, 'processing')
-			RETURNING id
+		const existingChunkRows = await sql`
+			SELECT content_hash FROM "KnowledgeChunk"
+			WHERE source_id = ${sourceId} AND content_hash IS NOT NULL
 		`;
+		const existingHashes = new Set(
+			existingChunkRows.map((r) => r.content_hash as string),
+		);
 
-		let totalChunks = 0;
+		const seenHashes = new Set<string>();
+		let chunksEmbedded = 0;
+		let chunksReused = 0;
 		let pagesProcessed = 0;
 
 		for (let i = 0; i < pageUrls.length; i++) {
@@ -565,6 +655,18 @@ export async function POST(request: Request) {
 			pagesProcessed++;
 
 			for (let ci = 0; ci < chunks.length; ci++) {
+				const chunkHash = hashContent(chunks[ci]);
+
+				if (existingHashes.has(chunkHash)) {
+					seenHashes.add(chunkHash);
+					chunksReused++;
+					continue;
+				}
+
+				if (seenHashes.has(chunkHash)) {
+					continue;
+				}
+
 				try {
 					const { embedding } = await embed({
 						model: openai.embedding("text-embedding-3-small"),
@@ -573,12 +675,13 @@ export async function POST(request: Request) {
 
 					await sql`
 						INSERT INTO "KnowledgeChunk" (
-							business_id, bot_id, source_id, content, embedding, metadata
+							business_id, bot_id, source_id, content, content_hash, embedding, metadata
 						) VALUES (
 							${user.businessId},
 							${user.botId},
-							${source.id},
+							${sourceId},
 							${chunks[ci]},
+							${chunkHash},
 							${JSON.stringify(embedding)},
 							${JSON.stringify({
 								url: pageUrl,
@@ -588,7 +691,8 @@ export async function POST(request: Request) {
 							})}
 						)
 					`;
-					totalChunks++;
+					seenHashes.add(chunkHash);
+					chunksEmbedded++;
 				} catch (embedErr) {
 					console.error(
 						`[ingest] Failed to embed chunk ${ci} of ${pageUrl}:`,
@@ -598,16 +702,30 @@ export async function POST(request: Request) {
 			}
 		}
 
+		// Orphan cleanup — same logic as streaming path
+		const orphanHashes = [...existingHashes].filter((h) => !seenHashes.has(h));
+		let orphansDeleted = 0;
+		if (orphanHashes.length > 0) {
+			await sql`
+				DELETE FROM "KnowledgeChunk"
+				WHERE source_id = ${sourceId}
+				  AND content_hash = ANY(${orphanHashes})
+			`;
+			orphansDeleted = orphanHashes.length;
+		}
+
 		await sql`
 			UPDATE "ContentSource"
 			SET status = 'processed', page_count = ${pagesProcessed}, processed_at = NOW()
-			WHERE id = ${source.id}
+			WHERE id = ${sourceId}
 		`;
 
 		return Response.json({
 			success: true,
 			pagesProcessed,
-			chunksCreated: totalChunks,
+			chunksCreated: chunksEmbedded,
+			chunksReused,
+			orphansDeleted,
 			sitemapUrl,
 			discoveryMethod,
 		});

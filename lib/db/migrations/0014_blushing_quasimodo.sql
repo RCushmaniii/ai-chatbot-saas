@@ -1,0 +1,2 @@
+ALTER TABLE "KnowledgeChunk" ADD COLUMN "content_hash" varchar(64);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "knowledge_chunk_business_hash_idx" ON "KnowledgeChunk" USING btree ("business_id","content_hash");
