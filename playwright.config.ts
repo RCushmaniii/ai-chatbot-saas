@@ -55,9 +55,18 @@ export default defineConfig({
 			name: "setup",
 			testMatch: /global\.setup\.ts/,
 		},
+		// Fully-mocked embed widget tests — no Clerk / OpenAI / Postgres needed.
+		// Runs without setup dependency so it works on Dependabot/fork PRs.
+		{
+			name: "embed-mocked",
+			testMatch: /e2e\/embed-widget\.test\.ts/,
+			use: {
+				...devices["Desktop Chrome"],
+			},
+		},
 		{
 			name: "e2e",
-			testMatch: /e2e\/.*.test.ts/,
+			testMatch: /e2e\/(?!embed-widget\.test\.ts).*\.test\.ts/,
 			dependencies: ["setup"],
 			use: {
 				...devices["Desktop Chrome"],

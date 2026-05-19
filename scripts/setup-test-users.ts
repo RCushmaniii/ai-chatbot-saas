@@ -10,8 +10,14 @@ config({ path: ".env.local" });
 
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 if (!CLERK_SECRET_KEY) {
-	console.error("CLERK_SECRET_KEY not found in .env.local");
-	process.exit(1);
+	// Dependabot PRs and fork PRs don't have access to repo secrets — skip
+	// cleanly instead of failing CI. Tests that require auth will be skipped
+	// downstream when global.setup.ts also detects the missing key.
+	console.warn(
+		"⚠️  CLERK_SECRET_KEY not set — skipping test-user setup. " +
+			"Auth-dependent tests will be skipped; mocked embed-widget tests still run.",
+	);
+	process.exit(0);
 }
 
 const TEST_USERS = [
