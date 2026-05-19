@@ -88,7 +88,7 @@ jobs:
         if: env.CLERK_SECRET_KEY == ''
         run: pnpm test:mocked
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always() && !cancelled()
         with:
           name: playwright-report
