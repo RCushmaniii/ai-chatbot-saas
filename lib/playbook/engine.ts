@@ -16,6 +16,39 @@ import {
 	playbookStep,
 	widgetConversation,
 } from "@/lib/db/schema";
+import { detectLanguage } from "@/lib/utils/language-detector";
+
+// Max validation failures per step before the playbook gives up and exits to a
+// graceful fallback message. Borrowed from ny-ai-chatbot's handoff guard rails —
+// without a cap, a confused user can be trapped in an endless "please enter a
+// valid email" loop and never escape to talk to a human.
+const MAX_ATTEMPTS_PER_STEP = 2;
+
+// Cancel keywords (exact match after trim + lowercase). Kept strict — broader
+// terms like "no" would collide with normal yes/no answers inside playbook
+// flows. Users get an unambiguous way to abort data collection.
+const CANCEL_KEYWORDS_EN = new Set([
+	"cancel",
+	"stop",
+	"exit",
+	"quit",
+	"nevermind",
+	"never mind",
+]);
+const CANCEL_KEYWORDS_ES = new Set([
+	"cancelar",
+	"salir",
+	"olvidalo",
+	"olvídalo",
+	"detener",
+]);
+
+function isCancelKeyword(input: string): boolean {
+	const normalized = input.trim().toLowerCase();
+	return (
+		CANCEL_KEYWORDS_EN.has(normalized) || CANCEL_KEYWORDS_ES.has(normalized)
+	);
+}
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
@@ -294,6 +327,25 @@ export class PlaybookEngine {
 		const config = step.config as PlaybookStep["config"];
 		let nextStepId = step.nextStepId;
 		const newVariables = { ...variables };
+		const lang = detectLanguage(userInput);
+
+		// Cancel keyword detection — applies to any step that consumes user input.
+		// Strict-match keywords ("cancel"/"cancelar") give the user an explicit
+		// escape hatch from data-collection flows. Without this, a user mid-handoff
+		// would have no way to back out.
+		if (
+			isCancelKeyword(userInput) &&
+			(step.type === "question" || step.type === "options")
+		) {
+			await this.updateExecutionStatus(execution.id, "abandoned");
+			return {
+				type: "complete",
+				content:
+					lang === "es"
+						? "Entendido — cancelamos esto. Si necesitas ayuda más adelante, no dudes en escribirnos de nuevo."
+						: "Got it — let's stop here. If you need help later, just send us a message any time.",
+			};
+		}
 
 		switch (step.type) {
 			case "question":
@@ -301,6 +353,30 @@ export class PlaybookEngine {
 				if (config?.validation) {
 					const isValid = this.validateInput(userInput, config.validation);
 					if (!isValid) {
+						// Track per-step validation attempts so a confused user can't get
+						// trapped in an endless "please enter a valid email" loop.
+						const attemptKey = `_attempts_${step.id}`;
+						const attempts = (Number(variables[attemptKey]) || 0) + 1;
+
+						if (attempts >= MAX_ATTEMPTS_PER_STEP) {
+							await this.updateExecutionStatus(execution.id, "abandoned");
+							return {
+								type: "complete",
+								content:
+									lang === "es"
+										? "Parece que tengo problemas para entenderte. Intentémoslo de nuevo más tarde — puedes escribirnos directamente cuando quieras."
+										: "Looks like I'm having trouble understanding. Let's try again later — feel free to send us a message any time.",
+							};
+						}
+
+						// Persist the bumped attempt counter so the next request remembers
+						await db
+							.update(playbookExecution)
+							.set({
+								variables: { ...variables, [attemptKey]: attempts },
+							})
+							.where(eq(playbookExecution.id, execution.id));
+
 						return {
 							type: "question",
 							content: this.getValidationErrorMessage(config.validation),
@@ -309,10 +385,11 @@ export class PlaybookEngine {
 						};
 					}
 				}
-				// Store the variable
+				// Store the variable; clear any leftover attempt counter for this step
 				if (config?.variableName) {
 					newVariables[config.variableName] = userInput;
 				}
+				delete newVariables[`_attempts_${step.id}`];
 				break;
 
 			case "options": {
