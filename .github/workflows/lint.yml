@@ -10,12 +10,13 @@ jobs:
         node-version: [20]
     steps:
       - uses: actions/checkout@v6
+      # pnpm/action-setup v6 reads the pnpm version from the `packageManager`
+      # field in package.json. No `version:` here — specifying it twice is an
+      # error in v6.
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.3
+        uses: pnpm/action-setup@v6
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
