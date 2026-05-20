@@ -3,6 +3,8 @@
  * SVG icons used throughout the landing page
  */
 
+import type { ReactElement } from "react";
+
 interface IconProps {
 	className?: string;
 }
@@ -157,7 +159,7 @@ export const SendIcon = ({ className = "w-5 h-5" }: IconProps) => (
  * Get icon component by name
  */
 export const getFeatureIcon = (iconName: string, className?: string) => {
-	const icons: Record<string, JSX.Element> = {
+	const icons: Record<string, ReactElement> = {
 		message: <MessageIcon className={className} />,
 		brain: <BrainIcon className={className} />,
 		globe: <GlobeIcon className={className} />,
