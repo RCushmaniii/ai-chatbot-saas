@@ -10,6 +10,28 @@ updates:
       - dependencies
     commit-message:
       prefix: "deps:"
+    # Group related updates into a single PR. Without this, every week
+    # produces 5+ individual PRs that conflict with each other's lockfile
+    # the moment one merges (lesson from 2026-05-19 backlog cleanup).
+    groups:
+      # All non-major npm bumps land together — safe and fast to review.
+      npm-patches-and-minors:
+        update-types:
+          - "patch"
+          - "minor"
+      # The @ai-sdk/* ecosystem is tightly coupled — provider, react, openai,
+      # xai must move together. Closed PR #15 broke trying to bump provider
+      # alone. Grouping any update type so the whole stack bumps as one PR.
+      ai-sdk:
+        patterns:
+          - "@ai-sdk/*"
+          - "ai"
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+      # Major bumps outside the ai-sdk group still get individual PRs —
+      # they typically need case-by-case review for breaking changes.
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -21,3 +43,8 @@ updates:
       - dependencies
     commit-message:
       prefix: "ci:"
+    groups:
+      # CI action bumps almost always land cleanly together.
+      ci-actions:
+        patterns:
+          - "*"
