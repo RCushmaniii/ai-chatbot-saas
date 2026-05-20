@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { type DataUIPart, DefaultChatTransport } from "ai";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -22,7 +22,7 @@ import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
-import type { Attachment, ChatMessage } from "@/lib/types";
+import type { Attachment, ChatMessage, CustomUIDataTypes } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { Artifact } from "./artifact";
@@ -97,9 +97,14 @@ export function Chat({
 			},
 		}),
 		onData: (dataPart) => {
-			setDataStream((ds) => (ds ? [...ds, dataPart] : []));
-			if (dataPart.type === "data-usage") {
-				setUsage(dataPart.data);
+			// As of `ai` 5.0.52 the SDK widens the onData callback parameter to
+			// `data: unknown`. Narrow back to our CustomUIDataTypes shape — the
+			// dataPart originates from the same useChat<ChatMessage> instance, so
+			// this cast is sound.
+			const typedPart = dataPart as DataUIPart<CustomUIDataTypes>;
+			setDataStream((ds) => (ds ? [...ds, typedPart] : []));
+			if (typedPart.type === "data-usage") {
+				setUsage(typedPart.data as AppUsage);
 			}
 		},
 		onFinish: () => {
