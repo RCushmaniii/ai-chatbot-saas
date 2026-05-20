@@ -6,6 +6,43 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 <!-- New entries go above this line -->
 
+## Session: 2026-05-20
+
+### Accomplished
+
+- Cleared the open PR backlog: merged #46 prismjs, #47 undici (5→7 major), #48 ai 5.0.52, #49 pnpm/setup-node v6 (with required workflow cleanup — removed redundant setup-node step + manual cache, single-source pnpm version), #43 docs + Dependabot grouping config, #44 batch transitive deps via `pnpm update` (replaced #34/#35/#37), #42 lockfile fix (drizzle peer-dep residue from #25)
+- New Dependabot grouping config landed and is working: produced grouped PR #51 (7 patches/minors in one PR) on its first run instead of 7 individual PRs
+- Closed PR #15 (@ai-sdk/provider isolated bump) and PR #50 (ai v6) with documentation — both need a coordinated cross-package AI SDK v2→v3 upgrade rather than per-package bumps
+- **Caught a silent production deploy failure**: PR #48 (ai 5.0.26 → 5.0.52) merged successfully to main but its production deploy (`dpl_3m9XkaGxYvAUMkhuYAPCuK9Sd4bE`) errored at TypeScript type-check on `components/chat.tsx:100`. Production traffic continued to be served by the prior deploy (PR #47 undici). Opened PR #54 with the type fix; closed PR #50 because the underlying v6 bump would hit the same issue plus more
+- CLAUDE.md doc cleanup: drizzle 0.34 → 0.45, @clerk/nextjs 6.36 → 7.3, React 19 RC → 19.2; replaced stale "RC" known-issue with the AI SDK v2→v3 coordinated upgrade item
+
+### Decisions Made
+
+- Aggressive merge with `--admin` on PRs where build is green and Playwright is the known pre-existing CI infra failure — accepted as a calibrated risk given the cleanup needs
+- Bundling lessons #2 + #5 in #41 was the right call; the new Dependabot grouping config now codifies this pattern at the dependency level too
+- Cast `dataPart` at the call boundary in chat.tsx rather than fight the broader SDK type changes — the value provably IS `DataUIPart<CustomUIDataTypes>` from `useChat<ChatMessage>`, the SDK just lost the inference
+
+### Immediate Next Steps
+
+- [ ] Merge PR #54 once CI clears — restores production deploy capability
+- [ ] After #54: merge #51 (grouped 7 patches/minors, low risk)
+- [ ] Defer #52 react-resizable-panels 2 → 4 (major, needs UI smoke test) and #53 @ai-sdk/gateway 3 (major, part of v3 ecosystem upgrade) until a real test pass
+- [ ] Robert: Stripe `sk_live_*` switch + re-seed plans (final launch gate)
+- [ ] One-time wash: next tenant re-ingest will populate content_hash on old chunks; subsequent re-ingests get the cost savings
+
+### Technical Debt
+
+- Sentry CLI build step is also failing in the deploy log with `error: Project not found` and `invalid value 'cushlabs-chatbot-saas\n'` — looks like the SENTRY_PROJECT env var has a trailing newline. Cosmetic for deploy success (source map upload only) but should be cleaned up.
+- @ai-sdk/\* v2 → v3 + ai v5 → v6 coordinated upgrade still pending
+- WhatsApp/Chat SDK integration on `feat/whatsapp-chat-sdk` branch
+- 89 `"use client"` components / no `next/dynamic` — bundle size opportunity
+
+### Open Questions / Blockers
+
+- Stripe live-mode switch remains the only true launch gate
+
+---
+
 ## Session: 2026-05-19
 
 ### Accomplished
