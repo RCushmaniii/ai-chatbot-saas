@@ -20,10 +20,10 @@ If Claude cannot complete a task (e.g., needs a CLI tool installed, needs a pack
 - **Framework:** Next.js 16.1.4 (App Router, Turbopack)
 - **Language:** TypeScript 5.6
 - **AI:** Vercel AI SDK 5.0, OpenAI GPT-4o, text-embedding-3-small
-- **Database:** PostgreSQL with pgvector (Drizzle ORM 0.34)
-- **Auth:** Clerk (@clerk/nextjs 6.36)
+- **Database:** PostgreSQL with pgvector (Drizzle ORM 0.45)
+- **Auth:** Clerk (@clerk/nextjs 7.3)
 - **Billing:** Stripe 20.3
-- **UI:** React 19 RC, Tailwind CSS 4.1, shadcn/ui, Radix UI
+- **UI:** React 19.2, Tailwind CSS 4.1, shadcn/ui, Radix UI
 - **Flow Builder:** React Flow (@xyflow/react 12.10)
 - **Testing:** Playwright 1.50
 - **Linting:** Biome 2.2
@@ -113,7 +113,7 @@ Key gotchas:
 
 - All ~89 components use `"use client"` directive — many static components should be server components for bundle size optimization
 - No dynamic imports (`next/dynamic`) used anywhere — admin and artifact code is eagerly loaded for all users
-- React 19 RC version in use (not stable release)
+- Vercel AI SDK is on v5 with `@ai-sdk/*` packages still on v2; v3 of the providers (and `ai` v6) is available and would be a meaningful upgrade but requires a coordinated cross-package bump + smoke test — see closed PR #15
 
 ## Environment Setup
 
