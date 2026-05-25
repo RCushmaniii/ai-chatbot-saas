@@ -57,7 +57,7 @@
 		"@vercel/otel": "^1.14.1",
 		"@vercel/speed-insights": "^2.0.0",
 		"@xyflow/react": "^12.10.2",
-		"ai": "5.0.52",
+		"ai": "6.0.191",
 		"chat": "^4.29.0",
 		"cheerio": "^1.2.0",
 		"class-variance-authority": "^0.7.1",
