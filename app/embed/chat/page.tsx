@@ -6,7 +6,11 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 function EmbedChatContent() {
-	const _searchParams = useSearchParams();
+	const searchParams = useSearchParams();
+	// The widget is loaded as /embed/chat?language=es|en by the host page, so the
+	// static UI follows that. (Chat replies are language-detected per message.)
+	const language = searchParams.get("language") === "es" ? "es" : "en";
+
 	const [embedSettings, setEmbedSettings] = useState<any>(null);
 	const [_isLoadingSettings, setIsLoadingSettings] = useState(true);
 
@@ -24,13 +28,39 @@ function EmbedChatContent() {
 			});
 	}, []);
 
-	const placeholder = embedSettings?.placeholder || "Type your message...";
+	const STRINGS = {
+		en: {
+			welcomeTitle: "Welcome! 👋",
+			welcomeSubtitle: "How can I help you today?",
+			quickLabel: "Quick questions:",
+			placeholder: "Type your message...",
+			suggested: [
+				"How much does it cost?",
+				"How long does it take?",
+				"How does the guarantee work?",
+				"Book a free call",
+			],
+			error: "Sorry, I encountered an error. Please try again.",
+		},
+		es: {
+			welcomeTitle: "¡Hola! 👋",
+			welcomeSubtitle: "¿En qué puedo ayudarte hoy?",
+			quickLabel: "Preguntas rápidas:",
+			placeholder: "Escribe un mensaje...",
+			suggested: [
+				"¿Cuánto cuesta?",
+				"¿Cuánto tarda?",
+				"¿Cómo funciona la garantía?",
+				"Agendar una llamada gratis",
+			],
+			error: "Lo siento, hubo un error. Por favor, intenta de nuevo.",
+		},
+	} as const;
+	const t = STRINGS[language];
+
 	const botIcon = embedSettings?.botIcon || "💬";
-	const suggestedQuestions = embedSettings?.suggestedQuestions || [
-		"What are the prices for classes?",
-		"What services do you offer?",
-		"How do I book a session?",
-	];
+	const placeholder = t.placeholder;
+	const suggestedQuestions: readonly string[] = t.suggested;
 
 	const [messages, setMessages] = useState<
 		Array<{ role: string; content: string }>
@@ -84,7 +114,7 @@ function EmbedChatContent() {
 				...prev,
 				{
 					role: "assistant",
-					content: "Sorry, I encountered an error. Please try again.",
+					content: t.error,
 				},
 			]);
 		} finally {
@@ -133,13 +163,13 @@ function EmbedChatContent() {
 					<div className="flex flex-col items-center justify-center h-full space-y-4 px-4">
 						<div className="text-center mb-6">
 							<h2 className="text-xl font-semibold text-gray-800 mb-2">
-								Welcome! 👋
+								{t.welcomeTitle}
 							</h2>
-							<p className="text-gray-600">How can I help you today?</p>
+							<p className="text-gray-600">{t.welcomeSubtitle}</p>
 						</div>
 						<div className="w-full max-w-md space-y-2">
 							<p className="text-sm font-medium text-gray-700 mb-3">
-								Quick questions:
+								{t.quickLabel}
 							</p>
 							{suggestedQuestions.map((question: string, idx: number) => (
 								<button
