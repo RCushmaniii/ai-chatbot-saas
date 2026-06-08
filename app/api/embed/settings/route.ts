@@ -14,11 +14,12 @@ const DEFAULT_EMBED_SETTINGS = {
 	position: "bottom-right" as const,
 	welcomeMessage: "Hello! How can I help you today?",
 	placeholder: "Type your message...",
-	botIcon: "🎓",
+	botIcon: "💬",
+	botName: "AI Assistant",
 	suggestedQuestions: [
-		"What are the prices for classes?",
 		"What services do you offer?",
-		"How do I book a session?",
+		"How much does it cost?",
+		"How do I book a call?",
 	],
 };
 
@@ -31,15 +32,27 @@ export async function GET() {
 			.orderBy(desc(botSettings.updatedAt))
 			.limit(1);
 
-		if (settings.length === 0 || !settings[0].embedSettings) {
+		if (settings.length === 0) {
 			// Return defaults if no settings found
 			return NextResponse.json(DEFAULT_EMBED_SETTINGS);
 		}
 
+		const row = settings[0];
+
+		// Prefer the bot's configured starter questions (set in /admin) over the
+		// generic embedSettings/default list.
+		const suggestedQuestions =
+			row.starterQuestions && row.starterQuestions.length > 0
+				? row.starterQuestions.map((q) => q.question)
+				: (row.embedSettings?.suggestedQuestions ??
+					DEFAULT_EMBED_SETTINGS.suggestedQuestions);
+
 		// Merge with defaults to ensure all fields are present
 		const embedSettings = {
 			...DEFAULT_EMBED_SETTINGS,
-			...settings[0].embedSettings,
+			...(row.embedSettings ?? {}),
+			botName: row.botName ?? DEFAULT_EMBED_SETTINGS.botName,
+			suggestedQuestions,
 		};
 
 		return NextResponse.json(embedSettings);

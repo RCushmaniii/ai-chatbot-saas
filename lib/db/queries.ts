@@ -20,6 +20,7 @@ import { ChatSDKError } from "../errors";
 import type { AppUsage } from "../usage";
 import {
 	bot,
+	botSettings,
 	business,
 	type Chat,
 	chat,
@@ -35,6 +36,26 @@ import {
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+/**
+ * Resolve a business's chatbot persona (the embed's system prompt).
+ * botSettings is keyed by userId, so we join through the owner Membership.
+ * Returns null if the business has no custom instructions — callers fall
+ * back to the default prompt.
+ */
+export async function getBusinessPersona(
+	businessId: string,
+): Promise<string | null> {
+	const rows = await db
+		.select({ instructions: botSettings.customInstructions })
+		.from(botSettings)
+		.innerJoin(membership, eq(membership.userId, botSettings.userId))
+		.where(
+			and(eq(membership.businessId, businessId), eq(membership.role, "owner")),
+		)
+		.limit(1);
+	return rows[0]?.instructions ?? null;
+}
 
 export async function ensureDefaultTenantForUser({
 	userId,

@@ -204,7 +204,10 @@ export class ChatPage {
 		const lastMessageElement = messageElements.at(-1);
 
 		if (!lastMessageElement) {
-			return null;
+			// Unreachable in practice — the toBeAttached wait above guarantees at
+			// least one assistant message. Throw (like getRecentUserMessage) so the
+			// return type is non-null and callers don't need null guards.
+			throw new Error("No assistant message found");
 		}
 
 		const content = await lastMessageElement

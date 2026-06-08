@@ -36,8 +36,11 @@ export const myProvider = isTestEnvironment
 			languageModels: {
 				// Free tier - gpt-4o-mini: fast, cheap, great for RAG Q&A
 				"chat-model-mini": openai("gpt-4o-mini"),
-				// Starter/Pro tier - gpt-4o: advanced multimodal
-				"chat-model": openai("gpt-4o"),
+				// Knowledge/questions tier. Kept on gpt-4o-mini: it's the model
+				// allowed on the current OpenAI project and is more than capable
+				// for grounded RAG Q&A. Bump back to gpt-4o here once that model
+				// is enabled on the project, if a quality gain is needed.
+				"chat-model": openai("gpt-4o-mini"),
 				// Business tier - o1-mini: deep reasoning
 				"chat-model-reasoning": wrapLanguageModel({
 					model: openai("o1-mini"),

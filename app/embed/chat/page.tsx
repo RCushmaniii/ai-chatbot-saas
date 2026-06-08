@@ -25,7 +25,7 @@ function EmbedChatContent() {
 	}, []);
 
 	const placeholder = embedSettings?.placeholder || "Type your message...";
-	const botIcon = embedSettings?.botIcon || "🎓";
+	const botIcon = embedSettings?.botIcon || "💬";
 	const suggestedQuestions = embedSettings?.suggestedQuestions || [
 		"What are the prices for classes?",
 		"What services do you offer?",
@@ -101,7 +101,7 @@ function EmbedChatContent() {
 						{botIcon}
 					</div>
 					<h1 className="text-lg font-semibold text-gray-900">
-						NY English Teacher
+						{embedSettings?.botName || "AI Assistant"}
 					</h1>
 				</div>
 				<button
