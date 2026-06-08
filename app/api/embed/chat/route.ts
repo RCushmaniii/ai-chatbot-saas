@@ -13,6 +13,7 @@ import {
 	SAFE_OUTPUT_FALLBACK,
 } from "@/lib/ai/safety/output-guard";
 import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
+import { getBusinessPersona } from "@/lib/db/queries";
 import {
 	checkMessageLimit,
 	incrementMessageCount,
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
 		}
 
+		// This deployment is single-tenant (one business per deploy). The embed
+		// widget doesn't thread tenant context, so fall back to the deployment's
+		// default business/bot for knowledge retrieval + persona.
+		const effectiveBusinessId =
+			businessId ?? process.env.DEFAULT_BUSINESS_ID ?? undefined;
+		const effectiveBotId = botId ?? process.env.DEFAULT_BOT_ID ?? undefined;
+
 		// Input safety: refuse prompt-injection attempts before they reach the model.
 		const inputCheck = checkInput(message);
 		if (!inputCheck.ok) {
@@ -78,8 +86,10 @@ export async function POST(request: Request) {
 		}
 
 		// Check plan-based monthly message limit for the business
-		if (businessId) {
-			const limitCheck = await checkMessageLimit({ businessId });
+		if (effectiveBusinessId) {
+			const limitCheck = await checkMessageLimit({
+				businessId: effectiveBusinessId,
+			});
 			if (!limitCheck.allowed) {
 				return NextResponse.json(
 					{
@@ -206,21 +216,28 @@ export async function POST(request: Request) {
 
 		// No active playbook - use AI response
 		// Track usage even when no conversation was created
-		if (businessId && !conversationId) {
-			await incrementMessageCount({ businessId });
+		if (effectiveBusinessId && !conversationId) {
+			await incrementMessageCount({ businessId: effectiveBusinessId });
 		}
 
 		// Search knowledge base (tenant-isolated by businessId)
-		const knowledgeResults = businessId
-			? await searchKnowledgeDirect(message, { businessId, botId })
+		const knowledgeResults = effectiveBusinessId
+			? await searchKnowledgeDirect(message, {
+					businessId: effectiveBusinessId,
+					botId: effectiveBotId,
+				})
 			: [];
 
 		// Detect language
 		const detectedLang = detectLanguage(message);
 		const learnMoreText = getLearnMoreText(detectedLang);
 
-		// Build context with knowledge results - use the same system prompt as main chat
-		let context = regularPrompt;
+		// Build context: the business's own persona (set in /admin → Instructions),
+		// falling back to the default prompt if none is configured.
+		const persona = effectiveBusinessId
+			? ((await getBusinessPersona(effectiveBusinessId)) ?? regularPrompt)
+			: regularPrompt;
+		let context = persona;
 
 		if (knowledgeResults.length > 0) {
 			const uniqueUrls = Array.from(

@@ -44,7 +44,9 @@ export class ArtifactPage {
 		const lastMessageElement = messageElements.at(-1);
 
 		if (!lastMessageElement) {
-			return null;
+			// Throw (not return null) so the return type is non-null and callers
+			// don't need null guards — consistent with ChatPage.
+			throw new Error("No assistant message found");
 		}
 
 		const content = await lastMessageElement
