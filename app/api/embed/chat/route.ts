@@ -63,9 +63,12 @@ export async function POST(request: Request) {
 		// This deployment is single-tenant (one business per deploy). The embed
 		// widget doesn't thread tenant context, so fall back to the deployment's
 		// default business/bot for knowledge retrieval + persona.
+		// .trim() is load-bearing: env values set via some CLIs carry a trailing
+		// newline, and an untrimmed UUID makes Postgres throw 22P02 (invalid uuid).
 		const effectiveBusinessId =
-			businessId ?? process.env.DEFAULT_BUSINESS_ID ?? undefined;
-		const effectiveBotId = botId ?? process.env.DEFAULT_BOT_ID ?? undefined;
+			(businessId ?? process.env.DEFAULT_BUSINESS_ID)?.trim() || undefined;
+		const effectiveBotId =
+			(botId ?? process.env.DEFAULT_BOT_ID)?.trim() || undefined;
 
 		// Input safety: refuse prompt-injection attempts before they reach the model.
 		const inputCheck = checkInput(message);
