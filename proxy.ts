@@ -1,5 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import {
+	type NextFetchEvent,
+	type NextRequest,
+	NextResponse,
+} from "next/server";
 
 /**
  * Public routes that don't require authentication.
@@ -94,7 +98,7 @@ function applySecurityHeaders(
 	return response;
 }
 
-export default clerkMiddleware(async (auth, request) => {
+const clerk = clerkMiddleware(async (auth, request) => {
 	const response = NextResponse.next();
 	const { pathname } = new URL(request.url);
 
@@ -111,6 +115,24 @@ export default clerkMiddleware(async (auth, request) => {
 
 	return response;
 });
+
+/**
+ * The public embed widget must be COMPLETELY Clerk-free. It renders in a
+ * cross-origin iframe on customer sites, where Clerk's dev-browser handshake
+ * and auth iframes are CSP-blocked and blank the page. So short-circuit /embed
+ * before clerkMiddleware ever runs — but still apply the security headers
+ * (notably `frame-ancestors *`) so the iframe is allowed to load.
+ */
+export default function middleware(
+	request: NextRequest,
+	event: NextFetchEvent,
+) {
+	const { pathname } = new URL(request.url);
+	if (pathname.startsWith("/embed")) {
+		return applySecurityHeaders(NextResponse.next(), pathname);
+	}
+	return clerk(request, event);
+}
 
 export const config = {
 	matcher: [

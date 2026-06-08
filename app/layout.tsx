@@ -1,5 +1,5 @@
 import { enUS, esES } from "@clerk/localizations";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ConditionalClerkProvider } from "./conditional-clerk";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -142,7 +142,7 @@ export default async function RootLayout({
 	const clerkLocalization = lang === "en" ? enUS : esES;
 
 	return (
-		<ClerkProvider localization={clerkLocalization}>
+		<ConditionalClerkProvider localization={clerkLocalization}>
 			<html
 				className={`${inter.variable} ${plusJakarta.variable} ${geistMono.variable}`}
 				// `next-themes` injects an extra classname to the body element to avoid
@@ -174,6 +174,6 @@ export default async function RootLayout({
 					<SpeedInsights />
 				</body>
 			</html>
-		</ClerkProvider>
+		</ConditionalClerkProvider>
 	);
 }
