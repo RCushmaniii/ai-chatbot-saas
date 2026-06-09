@@ -4,6 +4,40 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ---
 
+## Session: 2026-06-09
+
+### Accomplished
+
+- Configured this repo as the **CushLabs homepage demo** (single-tenant-per-deploy — the product's shipping model) and got it working end-to-end in prod at `soyconverso.com/embed/chat`: grounded RAG, bilingual UI + replies, CushLabs persona.
+- **PR #67** — embed tenant wiring: `/api/embed/chat` falls back to `DEFAULT_BUSINESS_ID`/`DEFAULT_BOT_ID` (the widget never threaded tenant context, so RAG returned nothing); persona from owner `botSettings.customInstructions` via new `getBusinessPersona`; `/api/embed/settings` returns `botName` + derives suggested questions from starter questions; `chat-model` → `gpt-4o-mini` (the model allowed on the OpenAI project); fixed test page-object null returns (build typecheck).
+- `scripts/provision-cushlabs-demo.ts` — idempotent CushLabs business/bot/owner/persona + 13 embedded knowledge chunks; self-heals `KnowledgeChunk` `content_hash`/`token_count` drift.
+- **PR #68** — `.trim()` env reads: `DEFAULT_BUSINESS_ID` had a trailing `\r\n` (CLI pipe) → Postgres `22P02` invalid-uuid → every embed 500'd.
+- **PR #70** — `/embed` is now completely Clerk-free: middleware short-circuits `/embed` before `clerkMiddleware` (no dev-browser handshake) while keeping `frame-ancestors *`; `ConditionalClerkProvider` skips `<ClerkProvider>` on `/embed`. (Clerk dev-instance auth iframes were CSP-blocked → blank widget cross-origin.)
+- **PR #71** — embed UI localizes off `?language=` (welcome text, quick-questions label, placeholder, suggested questions, errors); was hardcoded English.
+- Hand-created missing prod tables: `RateLimit`, `UsageRecord` + `(business_id, month)` unique index.
+- Verified in a real browser (Playwright) on the live homepage: renders, answers "$3,500", EN+ES UI correct, zero Clerk/CSP console errors.
+
+### Decisions Made
+
+- Single-tenant-per-deploy over building true multi-tenant embed plumbing now — defer until a 2nd embed client.
+- Surgical schema patches over `drizzle-kit push` — avoided risking drops on a DB with real data.
+
+### Immediate Next Steps
+
+- [ ] Reviewed `drizzle-kit push` to fully resync the prod Neon DB — significant drift remains beyond the 4 objects patched.
+- [ ] Migrate to Clerk **production** keys (app currently runs the dev instance; fine for the now-Clerk-free embed, not for the rest of the app).
+
+### Technical Debt
+
+- Embed is single-tenant-per-deploy; `getBusinessPersona` + `DEFAULT_BUSINESS_ID` fallback are the bridge.
+- Prod DB schema drift (RateLimit/UsageRecord/KnowledgeChunk columns were missing) — push was never run on prod.
+
+### Open Questions / Blockers
+
+- None.
+
+---
+
 <!-- New entries go above this line -->
 
 ## Session: 2026-05-20
