@@ -4,6 +4,38 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ---
 
+## Session: 2026-06-15
+
+### Accomplished
+
+- Diagnosed an unexpected Vercel build-failure email as a routine **Dependabot** event (not a security incident): branch `dependabot/npm_and_yarn/ai-sdk-a80fd08f9c`, commit `643459e`. Dependabot opened **PR #63** bumping `ai` 5.0.52 → 6.0.205; Vercel auto-built the preview and it failed.
+- Root cause of the build break: `ai` v6 made `convertToModelMessages()` async — it now returns `Promise<ModelMessage[]>`, so `app/(chat)/api/chat/route.ts:291` fails type-check (`messages:` expects `ModelMessage[]`). Production `main` was never affected.
+- **Closed PR #63** with an explanatory comment — the v5→v6 jump is a deliberate cross-package migration (pairs with `@ai-sdk/openai` v2→v3), not an automated merge.
+- Fixed a long-standing **`SENTRY_PROJECT` env-var defect**: the production value was `cushlabs-chatbot-saas\n` (trailing newline from an `echo`/pipe at set time, 72 days ago). sentry-cli rejected it (`invalid value ... Use the URL slug ... not the name!`), so Sentry release-creation + source-map upload have been silently failing on every build since. Removed and re-added via `printf "%s"` (no newline) using Vercel CLI.
+- Folded the staged `vercel.json` `ignoreCommand` rollout into this commit (docs-only commits now skip Vercel builds).
+
+### Decisions Made
+
+- Close, not merge, the `ai` v6 PR: major breaking changes require a coordinated migration + smoke test; out of scope for an unplanned session.
+- Re-add `SENTRY_PROJECT` with `printf "%s"` rather than `echo`/pipe — the newline-injection pattern is documented in memory (`feedback_vercel_env_pipe.md`).
+- Did not trigger a throwaway redeploy to validate the Sentry fix — Vercel Hobby deploy quota is finite; the fix validates on the next real merge to `main`.
+
+### Immediate Next Steps
+
+- [ ] On the next production deploy, confirm the Sentry "After Production Compile" step succeeds (no "Project not found" / "invalid value" errors).
+- [ ] Plan the AI SDK v5→v6 migration as its own branch: update `convertToModelMessages` call sites to `await`, bump `@ai-sdk/openai` v2→v3 together (Dependabot PR #64), smoke-test chat + embed end-to-end.
+- [ ] Review remaining open Dependabot PRs: #72 (38 patches/minors group), #65 (shiki 4), #64 (`@ai-sdk/openai` 3), #58 (esbuild 0.28).
+
+### Technical Debt
+
+- AI SDK is pinned on v5 while v6 / provider v3 are available — tracked in CLAUDE.md known-issues; the deferred upgrade is now also a stale Dependabot PR backlog.
+
+### Open Questions / Blockers
+
+- None. The Sentry slug `cushlabs-chatbot-saas` is assumed correct (DSN present, value set deliberately); confirm on next build since the MCP session was scoped to a different project and couldn't enumerate the project list.
+
+---
+
 ## Session: 2026-06-09
 
 ### Accomplished
