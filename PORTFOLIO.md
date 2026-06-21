@@ -27,15 +27,33 @@ tags:
 
 thumbnail: "/images/portfolio/ai-chatbot-saas-thumb.webp"
 hero_images:
-  - "/images/portfolio/converso-01.webp"
-  - "/images/portfolio/converso-02.webp"
-  - "/images/portfolio/converso-03.webp"
-  - "/images/portfolio/converso-04.webp"
-  - "/images/portfolio/converso-05.webp"
-  - "/images/portfolio/converso-06.webp"
-  - "/images/portfolio/converso-07.webp"
-  - "/images/portfolio/converso-08.webp"
-  - "/images/portfolio/converso-09.webp"
+  - src: "/images/portfolio/converso-01.webp"
+    alt_en: "Converso AI dashboard showing the bilingual AI front desk assistant with a live customer conversation in progress."
+    alt_es: "Panel de Converso AI que muestra el asistente de recepción con IA bilingüe con una conversación de cliente en curso."
+  - src: "/images/portfolio/converso-02.webp"
+    alt_en: "The embedded chat widget answering a customer question accurately in English, grounded in the business's own knowledge base."
+    alt_es: "El widget de chat integrado responde con precisión la pregunta de un cliente en inglés, basándose en la base de conocimiento del propio negocio."
+  - src: "/images/portfolio/converso-03.webp"
+    alt_en: "The chat assistant responding to the same question in Spanish, demonstrating native bilingual language detection."
+    alt_es: "El asistente de chat responde la misma pregunta en español, mostrando la detección de idioma bilingüe nativa."
+  - src: "/images/portfolio/converso-04.webp"
+    alt_en: "Knowledge base ingestion screen where a business owner uploads documents and scrapes their website to train the assistant."
+    alt_es: "Pantalla de carga de la base de conocimiento donde el dueño del negocio sube documentos y rastrea su sitio web para entrenar al asistente."
+  - src: "/images/portfolio/converso-05.webp"
+    alt_en: "The visual playbook builder built on React Flow, with message, question, condition, and handoff nodes connected into a conversation flow."
+    alt_es: "El constructor visual de guiones hecho con React Flow, con nodos de mensaje, pregunta, condición y transferencia conectados en un flujo de conversación."
+  - src: "/images/portfolio/converso-06.webp"
+    alt_en: "Lead management view showing captured contacts with scoring and tagging from automated conversations."
+    alt_es: "Vista de gestión de prospectos que muestra los contactos capturados con calificación y etiquetas de las conversaciones automatizadas."
+  - src: "/images/portfolio/converso-07.webp"
+    alt_en: "Live chat queue where a human agent takes over a high-intent conversation handed off by the AI assistant."
+    alt_es: "Cola de chat en vivo donde un agente humano retoma una conversación de alta intención transferida por el asistente con IA."
+  - src: "/images/portfolio/converso-08.webp"
+    alt_en: "Stripe billing and subscription management screen with usage tracking for messages and knowledge base pages per tenant."
+    alt_es: "Pantalla de facturación y gestión de suscripciones con Stripe, con seguimiento de uso de mensajes y páginas de la base de conocimiento por cliente."
+  - src: "/images/portfolio/converso-09.webp"
+    alt_en: "The one-tag embeddable widget configured from the admin panel and dropped into a sample business website."
+    alt_es: "El widget integrable de una sola etiqueta configurado desde el panel de administración e insertado en un sitio web de negocio de ejemplo."
 demo_video_url: "/video/converso-brief.mp4"
 demo_video_poster: "/video/converso-brief-poster.jpg"
 
@@ -50,6 +68,15 @@ problem_solved: |
   a knowledge-grounded AI assistant that answers accurately in English or Spanish,
   qualifies leads, and hands off to humans when needed.
 
+solution: |
+  A deterministic RAG pipeline retrieves verified content from each tenant's own
+  knowledge base and injects it into the prompt, so answers are grounded in facts and
+  cite their sources instead of hallucinating. Native bilingual generation detects the
+  customer's language on the first message and responds naturally in English or Spanish —
+  not auto-translation. A self-service admin dashboard lets non-technical owners ingest
+  content, design conversation playbooks visually, manage leads, and handle billing,
+  while a single embeddable script tag drops the assistant into any website.
+
 key_outcomes:
   - "Multi-tenant SaaS with full data isolation per business"
   - "RAG-powered answers grounded in verified business content"
@@ -57,6 +84,12 @@ key_outcomes:
   - "Visual playbook builder for non-technical conversation design"
   - "Stripe billing with subscription management and usage tracking"
   - "One-tag embeddable widget for any website"
+
+metrics:
+  - "24/7 bilingual lead capture — recovers the 30-50% of inquiries that arrive after hours"
+  - "Knowledge-grounded answers with source citations — eliminates chatbot hallucination on pricing and services"
+  - "Zero-developer setup — owners configure knowledge, playbooks, and billing entirely self-service"
+  - "Sub-second time-to-first-token via streaming chat from GPT-4o"
 
 tech_stack:
   - "Next.js 16"
@@ -132,12 +165,14 @@ A single script tag drops the chatbot into any website. Widget appearance, greet
 ## Results
 
 **For the End User / Business Owner:**
+
 - 24/7 bilingual customer engagement without hiring staff
 - Knowledge-grounded answers that don't hallucinate or give wrong information
 - Lead capture and qualification running automatically while the business is closed
 - Full chatbot configuration through a web dashboard — no developer dependency
 
 **Technical Demonstration:**
+
 - End-to-end SaaS architecture: multi-tenancy, RBAC, billing, usage metering
 - Production RAG pipeline: ingestion, chunking, embedding, vector search, citation
 - Real-time systems: streaming chat, live agent handoff, webhook event processing
