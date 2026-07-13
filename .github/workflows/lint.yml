@@ -9,7 +9,7 @@ jobs:
       matrix:
         node-version: [20]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # pnpm/action-setup v6 reads the pnpm version from the `packageManager`
       # field in package.json. No `version:` here — specifying it twice is an
       # error in v6.
