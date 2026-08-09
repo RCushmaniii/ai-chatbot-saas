@@ -59,8 +59,31 @@ function EmbedChatContent() {
 	const t = STRINGS[language];
 
 	const botIcon = embedSettings?.botIcon || "💬";
-	const placeholder = t.placeholder;
-	const suggestedQuestions: readonly string[] = t.suggested;
+
+	/**
+	 * Tenant settings win over the built-in copy.
+	 *
+	 * /api/embed/settings has always returned `suggestedQuestions` and
+	 * `placeholder`, reading them per tenant from `row.embedSettings`, and this
+	 * component read neither — it used the hardcoded bilingual list below. So on a
+	 * multi-tenant product every tenant's widget showed the same questions about
+	 * guarantees and booking a free call regardless of what they configured. The
+	 * admin could save a value that nothing ever rendered.
+	 *
+	 * A tenant-set list is used exactly as given, in whatever language it was
+	 * written, because those are the strings that tenant chose. The bilingual
+	 * defaults below only apply when nothing is configured.
+	 *
+	 * An explicitly empty array is honoured as "no quick questions" rather than
+	 * silently falling back to defaults — clearing them is a real choice, and the
+	 * settings route already substitutes its own defaults when a tenant has none.
+	 */
+	const placeholder: string = embedSettings?.placeholder || t.placeholder;
+	const suggestedQuestions: readonly string[] = Array.isArray(
+		embedSettings?.suggestedQuestions,
+	)
+		? embedSettings.suggestedQuestions
+		: t.suggested;
 
 	const [messages, setMessages] = useState<
 		Array<{ role: string; content: string }>
@@ -167,7 +190,13 @@ function EmbedChatContent() {
 							</h2>
 							<p className="text-gray-600">{t.welcomeSubtitle}</p>
 						</div>
-						<div className="w-full max-w-md space-y-2">
+						{/* Hidden entirely when a tenant has cleared their questions —
+                a "Quick questions:" heading with nothing under it reads as a
+                broken widget rather than as a deliberate choice. */}
+						<div
+							className="w-full max-w-md space-y-2"
+							hidden={suggestedQuestions.length === 0}
+						>
 							<p className="text-sm font-medium text-gray-700 mb-3">
 								{t.quickLabel}
 							</p>
