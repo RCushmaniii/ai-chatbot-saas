@@ -1,5 +1,4 @@
 import { enUS, esES } from "@clerk/localizations";
-import { ConditionalClerkProvider } from "./conditional-clerk";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -7,6 +6,7 @@ import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ConditionalClerkProvider } from "./conditional-clerk";
 
 import "./globals.css";
 
