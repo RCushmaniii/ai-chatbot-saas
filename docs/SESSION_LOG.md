@@ -10,7 +10,6 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 > **An item leaves this list only when it has been verified end to end.** "Tests pass" and
 > "the config looks right" are not verification.
 
-- **Sentry release/source-map upload is broken in production.** Every build's "After Production Compile" step fails: `error: Project not found. Ensure that you configured the correct project and organization.` Confirmed live on deployment `dpl_GZhp9zexcnKgtkGHAcf3i1ur82EA` (commit `816f43d`, 2026-08-09) and via Sentry MCP query: zero releases ever created for `cushlabs-chatbot-saas`, zero events in the last 14 days. The build itself still succeeds — this fails silently in the background. The 2026-06-15 fix (trailing-newline `SENTRY_PROJECT`) did not resolve it; the error signature changed from "invalid value" to "Project not found," pointing at `SENTRY_ORG` or the auth token's project access next. Blocks: production error monitoring on a client-facing, payment-taking app — violates the standing "Sentry on every production project" mandate.
 - **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5** while v3 providers / `ai` v6 exist — deferred since closed PR #15 (needs coordinated cross-package bump + smoke test). Also the reason the last 4 low-severity `@ai-sdk/provider-utils` audit findings (GHSA-866g-f22w-33x8) can't be patched. Blocks: those 4 findings, and Dependabot PRs #64 and #65 sitting open waiting on it.
 - **Dependabot PR #58** (esbuild 0.18.20→0.28.0) is now redundant — the 2026-08-09 `pnpm.overrides` fix already forces esbuild to 0.28.2 repo-wide. Needs closing with a comment, not merging.
 
@@ -23,20 +22,22 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 - Cut dependency vulnerabilities from 83/31-high (GitHub Dependabot) / 81 findings, 28 high + 37 moderate (`pnpm audit`) down to 1 low GitHub alert / 4 low `pnpm audit` findings. **PR #89**, merged to `main`.
 - Direct bumps: `next` 16.2.6→16.2.12, `nanoid` ^5.1.11→^5.1.16. Added `pnpm.overrides` forcing patched versions of 18 transitive-only vulnerable packages (undici, ai, postcss, @babel/core, ws, brace-expansion, fast-uri, sharp, js-cookie, markdown-it, linkify-it, prismjs, @opentelemetry/core, esbuild, mermaid, dompurify, postcss's nested nanoid), each pinned to its current major version except `undici` (bumped to v7).
 - Verified: `pnpm build` (all routes compile), `pnpm lint` (no new errors), `pnpm start` + `/api/health` smoke test.
-- Repo standardization audit: renamed `PORTFOLIO.md` → `portfolio.md` (tracked uppercase, invisible to lowercase-scanning tooling). README, LICENSE, .gitignore, CLAUDE.md all compliant.
-- Discovered (pre-existing, not caused by this session) that Sentry source-map upload is broken in production — see Open Items.
+- Repo standardization audit: renamed `PORTFOLIO.md` → `portfolio.md` (tracked uppercase, invisible to lowercase-scanning tooling). README, LICENSE, .gitignore, CLAUDE.md all compliant. Added `docs/REPO_PURPOSE.md` (ecosystem map — this repo is standalone, not part of a multi-repo platform family; its only real connections are the `soyconverso.com` demo embed on the `cushlabs` portfolio site and shared Sentry/Vercel-hygiene conventions). Flagged that `portfolio.md`'s `live_url`/`demo_url` are blank while the downstream `cushlabs/src/data/projects.generated.json` has the real URL — backwards, not fixed this session.
+- **Root-caused and fixed the Sentry release/source-map upload failure** discovered earlier this session: every build's "After Production Compile" step was failing with `error: Project not found`. Isolated to this one repo's `SENTRY_AUTH_TOKEN` (127 days stale, never rotated) by confirming the org (`cushlabsai`) and the release-creation pipeline both work fine on sibling repos (`cushlabs`, `cushlabs-os-dashboard` have continuous releases through today). Robert supplied a fresh Org Auth Token via `.env.local` (`SENTRY_CLAUDECODE_SETUP_TOKEN`); verified it against the Sentry API before using it, then rotated `SENTRY_AUTH_TOKEN` and pinned `SENTRY_ORG=cushlabsai` explicitly in both Production and Preview via the Vercel CLI (value piped through stdin, never in argv or chat). **Verified end to end, not just "config looks right":** triggered a real production build (`vercel --prod`), confirmed the log now reads `Successfully uploaded source maps to Sentry`, and confirmed via the Sentry API that a release now exists for `cushlabs-chatbot-saas` (version `bec25aa7`, dated 2026-08-09, tied to `vercel-production`) — the first one ever created for this project.
 
 ### Decisions Made
 
 - Scoped every `pnpm.overrides` entry to the package's current major version instead of latest, to limit breaking-change risk on a production app — verified with a full build rather than trusting semver alone.
 - Did not attempt the AI SDK v2→v3 migration to close the last 4 vulnerabilities, matching the existing closed-PR-#15 decision that it needs its own branch and smoke test.
-- Did not chase the Sentry "Project not found" error this session — it surfaced as a side effect of verifying the deploy, not the ask, and the fix needs its own Sentry/Vercel env-var investigation.
+- Rotated `SENTRY_AUTH_TOKEN` rather than just `SENTRY_ORG`, since the sibling-repo comparison ruled out the org slug and pointed at the token; also pinned `SENTRY_ORG` explicitly since the correct value was now known for certain, to remove the ambiguity entirely rather than leave one variable unverified.
+- Used a Node script piping the token via stdin to `vercel env add` (never as a CLI arg or in a heredoc) — followed the `secrets-playbook` skill's run-with-secrets pattern throughout.
 
 ### Immediate Next Steps
 
-- [ ] Investigate `SENTRY_ORG` / auth-token project access on Vercel for `cushlabs-chatbot-saas` (org `cushlabsai`) — see Open Items.
 - [ ] Close Dependabot PR #58 (esbuild) with a comment — superseded by this session's override.
 - [ ] Decide on Dependabot PR #65 (shiki 3→4) — still open, unrelated to this session.
+- [ ] Fix `portfolio.md`'s blank `live_url`/`demo_url` — the real value already lives downstream in `cushlabs/src/data/projects.generated.json`, backwards from how the source-of-truth file is supposed to work.
+- [ ] Remove `SENTRY_CLAUDECODE_SETUP_TOKEN` from local `.env.local` now that it's live in Vercel — no longer needed locally and is a second copy of a now-correctly-stored secret.
 
 ### Technical Debt
 
@@ -44,7 +45,7 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ### Open Questions / Blockers
 
-- None for the dependency fix itself. Sentry root cause is unconfirmed — see Open Items.
+- None. Sentry is confirmed working end to end; dependency fix is merged and verified.
 
 ---
 
