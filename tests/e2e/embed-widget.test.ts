@@ -48,7 +48,7 @@ test.describe("Embed widget — cold open", () => {
 		await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
 		await expect(page.getByText("Quick questions:")).toBeVisible();
 		await expect(
-			page.getByRole("button", { name: "What are the prices for classes?" }),
+			page.getByRole("button", { name: "How much does it cost?" }),
 		).toBeVisible();
 	});
 
@@ -69,7 +69,7 @@ test.describe("Embed widget — cold open", () => {
 		).toBeVisible();
 		// Default question should NOT appear when overrides are provided
 		await expect(
-			page.getByRole("button", { name: "What are the prices for classes?" }),
+			page.getByRole("button", { name: "How much does it cost?" }),
 		).not.toBeVisible();
 	});
 });
@@ -82,12 +82,10 @@ test.describe("Embed widget — chat flow", () => {
 		await page.goto(EMBED_URL);
 		await page.waitForLoadState("networkidle");
 
-		await page
-			.getByRole("button", { name: "What services do you offer?" })
-			.click();
+		await page.getByRole("button", { name: "How long does it take?" }).click();
 
 		await expect(page.getByPlaceholder(/type your message/i)).toHaveValue(
-			"What services do you offer?",
+			"How long does it take?",
 		);
 	});
 
@@ -102,7 +100,7 @@ test.describe("Embed widget — chat flow", () => {
 		await page.goto(EMBED_URL);
 		await page.waitForLoadState("networkidle");
 
-		await sendMessage(page, "What services do you offer?");
+		await sendMessage(page, "How long does it take?");
 
 		// Welcome screen disappears once a user message is sent
 		await expect(
