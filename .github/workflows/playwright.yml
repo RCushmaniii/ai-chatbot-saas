@@ -12,13 +12,38 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
-      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+      # lib/env.ts requires POSTGRES_URL, CLERK_SECRET_KEY, CLERK_WEBHOOK_SECRET,
+      # OPENAI_API_KEY and STRIPE_SECRET_KEY, each as a non-empty string. Two of
+      # them — CLERK_WEBHOOK_SECRET and STRIPE_SECRET_KEY — were never listed
+      # here, so the dev server failed its own env validation before serving a
+      # single request. Every Playwright run had therefore failed since
+      # 2026-07-28, including the REQUIRED mocked gate, which meant this
+      # workflow had been red on every PR while telling us nothing.
+      #
+      # The `||` fallbacks below make the required set always satisfiable. A real
+      # secret wins when it exists; otherwise an obviously-fake placeholder lets
+      # the app boot. That is legitimate for the mocked suite specifically: it
+      # mocks the network, /ping touches no database, and embed-mocked declares
+      # no auth dependency — it needs the app running, not real credentials.
+      #
+      # These placeholders are deliberately unusable. Never put a real value
+      # here; secrets belong in repository secrets, not in a committed workflow.
+      # Whether a REAL Clerk key exists. Step-level `if:` cannot read the secrets
+      # context — only env, github, needs, steps and a few others — so the check is
+      # captured here as a string flag and the auth steps gate on it. Gating on
+      # CLERK_SECRET_KEY directly no longer works now that it has a placeholder
+      # fallback: it is never empty, so the auth suite would always run and always
+      # fail against a fake key.
+      HAS_REAL_CLERK: ${{ secrets.CLERK_SECRET_KEY != '' }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'ci-placeholder-not-a-real-secret' }}
+      POSTGRES_URL: ${{ secrets.POSTGRES_URL || 'postgres://ci:ci@127.0.0.1:5432/ci-placeholder' }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_ci-placeholder' }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_ci-placeholder' }}
+      CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET || 'whsec_ci-placeholder' }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-ci-placeholder-not-a-real-key' }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_ci-placeholder' }}
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       E2E_CLERK_USER_USERNAME: "ada-test@cushlabs.ai"
 
@@ -41,11 +66,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Set up Clerk test users
-        if: env.CLERK_SECRET_KEY != ''
+        if: env.HAS_REAL_CLERK == 'true'
         run: pnpm test:setup
 
       - name: Generate Clerk testing token
-        if: env.CLERK_SECRET_KEY != ''
+        if: env.HAS_REAL_CLERK == 'true'
         id: clerk-token
         run: |
           TOKEN=$(curl -s -X POST https://api.clerk.com/v1/testing_tokens \
@@ -77,7 +102,7 @@ jobs:
       # diagnostic value but DON'T fail the workflow on their result — no
       # email noise on every PR.
       - name: Run auth-dependent Playwright tests (best-effort, won't block)
-        if: env.CLERK_SECRET_KEY != ''
+        if: env.HAS_REAL_CLERK == 'true'
         continue-on-error: true
         run: pnpm exec playwright test --project=setup --project=e2e --project=routes
 
