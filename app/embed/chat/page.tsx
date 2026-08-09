@@ -40,6 +40,7 @@ function EmbedChatContent() {
 				"How does the guarantee work?",
 				"Book a free call",
 			],
+			send: "Send message",
 			error: "Sorry, I encountered an error. Please try again.",
 		},
 		es: {
@@ -53,6 +54,7 @@ function EmbedChatContent() {
 				"¿Cómo funciona la garantía?",
 				"Agendar una llamada gratis",
 			],
+			send: "Enviar mensaje",
 			error: "Lo siento, hubo un error. Por favor, intenta de nuevo.",
 		},
 	} as const;
@@ -77,6 +79,13 @@ function EmbedChatContent() {
 	 * An explicitly empty array is honoured as "no quick questions" rather than
 	 * silently falling back to defaults — clearing them is a real choice, and the
 	 * settings route already substitutes its own defaults when a tenant has none.
+	 *
+	 * NOTE: `embedSettings` here is the /api/embed/settings RESPONSE, not the
+	 * database column of the same name. The response always carries
+	 * `suggestedQuestions`, resolved server-side from botSettings.starterQuestions
+	 * or the route's defaults. The `embedSettings.suggestedQuestions` DB field was
+	 * deleted on 2026-08-09 as a duplicate — do not "clean up" the read below on
+	 * the strength of that; it is a different thing with the same name.
 	 */
 	const placeholder: string = embedSettings?.placeholder || t.placeholder;
 	const suggestedQuestions: readonly string[] = Array.isArray(
@@ -331,8 +340,20 @@ function EmbedChatContent() {
 						className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white"
 						disabled={isLoading}
 					/>
+					{/*
+						aria-label because the button's only content is an icon.
+						Without it the button has no accessible name at all: a screen
+						reader announces "button" and nothing else, and the e2e suite
+						could not find it either — three tests timed out waiting for
+						getByRole("button", { name: /send/i }).
+
+						Localised alongside the rest of the widget copy, since a Spanish
+						visitor should not hear an English label.
+					*/}
 					<button
 						type="submit"
+						aria-label={t.send}
+						title={t.send}
 						disabled={isLoading || !input.trim()}
 						className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm hover:shadow-md"
 					>
@@ -347,6 +368,7 @@ function EmbedChatContent() {
 							strokeLinecap="round"
 							strokeLinejoin="round"
 							className="inline-block"
+							aria-hidden="true"
 						>
 							<path d="m22 2-7 20-4-9-9-4Z" />
 							<path d="M22 2 11 13" />

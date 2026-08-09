@@ -39,13 +39,25 @@ export async function GET() {
 
 		const row = settings[0];
 
-		// Prefer the bot's configured starter questions (set in /admin) over the
-		// generic embedSettings/default list.
+		/**
+		 * starterQuestions is the ONLY configurable source, then the defaults.
+		 *
+		 * embedSettings.suggestedQuestions used to sit between the two as a second
+		 * fallback, and nothing ever wrote it — the admin UI
+		 * (components/admin-starter-questions.tsx) writes starterQuestions, and
+		 * this route already preferred that. So it was a field that could only be
+		 * populated by editing a live jsonb column by hand, for a value that would
+		 * then be overridden by any tenant who configured the real one.
+		 *
+		 * Two fields for one concept is the same second-copy problem removed from
+		 * business_unit in the operating-system repo on 2026-08-09: two places can
+		 * disagree, and nothing compares them. Deleted rather than wired up,
+		 * because starterQuestions is the one with a UI behind it.
+		 */
 		const suggestedQuestions =
 			row.starterQuestions && row.starterQuestions.length > 0
 				? row.starterQuestions.map((q) => q.question)
-				: (row.embedSettings?.suggestedQuestions ??
-					DEFAULT_EMBED_SETTINGS.suggestedQuestions);
+				: DEFAULT_EMBED_SETTINGS.suggestedQuestions;
 
 		// Merge with defaults to ensure all fields are present
 		const embedSettings = {

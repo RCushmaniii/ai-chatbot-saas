@@ -370,6 +370,19 @@ export const botSettings = pgTable("bot_settings", {
 		showCitations?: boolean;
 		language?: string;
 	}>(),
+	/**
+	 * Widget appearance. `suggestedQuestions` was removed on 2026-08-09.
+	 *
+	 * It duplicated `starterQuestions` above, which is the field the admin UI
+	 * actually writes and the one /api/embed/settings already preferred. Nothing
+	 * ever populated this copy, so it could only be set by hand-editing a live
+	 * jsonb column — and any tenant who used the real UI would have overridden it
+	 * anyway. Two fields for one concept is a second copy that can disagree with
+	 * nothing comparing them.
+	 *
+	 * No migration needed: jsonb is schemaless, so the key is simply no longer
+	 * read on rows that happen to carry it.
+	 */
 	embedSettings: jsonb("embedSettings").$type<{
 		buttonColor?: string;
 		buttonSize?: number;
@@ -377,7 +390,6 @@ export const botSettings = pgTable("bot_settings", {
 		welcomeMessage?: string;
 		placeholder?: string;
 		botIcon?: string;
-		suggestedQuestions?: string[];
 	}>(),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
