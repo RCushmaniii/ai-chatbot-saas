@@ -4,6 +4,50 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ---
 
+## Open Items
+
+> Standing register. Not a dated entry — it is the CURRENT state of what is unfinished.
+> **An item leaves this list only when it has been verified end to end.** "Tests pass" and
+> "the config looks right" are not verification.
+
+- **Sentry release/source-map upload is broken in production.** Every build's "After Production Compile" step fails: `error: Project not found. Ensure that you configured the correct project and organization.` Confirmed live on deployment `dpl_GZhp9zexcnKgtkGHAcf3i1ur82EA` (commit `816f43d`, 2026-08-09) and via Sentry MCP query: zero releases ever created for `cushlabs-chatbot-saas`, zero events in the last 14 days. The build itself still succeeds — this fails silently in the background. The 2026-06-15 fix (trailing-newline `SENTRY_PROJECT`) did not resolve it; the error signature changed from "invalid value" to "Project not found," pointing at `SENTRY_ORG` or the auth token's project access next. Blocks: production error monitoring on a client-facing, payment-taking app — violates the standing "Sentry on every production project" mandate.
+- **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5** while v3 providers / `ai` v6 exist — deferred since closed PR #15 (needs coordinated cross-package bump + smoke test). Also the reason the last 4 low-severity `@ai-sdk/provider-utils` audit findings (GHSA-866g-f22w-33x8) can't be patched. Blocks: those 4 findings, and Dependabot PRs #64 and #65 sitting open waiting on it.
+- **Dependabot PR #58** (esbuild 0.18.20→0.28.0) is now redundant — the 2026-08-09 `pnpm.overrides` fix already forces esbuild to 0.28.2 repo-wide. Needs closing with a comment, not merging.
+
+---
+
+## Session: 2026-08-09
+
+### Accomplished
+
+- Cut dependency vulnerabilities from 83/31-high (GitHub Dependabot) / 81 findings, 28 high + 37 moderate (`pnpm audit`) down to 1 low GitHub alert / 4 low `pnpm audit` findings. **PR #89**, merged to `main`.
+- Direct bumps: `next` 16.2.6→16.2.12, `nanoid` ^5.1.11→^5.1.16. Added `pnpm.overrides` forcing patched versions of 18 transitive-only vulnerable packages (undici, ai, postcss, @babel/core, ws, brace-expansion, fast-uri, sharp, js-cookie, markdown-it, linkify-it, prismjs, @opentelemetry/core, esbuild, mermaid, dompurify, postcss's nested nanoid), each pinned to its current major version except `undici` (bumped to v7).
+- Verified: `pnpm build` (all routes compile), `pnpm lint` (no new errors), `pnpm start` + `/api/health` smoke test.
+- Repo standardization audit: renamed `PORTFOLIO.md` → `portfolio.md` (tracked uppercase, invisible to lowercase-scanning tooling). README, LICENSE, .gitignore, CLAUDE.md all compliant.
+- Discovered (pre-existing, not caused by this session) that Sentry source-map upload is broken in production — see Open Items.
+
+### Decisions Made
+
+- Scoped every `pnpm.overrides` entry to the package's current major version instead of latest, to limit breaking-change risk on a production app — verified with a full build rather than trusting semver alone.
+- Did not attempt the AI SDK v2→v3 migration to close the last 4 vulnerabilities, matching the existing closed-PR-#15 decision that it needs its own branch and smoke test.
+- Did not chase the Sentry "Project not found" error this session — it surfaced as a side effect of verifying the deploy, not the ask, and the fix needs its own Sentry/Vercel env-var investigation.
+
+### Immediate Next Steps
+
+- [ ] Investigate `SENTRY_ORG` / auth-token project access on Vercel for `cushlabs-chatbot-saas` (org `cushlabsai`) — see Open Items.
+- [ ] Close Dependabot PR #58 (esbuild) with a comment — superseded by this session's override.
+- [ ] Decide on Dependabot PR #65 (shiki 3→4) — still open, unrelated to this session.
+
+### Technical Debt
+
+- None new. Existing AI SDK v2/v5 pin remains tracked in CLAUDE.md known-issues.
+
+### Open Questions / Blockers
+
+- None for the dependency fix itself. Sentry root cause is unconfirmed — see Open Items.
+
+---
+
 ## Session: 2026-06-15
 
 ### Accomplished
