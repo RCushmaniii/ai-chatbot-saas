@@ -7,6 +7,13 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  # A superseded push should stop costing money. Without this, pushing twice to
+  # an open PR leaves the first run burning minutes to completion for a commit
+  # nobody is waiting on any more.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 30
