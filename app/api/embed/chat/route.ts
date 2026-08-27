@@ -243,9 +243,18 @@ export async function POST(request: Request) {
 		let context = persona;
 
 		if (knowledgeResults.length > 0) {
+			// Dedupe AFTER translating, not before. Retrieval routinely returns the
+			// EN and ES versions of the same page, which are two distinct URLs until
+			// they are localised and then collapse into one — deduping first left
+			// the same link listed twice under "Learn more".
 			const uniqueUrls = Array.from(
-				new Set(knowledgeResults.map((r) => r.url).filter(Boolean)),
-			).map((url) => translateUrl(url as string, detectedLang));
+				new Set(
+					knowledgeResults
+						.map((r) => r.url)
+						.filter(Boolean)
+						.map((url) => translateUrl(url as string, detectedLang)),
+				),
+			);
 
 			context += `\n\nKnowledge base results:\n${knowledgeResults
 				.map((r) => r.content)
