@@ -12,6 +12,41 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 - **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5** while v3 providers / `ai` v6 exist — deferred since closed PR #15 (needs coordinated cross-package bump + smoke test). Also the reason the last 4 low-severity `@ai-sdk/provider-utils` audit findings (GHSA-866g-f22w-33x8) can't be patched. Blocks: those 4 findings, and Dependabot PRs #64 and #65 sitting open waiting on it.
 - **Dependabot PR #58** (esbuild 0.18.20→0.28.0) is now redundant — the 2026-08-09 `pnpm.overrides` fix already forces esbuild to 0.28.2 repo-wide. Needs closing with a comment, not merging.
+- **No golden-set tests for the CushLabs tenant's channel claims.** The homepage persona now opens with a paragraph naming Instagram and WhatsApp, neither reachable by a client (see `strategy/DECISION-LOG.md` 2026-08-27 in operating-system). Containment is a persona rule, verified against one direct phrasing only. Needs a `bot-launch-gate` golden set asserting a dozen Instagram/WhatsApp phrasings all return "not live yet".
+- **`/api/embed/settings` returns the most recently updated `bot_settings` row globally** (`orderBy(desc(updatedAt)).limit(1)`, no tenant filter). Consistent with the current one-business-per-deploy model and NOT a live leak today; it breaks the moment two tenants share a deployment. Also the reason a Spanish visitor sees English starter chips: any DB-configured `starterQuestions` overrides the widget's localised defaults for both languages.
+
+---
+
+## Session: 2026-08-27 — The homepage assistant was selling a pricing model the business had stopped selling
+
+**PR:** [#95](https://github.com/RCushmaniii/ai-chatbot-saas/pull/95) — merged, deployed, verified against production.
+
+### What was wrong
+
+The CushLabs demo tenant's knowledge base had never been reconciled against the canonical files, and had drifted badly enough to be a commercial risk on a live sales surface:
+
+| Was answering                                                 | Canonical truth                                                             |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| "projects start at **$3,500 USD**", fixed-price / fixed-scope | monthly subscription, **$1,990 / $3,490 / $5,490 MXN + IVA**                |
+| "Robert… **30 years in IT**"                                  | `claims-policy.json` bans every aggregate career-year total, in every asset |
+| "**native-level bilingual developer**"                        | bilingual attaches to the product, never to Robert                          |
+| pay in milestones, 30-day post-launch window                  | 1-week free trial, month-to-month, no notice period                         |
+
+13 stale chunks → 48 (24 EN / 24 ES, parity enforced by the script), rewritten from `commercial-terms.json`, `service-reference.md`, `claims-policy.json`, `capability-registry.json` and `ADVERTISED-COMMITMENTS.md`. The file header now names all five, because nothing had been comparing this file to them.
+
+### Three defects found while verifying
+
+1. **Retrieval returned nothing for ordinary English questions.** A short query and a long paragraph are not similar vectors even when the paragraph is the perfect answer. Measured: "How much does it cost?" 0.376, "What are your plans?" 0.235, against a 0.4 threshold — so a plain pricing question got _"let's book a call with Robert"_ while the price sat in the database. **Spanish scored marginally higher and squeaked over the line, which is how it stayed hidden: testing in Spanish showed a working bot.** Fixed on both sides — chunks now embed their question phrasings and store the prose answer (`RETRIEVAL_QUESTIONS`, with a guard that fails provisioning if a chunk has none), and `searchKnowledgeDirect`'s threshold drops 0.4 → 0.3, which sits in the measured gap between genuine matches (0.31–0.51) and noise (0.09–0.25).
+2. **`translateUrl` emitted 404s for cushlabs.ai.** It only swapped `/en/` ↔ `/es/`; cushlabs.ai serves English at the root, so `/es/precios/` became `/en/precios/` — a dead link handed to a prospect. Now scheme-aware with the EN↔ES slug pairs; behaviour unchanged for every other host.
+3. **"Learn more" listed the same page twice**, because URLs were deduped before localisation instead of after.
+
+### Verified against production, not asserted
+
+`"What are your plans?"` measures 0.365 — below the old threshold, above the new one. It now returns all three tiers with exact figures, which can only happen at 0.3, and the persona forbids inventing prices. Links resolve to `/pricing/`, `/terms/`, `/services/` with no duplicates. An earlier background check that asserted merely the _absence_ of the bad link gave a false pass; model wording varies, so the assertion was replaced with this behavioural one.
+
+### Also landed
+
+Robert's own positioning paragraph replaced the capability-list opener, with an es-MX twin and a concrete outcome sentence after it. It names Instagram and WhatsApp deliberately — see `operating-system/strategy/DECISION-LOG.md`, 2026-08-27, and the DELIBERATE EXCEPTION block in the provisioning script header.
 
 ---
 
