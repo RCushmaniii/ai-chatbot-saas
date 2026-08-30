@@ -1,5 +1,34 @@
 # Converso AI — Bilingual AI Front Desk & Sales Assistant
 
+> Most website visitors leave without asking the question that would have led to a sale.
+> This is the front desk that asks it for you.
+
+## The problem it solves
+
+A service business website is a brochure. It answers the questions someone thought to look for, and nothing else.
+
+- A visitor with a specific question — do you handle this, how soon, how much — finds no way to ask, and leaves.
+- Contact forms convert badly because they ask for commitment before answering anything.
+- Staffing a live chat means paying someone to wait, mostly for nothing.
+
+## What it does for the business
+
+- Answers visitor questions on the website, in English or Spanish, using the business's own information.
+- Qualifies who is serious and captures booking intent while the person is still interested.
+- Escalates the high-intent ones to a human rather than treating every visitor the same.
+- Onboards and bills without CushLabs doing the setup by hand, which is what makes it self-serve.
+
+## Who it's for
+
+- **Service businesses** that get web traffic and convert too little of it.
+- **CushLabs**, as the self-serve tier of the assistant range.
+
+---
+
+# Technical reference
+
+Everything below is implementation detail. The business case is above.
+
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
 ![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)
