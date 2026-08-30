@@ -1,5 +1,12 @@
 # CLAUDE.md — Converso AI (ai-chatbot-saas)
 
+## Why this matters before you change anything
+
+Self-serve website assistant with its own billing and tenant onboarding.
+
+**If this breaks:** Sign-ups fail or tenants get each other's configuration. Because it is self-serve, a fault reaches a paying customer before anyone here notices.
+
+Its risk class and revenue proximity are recorded in `operating-system/portfolio/repo-metadata.json`, and are read from there rather than restated here -- the same rule that governs prices, client facts and platform approvals.
 ## Project Overview
 
 Multi-tenant AI chatbot SaaS built with Next.js 16. Service businesses deploy bilingual (EN/ES) AI assistants backed by their own knowledge base. Includes admin dashboard, visual playbook builder, lead management, live chat handoff, Stripe billing, and an embeddable widget. Deployed on Vercel.
