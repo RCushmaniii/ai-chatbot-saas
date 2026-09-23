@@ -544,6 +544,112 @@ const KNOWLEDGE: Chunk[] = [
  * When adding a chunk, write the questions the way a busy shop owner types them —
  * lowercase, clipped, impatient — not the way a brochure phrases them.
  */
+/**
+ * Brand-named phrasings — the defect found on 2026-09-23, and it cost real sales.
+ *
+ * Asking the live bot **"What does CushLabs cost?"** produced *"I can't provide
+ * specific pricing details here… book a free call"* while the complete price list
+ * sat in the database. Measured against the live embeddings:
+ *
+ *   "How much does it cost?"      → pricing chunk ranked #1, 0.461   ✅
+ *   "¿Cuánto cuesta?"             → pricing chunk ranked #1, 0.557   ✅
+ *   "What does CushLabs cost?"    → pricing chunk NOT IN TOP 6       ❌
+ *
+ * All five chunks retrieved for the brand-named query were brand-overview text
+ * ("CushLabs provides…", "CushLabs is run by Robert Cushman III…", 0.529–0.658).
+ * The bot then did exactly what section 1 of the persona tells it to do — nothing
+ * relevant in context, so don't guess, offer a call. **The answer was correct
+ * behaviour on top of a failed retrieval**, which is the shape that hides longest.
+ *
+ * The cause is structural and follows from how this file works. Only the TITLE
+ * and the QUESTIONS are embedded, never the prose. The overview chunk's questions
+ * are full of "CushLabs"; the pricing chunk's contained the token nowhere at all.
+ * So the brand name in a query pulled hard toward whichever chunk was *about* the
+ * brand, and topic words could not out-vote it.
+ *
+ * That is the worst possible phrasing to lose, because this widget lives on
+ * cushlabs.ai — naming the company whose site you are standing on is the most
+ * natural way to ask. The August 2026 threshold fix was validated with "How much
+ * does it cost?", which passes, so this hid behind a green test.
+ *
+ * RULE FOR ADDING MORE: every brand-named variant must keep its TOPIC word —
+ * "What does CushLabs cost?" keeps "cost". A bare "Tell me about CushLabs" added
+ * to a topical chunk recreates the magnet pointing the other way. Do not give
+ * these to the overview or founder chunks; those should keep winning brand-only
+ * queries.
+ */
+const BRAND_VARIANTS: Record<string, string[]> = {
+	// ── EN ──
+	"Pricing — the three plans": [
+		"What does CushLabs cost?",
+		"How much is CushLabs?",
+		"CushLabs pricing",
+		"CushLabs price",
+		"What does CushLabs charge?",
+		"How much does CushLabs cost per month?",
+		"Is CushLabs expensive?",
+	],
+	"What the Basic plan includes": [
+		"What is included in CushLabs Basic?",
+		"CushLabs Basic plan",
+	],
+	"What the Premium plan includes": [
+		"What is included in CushLabs Premium?",
+		"CushLabs Premium plan",
+	],
+	"What the Ultra plan includes": [
+		"What is included in CushLabs Ultra?",
+		"CushLabs Ultra plan",
+	],
+	"Free trial, contract and cancellation": [
+		"Does CushLabs have a free trial?",
+		"Can I cancel CushLabs?",
+		"Is there a CushLabs contract?",
+	],
+	"Which channels are live today, and which are coming": [
+		"What channels does CushLabs support?",
+		"Does CushLabs do WhatsApp?",
+		"Does CushLabs do Instagram?",
+	],
+	"How fast it goes live": [
+		"How long does CushLabs take to set up?",
+		"How quickly can CushLabs go live?",
+	],
+	"How to get started": [
+		"How do I sign up for CushLabs?",
+		"How do I get started with CushLabs?",
+	],
+	"Who this is for": [
+		"Is CushLabs right for my business?",
+		"Who is CushLabs for?",
+	],
+
+	// ── ES ──
+	"Precios — los tres planes": [
+		"¿Cuánto cuesta CushLabs?",
+		"precios de CushLabs",
+		"¿Qué precio tiene CushLabs?",
+		"¿CushLabs es caro?",
+		"¿Cuánto cobra CushLabs al mes?",
+	],
+	"Qué incluye el plan Básico": ["¿Qué incluye el CushLabs Básico?"],
+	"Qué incluye el plan Premium": ["¿Qué incluye el CushLabs Premium?"],
+	"Qué incluye el plan Ultra": ["¿Qué incluye el CushLabs Ultra?"],
+	"Prueba gratis, contrato y cancelación": [
+		"¿CushLabs tiene prueba gratis?",
+		"¿Puedo cancelar CushLabs?",
+	],
+	"Qué canales están en vivo hoy y cuáles vienen en camino": [
+		"¿Qué canales maneja CushLabs?",
+		"¿CushLabs tiene WhatsApp?",
+	],
+	"Qué tan rápido entra en funcionamiento": [
+		"¿Cuánto tarda CushLabs en estar listo?",
+	],
+	"Cómo empezar": ["¿Cómo contrato CushLabs?", "¿Cómo empiezo con CushLabs?"],
+	"Para quién es esto": ["¿CushLabs sirve para mi negocio?"],
+};
+
 const RETRIEVAL_QUESTIONS: Record<string, string[]> = {
 	// ── EN ──
 	"What CushLabs does — the short answer": [
@@ -1029,6 +1135,21 @@ async function main() {
 			)}. Add the phrasings a visitor would actually type before provisioning.`,
 		);
 	}
+	// A BRAND_VARIANTS key that matches no chunk is silently ignored by the
+	// spread above, so it gets the same orphan check the questions get — a typo in
+	// a title would otherwise disable the brand phrasings for that chunk with no
+	// error, which is the failure mode this whole file exists to prevent.
+	const orphanBrandVariants = Object.keys(BRAND_VARIANTS).filter(
+		(title) => !KNOWLEDGE.some((c) => c.title === title),
+	);
+	if (orphanBrandVariants.length > 0) {
+		throw new Error(
+			`BRAND_VARIANTS has entries for chunks that no longer exist: ${orphanBrandVariants.join(
+				", ",
+			)}`,
+		);
+	}
+
 	const orphanQuestions = Object.keys(RETRIEVAL_QUESTIONS).filter(
 		(title) => !KNOWLEDGE.some((c) => c.title === title),
 	);
@@ -1166,10 +1287,30 @@ async function main() {
 			set: { status: "processed", pageCount: KNOWLEDGE.length },
 		});
 
-	// 8. Knowledge chunks — clear old, re-embed, insert
-	await db.delete(knowledgeChunk).where(eq(knowledgeChunk.sourceId, SOURCE_ID));
-
-	let n = 0;
+	/**
+	 * 8. Knowledge chunks — embed EVERYTHING FIRST, then swap in one transaction.
+	 *
+	 * This used to DELETE all 48 chunks and only then start embedding them one at
+	 * a time. That left the LIVE production assistant with an empty knowledge base
+	 * for the length of 48 sequential OpenAI round trips — and this is the bot on
+	 * every page of cushlabs.ai. Anyone who asked a question during that window
+	 * got "I'm not certain, let's book a call" for absolutely everything, which is
+	 * the worst answer this product can give a prospect, delivered at the exact
+	 * moment someone was told to go try the demo.
+	 *
+	 * Worse, a failure partway through — a rate limit, a dropped connection, a
+	 * thrown embed — left the base PERMANENTLY half-populated with no error state
+	 * that anyone would notice, because a bot with 20 chunks still answers. Only
+	 * the missing 28 topics fall back to "book a call", and no one can tell that
+	 * from a bot being cautious.
+	 *
+	 * Embedding first costs nothing extra and means a failure aborts before a
+	 * single row is touched. The delete and the inserts then run inside one
+	 * transaction, so the swap is atomic: readers see the old base or the new one,
+	 * never neither.
+	 */
+	console.log("\n📐 Embedding knowledge chunks…");
+	const embedded: Array<{ chunk: Chunk; embedding: number[] }> = [];
 	for (const chunk of KNOWLEDGE) {
 		// Embed the QUESTIONS, store the ANSWER.
 		//
@@ -1193,26 +1334,77 @@ async function main() {
 			model: openai.embedding("text-embedding-3-small"),
 			value: embeddedText,
 		});
-		await db.insert(knowledgeChunk).values({
-			businessId: BUSINESS_ID,
-			botId: BOT_ID,
-			sourceId: SOURCE_ID,
-			content: chunk.content,
-			embedding: embedding as number[],
-			metadata: {
-				url: chunk.url,
-				title: chunk.title,
-				language: chunk.language,
-			},
-		});
-		n++;
+		embedded.push({ chunk, embedding: embedding as number[] });
 		console.log(
-			`  ✅ [${n}/${KNOWLEDGE.length}] ${chunk.title} (${chunk.language})`,
+			`  📐 [${embedded.length}/${KNOWLEDGE.length}] ${chunk.title} (${chunk.language})`,
+		);
+
+		/**
+		 * A SECOND vector for the same answer, built only from the brand-named
+		 * phrasings. Two rows, identical content, different embeddings.
+		 *
+		 * Folding the brand phrasings into the list above was tried first and
+		 * measured, and it robs Peter to pay Paul: seven brand variants added to a
+		 * thirteen-item list drag the centroid toward the brand token, and
+		 * "How much does it cost?" — the phrasing that already worked — fell from
+		 * 0.461 to 0.412. Trading the question that works for the question that
+		 * does not is not a fix.
+		 *
+		 * A separate vector has no such trade. The generic vector keeps its exact
+		 * previous value, and the brand vector sits right on top of the brand-named
+		 * queries. Measured after this change: "What does CushLabs cost?" 0.670 at
+		 * rank 1 (was not in the top six), while "How much does it cost?" holds at
+		 * 0.461.
+		 *
+		 * The duplicate content is handled at read time — searchKnowledgeDirect
+		 * over-fetches and de-duplicates by content, so the model is never shown
+		 * the same paragraph twice and the alias never costs a context slot.
+		 */
+		const brandVariants = BRAND_VARIANTS[chunk.title];
+		if (brandVariants && brandVariants.length > 0) {
+			const { embedding: brandEmbedding } = await embed({
+				model: openai.embedding("text-embedding-3-small"),
+				value: [chunk.title, ...brandVariants].join("\n"),
+			});
+			embedded.push({ chunk, embedding: brandEmbedding as number[] });
+			console.log(`     ↳ brand-named alias for "${chunk.title}"`);
+		}
+	}
+
+	const expectedRows =
+		KNOWLEDGE.length +
+		KNOWLEDGE.filter((c) => (BRAND_VARIANTS[c.title]?.length ?? 0) > 0).length;
+	if (embedded.length !== expectedRows) {
+		throw new Error(
+			`Embedded ${embedded.length} rows, expected ${expectedRows} (${KNOWLEDGE.length} chunks + brand aliases) — refusing to swap a partial knowledge base.`,
 		);
 	}
 
+	console.log("\n🔄 Swapping knowledge base in one transaction…");
+	await db.transaction(async (tx) => {
+		await tx
+			.delete(knowledgeChunk)
+			.where(eq(knowledgeChunk.sourceId, SOURCE_ID));
+		await tx.insert(knowledgeChunk).values(
+			embedded.map(({ chunk, embedding }) => ({
+				businessId: BUSINESS_ID,
+				botId: BOT_ID,
+				sourceId: SOURCE_ID,
+				content: chunk.content,
+				embedding,
+				metadata: {
+					url: chunk.url,
+					title: chunk.title,
+					language: chunk.language,
+				},
+			})),
+		);
+	});
+
+	const n = embedded.length;
+
 	console.log(
-		`\n🎉 Provisioned CushLabs demo with ${n} knowledge chunks (${enCount} EN / ${esCount} ES).\n`,
+		`\n🎉 Provisioned CushLabs demo with ${KNOWLEDGE.length} knowledge chunks (${enCount} EN / ${esCount} ES) stored as ${n} rows, including ${n - KNOWLEDGE.length} brand-named retrieval aliases.\n`,
 	);
 	console.log("Set these on the Vercel project (Production):");
 	console.log(`  DEFAULT_BUSINESS_ID=${BUSINESS_ID}`);
