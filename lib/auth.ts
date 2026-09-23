@@ -54,6 +54,13 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     LEFT JOIN "Bot" b ON b."businessId" = m."businessId"
     LEFT JOIN "Business" biz ON biz.id = m."businessId"
     WHERE u.clerk_user_id = ${userId}
+    -- Deterministic. This was LIMIT 1 over an unordered LEFT JOIN, so a user
+    -- belonging to more than one business got an ARBITRARY one, and could get a
+    -- different one on the next request. Oldest membership wins, tie-broken on
+    -- the business id so the result is stable even for two created in the same
+    -- transaction. Also matters for the 7 duplicate Membership rows the
+    -- provisioning script left for demo-bot@cushlabs.ai.
+    ORDER BY m."createdAt" ASC NULLS LAST, m."businessId" ASC
     LIMIT 1
   `;
 
@@ -130,6 +137,58 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 	}
 
 	return dbUser as AuthUser;
+}
+
+/**
+ * Every business this login can reach, oldest membership first.
+ *
+ * getAuthUser() returns exactly one business and the console used to show no
+ * indication that others might exist. On 2026-09-23 the owner signed in, landed
+ * in a business auto-created for him on first page load, and had no way to learn
+ * that the assistant he wanted to manage lived somewhere else entirely.
+ *
+ * Ordered identically to getAuthUser's own query, so "the account you are in" is
+ * always the first row of this list and never disagrees with it.
+ */
+export type UserBusiness = {
+	businessId: string;
+	businessName: string;
+	role: MembershipRole;
+	knowledgeChunks: number;
+	hasPersona: boolean;
+};
+
+export async function getUserBusinesses(
+	userDbId: string,
+): Promise<UserBusiness[]> {
+	const rows = await sql`
+    SELECT DISTINCT ON (m."businessId")
+      m."businessId"                                  AS "businessId",
+      biz.name                                        AS "businessName",
+      m.role                                          AS role,
+      (
+        SELECT count(*)::int FROM "KnowledgeChunk" k
+        WHERE k.business_id = m."businessId"
+      )                                               AS "knowledgeChunks",
+      EXISTS (
+        SELECT 1 FROM bot_settings bs
+        WHERE bs."userId" = m."userId"
+          AND bs."customInstructions" IS NOT NULL
+          AND length(bs."customInstructions") > 0
+      )                                               AS "hasPersona",
+      m."createdAt"                                   AS "createdAt"
+    FROM "Membership" m
+    JOIN "Business" biz ON biz.id = m."businessId"
+    WHERE m."userId" = ${userDbId}
+    -- DISTINCT ON collapses duplicate Membership rows; the provisioning script
+    -- left 7 identical ones for a single business and they must not render as
+    -- 7 accounts.
+    ORDER BY m."businessId", m."createdAt" ASC
+  `;
+
+	return (rows as unknown as Array<UserBusiness & { createdAt: Date }>)
+		.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+		.map(({ createdAt: _createdAt, ...rest }) => rest);
 }
 
 /**
