@@ -14,6 +14,54 @@ function EmbedChatContent() {
 	const [embedSettings, setEmbedSettings] = useState<any>(null);
 	const [_isLoadingSettings, setIsLoadingSettings] = useState(true);
 
+	/**
+	 * Visitor and session identity — required for the conversation to be RECORDED.
+	 *
+	 * This widget used to POST a body of exactly { chatId, message }. The chat
+	 * route's logging block is guarded by
+	 *   if (effectiveBusinessId && visitorId && sessionId)
+	 * so it never ran: WidgetConversation, WidgetMessage and Contact were empty
+	 * for every tenant while the widget was live on 126 pages. Replies were always
+	 * correct, because the ANSWER path falls back to DEFAULT_BUSINESS_ID, which is
+	 * exactly why nobody noticed for months. Anything added to that body has to be
+	 * sent here or it silently does nothing.
+	 *
+	 * visitorId persists across sessions so a returning visitor is recognisable.
+	 * sessionId is regenerated per page load, which is what separates one visit
+	 * from the next.
+	 *
+	 * Every localStorage access is wrapped: it throws in a private window, in an
+	 * iframe with third-party storage blocked, and under some corporate policies.
+	 * This widget lives in a cross-origin iframe on customer sites, so that is a
+	 * normal condition, not an edge case. When storage is unavailable the visitor
+	 * id falls back to a per-load value — the conversation is still recorded, it
+	 * just cannot be linked to a previous visit. Recording something beats
+	 * recording nothing, which is what the bug did.
+	 */
+	const visitorId = useRef<string>("");
+	const sessionId = useRef<string>(nanoid());
+	if (!visitorId.current) {
+		const KEY = "converso_visitor_id";
+		let id: string | null = null;
+		try {
+			id = window.localStorage.getItem(KEY);
+			if (!id) {
+				id = nanoid();
+				window.localStorage.setItem(KEY, id);
+			}
+		} catch {
+			id = null;
+		}
+		visitorId.current = id ?? nanoid();
+	}
+
+	/**
+	 * The server assigns the conversation id on the first message and every later
+	 * message must carry it back, or each turn opens a new conversation and the
+	 * transcript is shredded into one-message rows.
+	 */
+	const conversationId = useRef<string | null>(null);
+
 	// Fetch embed settings from admin
 	useEffect(() => {
 		fetch("/api/embed/settings")
@@ -130,12 +178,23 @@ function EmbedChatContent() {
 				body: JSON.stringify({
 					chatId: chatId.current,
 					message: userMessage,
+					// Resolved server-side from this deployment's DEFAULT_BUSINESS_ID;
+					// null only when that env var is unset, in which case the route
+					// falls back to it anyway and logging stays off by design.
+					businessId: embedSettings?.businessId ?? undefined,
+					botId: embedSettings?.botId ?? undefined,
+					visitorId: visitorId.current,
+					sessionId: sessionId.current,
+					conversationId: conversationId.current ?? undefined,
+					currentUrl:
+						typeof document !== "undefined" ? document.referrer || null : null,
 				}),
 			});
 
 			if (!response.ok) throw new Error("Failed to send message");
 
 			const data = await response.json();
+			if (data.conversationId) conversationId.current = data.conversationId;
 			setMessages((prev) => [
 				...prev,
 				{ role: "assistant", content: data.response },

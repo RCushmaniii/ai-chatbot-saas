@@ -165,3 +165,118 @@ test.describe("Embed widget — settings", () => {
 		await expect(page.getByPlaceholder(/type your message/i)).toBeVisible();
 	});
 });
+
+/**
+ * The conversation-logging contract.
+ *
+ * The widget shipped for months POSTing a body of exactly { chatId, message }.
+ * The chat route only records a conversation when businessId, visitorId and
+ * sessionId are all present, so WidgetConversation, WidgetMessage and Contact
+ * stayed empty for every tenant while the widget was live on 126 pages. The
+ * replies were correct the whole time, because the answer path falls back to
+ * DEFAULT_BUSINESS_ID — which is exactly why no test and no human caught it.
+ *
+ * These assertions are on the REQUEST, not the reply, because the reply was
+ * never the thing that broke.
+ */
+test.describe("Embed widget — conversation logging contract", () => {
+	test("sends businessId, visitorId and sessionId with every message", async ({
+		page,
+	}) => {
+		await mockSettings(page, { businessId: "biz-123", botId: "bot-456" });
+
+		const bodies: Array<Record<string, unknown>> = [];
+		await page.route("**/api/embed/chat**", async (route) => {
+			bodies.push(route.request().postDataJSON());
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "ok", conversationId: "conv-789" },
+			});
+		});
+
+		await page.goto(EMBED_URL);
+		await page.waitForLoadState("networkidle");
+
+		await sendMessage(page, "first message");
+		await expect(page.getByText("ok")).toBeVisible();
+
+		expect(bodies).toHaveLength(1);
+		const first = bodies[0];
+		expect(first.message).toBe("first message");
+		expect(first.businessId).toBe("biz-123");
+		expect(first.botId).toBe("bot-456");
+		expect(typeof first.visitorId).toBe("string");
+		expect((first.visitorId as string).length).toBeGreaterThan(0);
+		expect(typeof first.sessionId).toBe("string");
+		expect((first.sessionId as string).length).toBeGreaterThan(0);
+	});
+
+	test("carries the server-assigned conversationId into the next message", async ({
+		page,
+	}) => {
+		await mockSettings(page, { businessId: "biz-123", botId: "bot-456" });
+
+		const bodies: Array<Record<string, unknown>> = [];
+		await page.route("**/api/embed/chat**", async (route) => {
+			bodies.push(route.request().postDataJSON());
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "ok", conversationId: "conv-789" },
+			});
+		});
+
+		await page.goto(EMBED_URL);
+		await page.waitForLoadState("networkidle");
+
+		await sendMessage(page, "one");
+		await expect(page.getByText("ok").first()).toBeVisible();
+		await sendMessage(page, "two");
+		await expect(page.getByText("ok").nth(1)).toBeVisible();
+
+		expect(bodies).toHaveLength(2);
+		// First turn has no conversation yet; the second must reuse what the
+		// server assigned, or every turn opens its own orphan conversation.
+		expect(bodies[0].conversationId).toBeUndefined();
+		expect(bodies[1].conversationId).toBe("conv-789");
+		// Same visitor and session across turns in one page load.
+		expect(bodies[1].visitorId).toBe(bodies[0].visitorId);
+		expect(bodies[1].sessionId).toBe(bodies[0].sessionId);
+	});
+
+	test("still records when localStorage is unavailable", async ({ page }) => {
+		await mockSettings(page, { businessId: "biz-123", botId: "bot-456" });
+
+		// A cross-origin iframe with third-party storage blocked, or a private
+		// window, throws on access. The widget must degrade to a per-load visitor
+		// id rather than crash or send nothing.
+		await page.addInitScript(() => {
+			Object.defineProperty(window, "localStorage", {
+				get() {
+					throw new Error("localStorage is not available");
+				},
+			});
+		});
+
+		const bodies: Array<Record<string, unknown>> = [];
+		await page.route("**/api/embed/chat**", async (route) => {
+			bodies.push(route.request().postDataJSON());
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "ok" },
+			});
+		});
+
+		await page.goto(EMBED_URL);
+		await page.waitForLoadState("networkidle");
+
+		await sendMessage(page, "hello");
+		await expect(page.getByText("ok")).toBeVisible();
+
+		expect(bodies).toHaveLength(1);
+		expect(typeof bodies[0].visitorId).toBe("string");
+		expect((bodies[0].visitorId as string).length).toBeGreaterThan(0);
+	});
+});

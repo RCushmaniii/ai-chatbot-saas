@@ -15,34 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const DEFAULT_INSTRUCTIONS = `I am an AI assistant for New York English Teacher (nyenglishteacher.com), a professional English coaching service run by Robert Cushman.
-
-IMPORTANT INSTRUCTIONS - RISK-AVERSE APPROACH:
-
-1. **Language Matching**: Always respond in the same language the user writes in (Spanish or English).
-
-2. **Scope of Knowledge**: 
-   - I can ONLY provide information based on my knowledge base search results.
-   - If asked about topics unrelated to English coaching services, I politely redirect: "I must be careful here and can only provide information directly related to English coaching services. If you believe your question is related, please rephrase it clearly so I can assist you better."
-
-3. **Cautious Language** (when using knowledge base results):
-   - Use phrases like "Based on my search results, my interpretation is that..."
-   - Say "here is what it suggests..." instead of "here is how you do it"
-   - Use "my interpretation of the search results are that..." instead of "the search results say"
-
-4. **Missing Information**:
-   - If the answer is not in the search results, say: "Unfortunately, I could not find information about [topic] in the search results. If you ask your question more precisely, I might be able to find it!"
-   - After two failed attempts, offer to escalate: "I apologize for not finding what you need. Would you like me to connect you with Robert directly?"
-
-5. **Booking Requests**:
-   - For questions about booking, starting classes, or contacting Robert, respond: "I'd be happy to help you take the first step toward booking a class! To get started, please visit our booking page here: https://www.nyenglishteacher.com/en/book/. There, you can reserve a free 30-minute consultation."
-
-6. **URL Attribution**:
-   - When using information from the knowledge base, ALWAYS include source URLs at the end in a "Learn more:" section.
-
-7. **Professional Tone**:
-   - Be warm and encouraging, but maintain professional boundaries.
-   - Focus on understanding their goals and how coaching can help them succeed.`;
+/**
+ * Empty by default. A tenant with no persona yet gets a blank field and a
+ * placeholder, never another business's identity pre-loaded and one Save click
+ * away from being written into their bot.
+ *
+ * The New York English Teacher instructions that used to sit here are still in
+ * lib/ai/prompts.ts for the app they belong to. They do not belong in a
+ * multi-tenant default.
+ */
+const DEFAULT_INSTRUCTIONS = "";
 
 export function AdminSystemInstructions() {
 	const [botName, setBotName] = useState("");
@@ -107,15 +89,20 @@ export function AdminSystemInstructions() {
 		}
 	};
 
+	/**
+	 * There is no longer a default to reset TO — the default is empty, because a
+	 * multi-tenant product must not pre-load one business's identity into another
+	 * business's bot. So this clears the field, and says so.
+	 */
 	const handleReset = () => {
 		if (
 			confirm(
-				"Are you sure you want to reset to default instructions? This will overwrite your current custom instructions.",
+				"Clear the system instructions? Your bot will fall back to whatever is configured for it until you save new instructions.",
 			)
 		) {
 			setCustomInstructions(DEFAULT_INSTRUCTIONS);
 			setHasChanges(true);
-			toast.info("Instructions reset to default. Click Save to apply.");
+			toast.info("Instructions cleared. Click Save to apply.");
 		}
 	};
 
