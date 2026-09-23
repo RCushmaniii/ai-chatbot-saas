@@ -1,6 +1,6 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
-import { regularPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { withRetry } from "@/lib/ai/retry";
 import { routeModel } from "@/lib/ai/router";
@@ -30,6 +30,16 @@ import {
 	getLearnMoreText,
 	translateUrl,
 } from "@/lib/utils/language-detector";
+
+/**
+ * Shown when a deployment has no persona configured for its business. Neutral by
+ * design: it names no company, because the whole point is that we do not know
+ * which company this is supposed to be.
+ */
+const UNCONFIGURED_REPLY: Record<string, string> = {
+	en: "This assistant isn't set up yet, so I can't answer questions right now. Please use the contact details on this page and someone will get back to you.",
+	es: "Este asistente aún no está configurado, así que por ahora no puedo responder preguntas. Usa los datos de contacto de esta página y con gusto te atendemos.",
+};
 
 export async function POST(request: Request) {
 	// Rate limit: 30 messages per minute per IP
@@ -105,21 +115,41 @@ export async function POST(request: Request) {
 			}
 		}
 
-		// Get or create conversation for playbook tracking
+		/**
+		 * Get or create the conversation — this is what RECORDS the chat.
+		 *
+		 * This guard used to read `if (businessId && visitorId && sessionId)`,
+		 * against the RAW request body, while the answer path below used
+		 * effectiveBusinessId (body value OR the deployment default). The widget
+		 * sent none of the three, so the guard was false on every request and this
+		 * block never executed in production: WidgetConversation, WidgetMessage and
+		 * Contact were empty for every tenant while the widget served 126 pages.
+		 * The bot answered correctly the whole time, which is precisely why it went
+		 * unnoticed.
+		 *
+		 * It now uses the same effective ids as the answer path, so recording and
+		 * answering can never disagree about which business a message belongs to.
+		 *
+		 * visitorId and sessionId remain REQUIRED and must not be defaulted away.
+		 * Without them getWidgetConversationBySession can never match an existing
+		 * row, so every message would open its own conversation — a table full of
+		 * one-message transcripts, which is worse than an empty one because it
+		 * looks like data.
+		 */
 		let conversationId = existingConversationId;
 		let isFirstMessage = false;
 
-		if (businessId && visitorId && sessionId) {
+		if (effectiveBusinessId && visitorId && sessionId) {
 			let conversation = await getWidgetConversationBySession({
-				businessId,
+				businessId: effectiveBusinessId,
 				visitorId,
 				sessionId,
 			});
 
 			if (!conversation) {
 				conversation = await createWidgetConversation({
-					businessId,
-					botId,
+					businessId: effectiveBusinessId,
+					botId: effectiveBotId,
 					visitorId,
 					sessionId,
 					metadata: { pageUrl: currentUrl, origin },
@@ -135,7 +165,7 @@ export async function POST(request: Request) {
 				role: "user",
 				content: message,
 			});
-			await incrementMessageCount({ businessId });
+			await incrementMessageCount({ businessId: effectiveBusinessId });
 
 			// Check for active playbook execution
 			const activeExecution =
@@ -174,8 +204,8 @@ export async function POST(request: Request) {
 
 			// Check for playbook triggers
 			const triggeredPlaybook = await playbookEngine.checkTriggers(message, {
-				businessId,
-				botId,
+				businessId: effectiveBusinessId,
+				botId: effectiveBotId,
 				conversationId,
 				isFirstMessage,
 				currentUrl,
@@ -235,11 +265,48 @@ export async function POST(request: Request) {
 		const detectedLang = detectLanguage(message);
 		const learnMoreText = getLearnMoreText(detectedLang);
 
-		// Build context: the business's own persona (set in /admin → Instructions),
-		// falling back to the default prompt if none is configured.
+		/**
+		 * The business's own persona. A missing one is a CONFIGURATION FAILURE, and
+		 * it is answered as one.
+		 *
+		 * This used to read `?? regularPrompt`. regularPrompt is the legacy
+		 * single-tenant New York English Teacher prompt — it opens "I am an AI
+		 * assistant for New York English Teacher (nyenglishteacher.com)" and hands
+		 * out nyenglishteacher.com/en/book/ as the booking link. So any deployment
+		 * whose DEFAULT_BUSINESS_ID was unset, wrong, or whose owner bot_settings
+		 * row was missing would keep answering visitors — fluently, confidently,
+		 * and as a different company. On cushlabs.ai that is the front door of the
+		 * business introducing itself as an English school.
+		 *
+		 * One tenant's identity must never be another tenant's silent default. The
+		 * widget now says it is not configured and reports it, which is a bad
+		 * minute instead of an unbounded number of misbranded conversations.
+		 */
 		const persona = effectiveBusinessId
-			? ((await getBusinessPersona(effectiveBusinessId)) ?? regularPrompt)
-			: regularPrompt;
+			? await getBusinessPersona(effectiveBusinessId)
+			: null;
+
+		if (!persona) {
+			Sentry.captureMessage("embed-chat: no persona configured", {
+				level: "error",
+				extra: {
+					businessId: effectiveBusinessId ?? null,
+					botId: effectiveBotId ?? null,
+					hasDefaultBusinessId: Boolean(process.env.DEFAULT_BUSINESS_ID),
+					origin,
+				},
+			});
+			console.error(
+				"[embed-chat] no persona for business",
+				effectiveBusinessId ?? "(none)",
+			);
+			return NextResponse.json({
+				response: UNCONFIGURED_REPLY[detectedLang] ?? UNCONFIGURED_REPLY.en,
+				conversationId,
+				playbook: { active: false },
+			});
+		}
+
 		let context = persona;
 
 		if (knowledgeResults.length > 0) {

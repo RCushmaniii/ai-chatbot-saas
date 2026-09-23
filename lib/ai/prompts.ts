@@ -32,6 +32,21 @@ This is a guide for using artifacts tools: \`createDocument\` and \`updateDocume
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
 
+/**
+ * LEGACY, SINGLE-TENANT. This is the New York English Teacher assistant, kept
+ * for the authenticated /chat app it was written for.
+ *
+ * NEVER use it as a fallback in a multi-tenant code path. On 2026-09-23 it was
+ * found behind `getBusinessPersona(id) ?? regularPrompt` in the public embed
+ * route, which meant any misconfigured tenant's widget would introduce itself as
+ * an English coaching service and hand out that company's booking link. A
+ * missing persona must fail loudly — see app/api/embed/chat/route.ts.
+ *
+ * lib/channels/whatsapp-handler.ts still assigns this unconditionally and calls
+ * searchKnowledgeDirect() with no businessId, so the WhatsApp channel is
+ * single-tenant and unscoped by construction. That is a known gap, tracked
+ * separately; it is not reachable from the CushLabs deployment today.
+ */
 export const regularPrompt = `I am an AI assistant for New York English Teacher (nyenglishteacher.com), a professional English coaching service run by Robert Cushman.
 
 ABOUT MY SERVICE:

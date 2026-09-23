@@ -16,9 +16,16 @@ import { Label } from "@/components/ui/label";
 
 export function AdminWebsiteScraping() {
 	const [isIngesting, setIsIngesting] = useState(false);
-	const [sitemapUrl, setSitemapUrl] = useState(
-		"https://www.nyenglishteacher.com/sitemap-0.xml",
-	);
+	/**
+	 * Empty, with the example only as a placeholder.
+	 *
+	 * This field used to be PRE-FILLED with a real sitemap belonging to an
+	 * unrelated business, one "Run Ingestion" click away from scraping that
+	 * company's site into whichever tenant happened to be signed in. It also made
+	 * the dashboard read as broken on first sight — another company's domain
+	 * sitting in your input is indistinguishable from your data being wrong.
+	 */
+	const [sitemapUrl, setSitemapUrl] = useState("");
 	const [stats, setStats] = useState<{
 		websiteContent: number;
 		manualContent: number;
