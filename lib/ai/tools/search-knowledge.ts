@@ -149,7 +149,12 @@ export async function searchKnowledgeDirect(
 				AND embedding IS NOT NULL
 				AND 1 - (embedding <=> ${embeddingStr}::vector) > ${similarityThreshold}
 			ORDER BY similarity DESC
-			LIMIT ${maxChunks}
+			-- Over-fetch, because rows are de-duplicated by content below and a
+			-- duplicate must not consume one of the caller's slots. A chunk can be
+			-- stored more than once with different embeddings — the same answer
+			-- indexed under different phrasings of the question (see BRAND_VARIANTS
+			-- in scripts/provision-cushlabs-demo.ts) — and both copies can rank.
+			LIMIT ${maxChunks * 2}
 		`;
 
 		for (const row of chunkResults) {
@@ -192,9 +197,29 @@ export async function searchKnowledgeDirect(
 			}
 		}
 
-		return results
-			.sort((a, b) => b.similarity - a.similarity)
-			.slice(0, maxChunks);
+		/**
+		 * De-duplicate by content, keeping the highest-scoring copy.
+		 *
+		 * Two things produce duplicates. The same answer may be indexed under more
+		 * than one embedding so it can be found by differently-phrased questions,
+		 * and the legacy Document_Knowledge table can still hold a copy of a row
+		 * that has already been migrated into KnowledgeChunk.
+		 *
+		 * Either way the model must not be handed the same paragraph twice: it
+		 * burns a context slot that a different topic needed, and repetition in
+		 * context makes a model more likely to repeat itself back.
+		 */
+		const seen = new Set<string>();
+		const deduped: KnowledgeSearchResult[] = [];
+		for (const r of results.sort((a, b) => b.similarity - a.similarity)) {
+			const key = r.content.trim();
+			if (seen.has(key)) continue;
+			seen.add(key);
+			deduped.push(r);
+			if (deduped.length === maxChunks) break;
+		}
+
+		return deduped;
 	} catch (error) {
 		console.error("Error searching knowledge base:", error);
 		return [];
