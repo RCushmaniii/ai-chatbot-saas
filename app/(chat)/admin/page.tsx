@@ -1,6 +1,18 @@
+import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import { AdminAccountContext } from "@/components/admin-account-context";
+import { AdminConsoleHeader } from "@/components/admin-console-header";
 import { AdminTabs } from "@/components/admin-tabs";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, getUserBusinesses } from "@/lib/auth";
+
+/**
+ * The business this deployment's public widget answers from.
+ *
+ * .trim() is load-bearing: env values set via some CLIs carry a trailing
+ * newline, and an untrimmed UUID makes Postgres throw 22P02 elsewhere in the
+ * codebase. Kept consistent with app/api/embed/chat/route.ts.
+ */
+const servingBusinessId = process.env.DEFAULT_BUSINESS_ID?.trim() || undefined;
 
 export default async function AdminPage() {
 	const user = await getAuthUser();
@@ -13,64 +25,84 @@ export default async function AdminPage() {
 	// Add your email here or use an environment variable
 	const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "your-email@example.com";
 
+	/**
+	 * A refused operator is TOLD they were refused, and with which identity.
+	 *
+	 * This used to be redirect("/") — a signed-in person with the wrong email
+	 * was bounced to the home page with no message at all, which is
+	 * indistinguishable from the console being broken. Borrowed from
+	 * cushlabs-messenger-bot/admin, whose 403 screen prints the email its auth
+	 * layer actually saw; that single line is what turns "this product is dead"
+	 * into "I am signed in as the wrong account" in about five seconds.
+	 *
+	 * Showing the viewer their own email back is not a disclosure — they are
+	 * already authenticated as it, and Clerk's own account menu displays it.
+	 */
 	if (user.email !== ADMIN_EMAIL) {
-		redirect("/");
+		return (
+			<NotAuthorized email={user.email} businessName={user.businessName} />
+		);
 	}
 
-	/**
-	 * Which business this dashboard is editing, and whether that is the one this
-	 * deployment's public widget actually serves.
-	 *
-	 * Every tab below writes rows scoped to the SIGNED-IN user's business, while
-	 * the public widget answers from DEFAULT_BUSINESS_ID. Those are two different
-	 * things and the page never said so. On 2026-09-23 the owner signed in, landed
-	 * in a business holding zero knowledge chunks and no bot settings, saw empty
-	 * stats plus a hardcoded placeholder naming an unrelated company, and
-	 * reasonably concluded the product was dead. It was not — he was editing a
-	 * different tenant, and nothing on screen could have told him.
-	 */
-	const servingBusinessId = process.env.DEFAULT_BUSINESS_ID?.trim();
-	const editingTheServedBusiness =
-		Boolean(servingBusinessId) && servingBusinessId === user.businessId;
+	const businesses = await getUserBusinesses(user.id);
 
 	return (
-		<div className="flex flex-col min-h-screen">
+		<div className="flex min-h-screen flex-col">
+			<AdminConsoleHeader
+				businessName={user.businessName}
+				email={user.email}
+				role={user.role}
+			/>
 			<div className="flex-1 overflow-y-auto">
-				<div className="max-w-6xl mx-auto p-6">
+				<div className="mx-auto max-w-6xl p-6">
 					<div className="mb-8">
-						<h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+						<h1 className="mb-2 font-bold text-3xl">Admin Dashboard</h1>
 						<p className="text-muted-foreground">
-							Manage your AI chatbot's knowledge base and settings
+							Manage your AI chatbot&apos;s knowledge base and settings
 						</p>
-						<div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-							<span className="rounded-md border bg-muted px-2.5 py-1 font-medium">
-								{user.businessName}
-							</span>
-							<span className="text-muted-foreground">{user.email}</span>
-							<span className="text-muted-foreground">·</span>
-							<span className="text-muted-foreground capitalize">
-								{user.role}
-							</span>
-						</div>
-						{servingBusinessId && !editingTheServedBusiness && (
-							<div
-								role="alert"
-								className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
-							>
-								<p className="font-semibold">
-									You are not editing the assistant on this site.
-								</p>
-								<p className="mt-1">
-									The public chat widget on this deployment is served by a
-									different business. Everything you change here applies to{" "}
-									<strong>{user.businessName}</strong> only, and will not affect
-									that widget.
-								</p>
-							</div>
-						)}
 					</div>
+
+					<AdminAccountContext
+						businessName={user.businessName}
+						businessId={user.businessId}
+						servingBusinessId={servingBusinessId}
+						businesses={businesses}
+					/>
+
 					<AdminTabs />
 				</div>
+			</div>
+		</div>
+	);
+}
+
+function NotAuthorized({
+	email,
+	businessName,
+}: {
+	email: string;
+	businessName: string;
+}) {
+	return (
+		<div className="flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
+			<div className="mb-2 font-semibold text-amber-600 text-sm uppercase tracking-[0.2em] dark:text-amber-400">
+				403
+			</div>
+			<h1 className="mb-3 font-bold text-2xl">Not authorized</h1>
+			<p className="max-w-md text-muted-foreground text-sm">
+				This account is not on the operator allowlist for this deployment. Sign
+				out and try again with the correct account.
+			</p>
+			<div className="mt-6 space-y-1 text-sm">
+				<p className="text-muted-foreground">
+					Signed in as <code className="text-foreground">{email}</code>
+				</p>
+				<p className="text-muted-foreground">
+					Account <code className="text-foreground">{businessName}</code>
+				</p>
+			</div>
+			<div className="mt-8">
+				<UserButton />
 			</div>
 		</div>
 	);
