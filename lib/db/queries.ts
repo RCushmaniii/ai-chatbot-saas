@@ -9,7 +9,9 @@ import {
 	gt,
 	gte,
 	inArray,
+	isNotNull,
 	lt,
+	ne,
 	type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -38,10 +40,37 @@ const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
 /**
- * Resolve a business's chatbot persona (the embed's system prompt).
- * botSettings is keyed by userId, so we join through the owner Membership.
- * Returns null if the business has no custom instructions — callers fall
- * back to the default prompt.
+ * Resolve a business's chatbot persona — the system prompt the public widget
+ * answers with. This is the highest-stakes read in the product: whatever it
+ * returns is who the assistant claims to be in front of a prospect.
+ *
+ * botSettings is keyed by userId, so the business is reached through an owner
+ * Membership. That means a business with TWO owners has two candidate personas,
+ * and this used to resolve between them with a bare `LIMIT 1` over an unordered
+ * join — a coin flip, re-tossed on every request.
+ *
+ * It never fired only because the one business serving a public widget had
+ * exactly one owner, and that owner was a placeholder account nobody could sign
+ * in as. The moment a real person is added as a second owner so they can
+ * actually administer their own bot, and saves anything at all in /admin, the
+ * live assistant starts answering from an arbitrary one of the two. Nothing
+ * would alert on it: both answers are fluent, and the wrong one is simply a
+ * different company's voice.
+ *
+ * Two changes make that safe:
+ *
+ *  1. `customInstructions` must be non-empty. A newly added owner has no
+ *     bot_settings row at all, so the inner join already excludes them — but the
+ *     moment they open /admin and save anything, an empty row appears, and an
+ *     empty persona would otherwise win the coin flip and blank the assistant's
+ *     identity.
+ *  2. Deterministic order: most recently updated wins. Same inputs, same answer,
+ *     every request.
+ *
+ * The practical consequence, which is intended and must stay documented: editing
+ * the persona in /admin DOES override what scripts/provision-cushlabs-demo.ts
+ * last wrote, until that script is run again. An admin UI that silently loses
+ * its own saves would be worse.
  */
 export async function getBusinessPersona(
 	businessId: string,
@@ -51,8 +80,14 @@ export async function getBusinessPersona(
 		.from(botSettings)
 		.innerJoin(membership, eq(membership.userId, botSettings.userId))
 		.where(
-			and(eq(membership.businessId, businessId), eq(membership.role, "owner")),
+			and(
+				eq(membership.businessId, businessId),
+				eq(membership.role, "owner"),
+				isNotNull(botSettings.customInstructions),
+				ne(botSettings.customInstructions, ""),
+			),
 		)
+		.orderBy(desc(botSettings.updatedAt))
 		.limit(1);
 	return rows[0]?.instructions ?? null;
 }

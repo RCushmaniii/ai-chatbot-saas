@@ -92,7 +92,7 @@ export function AdminWebsiteScraping() {
 	const handleClearWebsiteContent = async () => {
 		if (
 			!confirm(
-				"Are you sure you want to clear all website content? This will delete all scraped data from the website_content table.",
+				"Clear all scraped website content for this account? Pages added by ingestion will be deleted. Content you entered by hand on the Knowledge tab is not affected, and you can re-run ingestion at any time.",
 			)
 		) {
 			return;
@@ -192,7 +192,8 @@ export function AdminWebsiteScraping() {
 					<CardTitle>Website Scraping</CardTitle>
 					<CardDescription>
 						Automatically scrape and index content from your website using a
-						sitemap. This will populate the website_content table used for RAG.
+						sitemap, and add every page it finds to this account&apos;s
+						knowledge.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -270,19 +271,27 @@ export function AdminWebsiteScraping() {
 				</CardHeader>
 				<CardContent className="space-y-2 text-sm text-muted-foreground">
 					<p>
-						<strong>Website Content (website_content table):</strong>{" "}
-						Automatically scraped from your sitemap. Used for answering
-						questions about your website content.
+						<strong>Scraped pages.</strong> Ingestion reads your sitemap,
+						fetches up to 20 pages, splits each into ~1,000-character passages
+						and stores them for this account only. Re-running it skips passages
+						that have not changed, so a re-ingest after a small edit is cheap.
 					</p>
 					<p>
-						<strong>Manual Content (Document_Knowledge table):</strong> Content
-						you manually add via the forms above. Use this for information not
-						on your website.
+						<strong>Manually added content.</strong> Anything you enter on the
+						Knowledge tab is stored the same way and searched together with the
+						scraped pages — there is no priority order between them. The
+						assistant simply uses the closest matches to the question it was
+						asked.
 					</p>
 					<p>
-						<strong>Search Priority:</strong> The chatbot searches website
-						content first, then falls back to manual content if no results are
-						found.
+						<strong>
+							Scraped pages retrieve less reliably than written answers.
+						</strong>{" "}
+						A visitor&apos;s question is short and a scraped paragraph is long,
+						and those are not similar to each other even when the paragraph
+						holds the answer. Use scraping for breadth, and write the answers
+						you cannot afford to have missed — prices, hours, policies — on the
+						Knowledge tab.
 					</p>
 				</CardContent>
 			</Card>
