@@ -284,14 +284,16 @@ export function AdminWebsiteScraping() {
 						asked.
 					</p>
 					<p>
-						<strong>
-							Scraped pages retrieve less reliably than written answers.
-						</strong>{" "}
-						A visitor&apos;s question is short and a scraped paragraph is long,
-						and those are not similar to each other even when the paragraph
-						holds the answer. Use scraping for breadth, and write the answers
-						you cannot afford to have missed — prices, hours, policies — on the
-						Knowledge tab.
+						<strong>Scraping and written answers do different jobs.</strong>{" "}
+						Scraped pages give broad coverage cheaply, and they match
+						descriptive questions well — a visitor asking &quot;what does{" "}
+						{"{your company}"} cost?&quot; lands on the scraped pricing page
+						reliably. Terse questions are where they weaken: &quot;how
+						much?&quot; is a short phrase and a scraped paragraph is a long one,
+						and the two are less similar than you would expect even when the
+						paragraph holds the answer. So scrape for coverage, and write short
+						answers on the Knowledge tab for the handful of facts you cannot
+						afford to have missed — prices, hours, policies.
 					</p>
 				</CardContent>
 			</Card>
