@@ -29,52 +29,52 @@ config({ path: ".env" });
 
 /** Tables that prove we are looking at ny-ai-chatbot's database. */
 const FOREIGN_TABLES = [
-  "website_content",
-  "knowledge_events",
-  "chat_analytics",
-  "lead_events",
-  "handoff_events",
+	"website_content",
+	"knowledge_events",
+	"chat_analytics",
+	"lead_events",
+	"handoff_events",
 ];
 
 const url = process.env.POSTGRES_URL;
 if (!url) {
-  console.error(
-    "✋ No database connection configured — refusing to push blind.",
-  );
-  process.exit(1);
+	console.error(
+		"✋ No database connection configured — refusing to push blind.",
+	);
+	process.exit(1);
 }
 
 const sql = postgres(url, { ssl: "require" });
 try {
-  const found = await sql`
+	const found = await sql`
     SELECT table_name FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = ANY(${FOREIGN_TABLES})`;
 
-  if (found.length > 0) {
-    console.error(
-      [
-        "",
-        "✋ REFUSING TO PUSH — this database is shared with ny-ai-chatbot.",
-        "",
-        `   Found ${found.length} table(s) belonging to New York English Teacher:`,
-        ...found.map((r) => `     - ${r.table_name}`),
-        "",
-        "   drizzle-kit push reconciles the database to lib/db/schema.ts, and none",
-        "   of these tables are in it. Pushing can DROP a live client's knowledge",
-        "   base. website_content alone holds 3,901 rows serving",
-        "   chat.nyenglishteacher.com right now.",
-        "",
-        "   Split the databases first. Until then use db:generate + db:migrate,",
-        "   which apply only the migrations you have reviewed.",
-        "",
-      ].join("\n"),
-    );
-    process.exit(1);
-  }
+	if (found.length > 0) {
+		console.error(
+			[
+				"",
+				"✋ REFUSING TO PUSH — this database is shared with ny-ai-chatbot.",
+				"",
+				`   Found ${found.length} table(s) belonging to New York English Teacher:`,
+				...found.map((r) => `     - ${r.table_name}`),
+				"",
+				"   drizzle-kit push reconciles the database to lib/db/schema.ts, and none",
+				"   of these tables are in it. Pushing can DROP a live client's knowledge",
+				"   base. website_content alone holds 3,901 rows serving",
+				"   chat.nyenglishteacher.com right now.",
+				"",
+				"   Split the databases first. Until then use db:generate + db:migrate,",
+				"   which apply only the migrations you have reviewed.",
+				"",
+			].join("\n"),
+		);
+		process.exit(1);
+	}
 
-  console.log(
-    "✅ No foreign tables found — this database is not shared. Push allowed.",
-  );
+	console.log(
+		"✅ No foreign tables found — this database is not shared. Push allowed.",
+	);
 } finally {
-  await sql.end();
+	await sql.end();
 }
