@@ -12,7 +12,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "npx tsx lib/db/migrate.ts",
 		"db:studio": "drizzle-kit studio",
-		"db:push": "drizzle-kit push",
+		"db:push": "node scripts/guard-db-push.mjs && drizzle-kit push",
 		"db:pull": "drizzle-kit pull",
 		"db:check": "drizzle-kit check",
 		"db:up": "drizzle-kit up",
@@ -21,7 +21,8 @@
 		"test:setup": "tsx scripts/setup-test-users.ts",
 		"ingest": "tsx scripts/ingest.ts",
 		"reset-messages": "tsx scripts/reset-message-count.ts",
-		"seed:plans": "tsx scripts/seed-plans.ts"
+		"seed:plans": "tsx scripts/seed-plans.ts",
+		"db:guard": "node scripts/guard-db-push.mjs"
 	},
 	"dependencies": {
 		"@ai-sdk/gateway": "^1.0.41",
