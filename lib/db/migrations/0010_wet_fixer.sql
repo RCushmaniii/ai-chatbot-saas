@@ -326,7 +326,19 @@ CREATE TABLE IF NOT EXISTS "WidgetMessage" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "Membership" ALTER COLUMN "role" SET DATA TYPE membership_role;--> statement-breakpoint
+-- AMENDED 2026-09-25. Postgres will not cast varchar to an enum implicitly, so
+-- this statement as generated ("SET DATA TYPE membership_role" with no USING)
+-- fails on any database where it has not already been applied:
+--   column "role" cannot be cast automatically to type membership_role
+-- Proven by replaying the full journal against an empty database; it died here.
+--
+-- Editing a historical migration is normally off limits. This one is an
+-- exception because it CANNOT be applied as written — every environment that
+-- has it got it some other way, which is a large part of why this repo grew a
+-- folder of hand-run SQL. Databases that already applied it skip this file on
+-- `created_at`, so the amendment only affects builds that were impossible
+-- before.
+ALTER TABLE "Membership" ALTER COLUMN "role" SET DATA TYPE membership_role USING "role"::membership_role;--> statement-breakpoint
 ALTER TABLE "Membership" ALTER COLUMN "role" SET DEFAULT 'member';--> statement-breakpoint
 ALTER TABLE "Membership" ALTER COLUMN "createdAt" SET DEFAULT now();--> statement-breakpoint
 ALTER TABLE "User" ALTER COLUMN "email" SET DATA TYPE varchar(255);--> statement-breakpoint

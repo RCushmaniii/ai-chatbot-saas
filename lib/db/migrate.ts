@@ -26,6 +26,22 @@ const runMigrate = async () => {
 	const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
 	const db = drizzle(connection);
 
+	/**
+	 * pgvector must exist before the migrator starts.
+	 *
+	 * Migration 0008 declares `"embedding" vector(1536)` and 0010 does the same.
+	 * No migration has ever created the extension — it was only ever created
+	 * inside provisioning scripts that do not run at migrate time. So a replay
+	 * against a fresh database, which Neon does not ship with pgvector enabled,
+	 * died at 0008 with `type "vector" does not exist`.
+	 *
+	 * It cannot be fixed by adding a migration, because any migration numbered
+	 * after 0008 is too late and renumbering history is worse. It belongs here,
+	 * ahead of the migrator, where ordering is guaranteed.
+	 */
+	console.log("⏳ Ensuring pgvector...");
+	await connection.unsafe("CREATE EXTENSION IF NOT EXISTS vector");
+
 	console.log("⏳ Running migrations...");
 
 	const start = Date.now();
