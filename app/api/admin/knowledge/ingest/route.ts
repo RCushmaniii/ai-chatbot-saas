@@ -15,19 +15,34 @@ const sql = postgres(process.env.POSTGRES_URL!);
 export const maxDuration = 300; // 5 minutes for ingestion
 
 /**
- * Pages per run, through the DASHBOARD.
- *
- * This is a property of the runtime, not of the task: Vercel kills the function
- * at maxDuration above, and 20 pages is what reliably fits. It is NOT a limit on
- * what the product can index — scripts/ingest-site.ts runs the same scraper with
- * no timeout and took cushlabs.ai's full 133-page sitemap, the same way the
- * sibling ny-ai-chatbot repo indexes 476 pages of nyenglishteacher.com.
- *
- * Scraping, sitemap discovery and chunking now live in lib/ingest/site.ts and
- * are shared with that script, so the button and the command line cannot answer
- * the same question differently.
+ * Discovery is cheap — one request per sitemap — so it is not what the runtime
+ * limit is protecting. Cap it high enough to see an entire site.
  */
-const MAX_PAGES = 20;
+const MAX_DISCOVERY_PAGES = 5000;
+
+/**
+ * How long one dashboard run may spend SCRAPING before it stops and reports.
+ *
+ * Vercel kills this function at maxDuration (300s). Scraping costs roughly a
+ * second a page, so a fixed page count was the wrong control: it made the
+ * button useless on any site bigger than the number chosen. It was 20, against
+ * a cushlabs.ai sitemap of 133 pages — so the dashboard could only ever index
+ * the first fifteen percent of the site and stopped without saying so.
+ *
+ * Instead the run is time-boxed and RESUMABLE. Pages already indexed for this
+ * source are skipped outright, so each click makes progress on what is left and
+ * a caught-up site finishes in seconds. The response reports how many pages
+ * remain, so the UI can say "run it again" rather than silently truncating.
+ *
+ * 230s leaves headroom for discovery, the final orphan pass and the response.
+ */
+const RUN_BUDGET_MS = 230_000;
+
+/**
+ * A hard ceiling alongside the time budget, so a site of very small pages
+ * cannot produce an unbounded number of embed calls in one request.
+ */
+const MAX_PAGES_PER_RUN = 150;
 
 /**
  * NDJSON progress event types sent during streaming ingestion.
@@ -105,7 +120,7 @@ export async function POST(request: Request) {
 
 					// One discovery path, shared with scripts/ingest-site.ts so the
 					// dashboard button and the command line cannot disagree.
-					const discovery = await discoverPages(input, MAX_PAGES);
+					const discovery = await discoverPages(input, MAX_DISCOVERY_PAGES);
 					const pageUrls = discovery.urls;
 					const sitemapUrl = discovery.sitemapUrl ?? null;
 					const discoveryMethod = discovery.method;
@@ -306,7 +321,7 @@ export async function POST(request: Request) {
 		// Non-streaming path (original behavior)
 		// One discovery path, shared with scripts/ingest-site.ts so the
 		// dashboard button and the command line cannot disagree.
-		const discovery = await discoverPages(input, MAX_PAGES);
+		const discovery = await discoverPages(input, MAX_DISCOVERY_PAGES);
 		const pageUrls = discovery.urls;
 		const sitemapUrl = discovery.sitemapUrl ?? null;
 		const discoveryMethod = discovery.method;
@@ -357,13 +372,43 @@ export async function POST(request: Request) {
 			existingChunkRows.map((r) => r.content_hash as string),
 		);
 
+		/**
+		 * Pages already indexed for this source, so a re-run does not pay to
+		 * scrape them again. This is what makes the button resumable: click it
+		 * repeatedly on a large site and each run advances through what is left.
+		 */
+		const indexedUrlRows = await sql`
+			SELECT DISTINCT metadata->>'url' AS url FROM "KnowledgeChunk"
+			WHERE source_id = ${sourceId} AND metadata->>'url' IS NOT NULL
+		`;
+		const indexedUrls = new Set(
+			indexedUrlRows.map((r) => r.url as string).filter(Boolean),
+		);
+
+		const pending = pageUrls.filter((u) => !indexedUrls.has(u));
+		const alreadyIndexed = pageUrls.length - pending.length;
+
 		const seenHashes = new Set<string>();
 		let chunksEmbedded = 0;
 		let chunksReused = 0;
 		let pagesProcessed = 0;
+		let stoppedEarly = false;
 
-		for (let i = 0; i < pageUrls.length; i++) {
-			const pageUrl = pageUrls[i];
+		const startedAt = Date.now();
+
+		for (let i = 0; i < pending.length; i++) {
+			// Stop cleanly and report, rather than being killed mid-write by the
+			// platform. A truncated run that says so is recoverable; one that does
+			// not is indistinguishable from a complete one.
+			if (
+				Date.now() - startedAt > RUN_BUDGET_MS ||
+				pagesProcessed >= MAX_PAGES_PER_RUN
+			) {
+				stoppedEarly = true;
+				break;
+			}
+
+			const pageUrl = pending[i];
 			const pageData = await scrapePage(pageUrl);
 			if (!pageData) continue;
 
@@ -418,8 +463,20 @@ export async function POST(request: Request) {
 			}
 		}
 
-		// Orphan cleanup — same logic as streaming path
-		const orphanHashes = [...existingHashes].filter((h) => !seenHashes.has(h));
+		/**
+		 * Orphan cleanup deletes chunks whose text no longer appears on the site —
+		 * but only when this run actually LOOKED at the whole site.
+		 *
+		 * A resumable run deliberately skips pages it has already indexed and may
+		 * stop early on the time budget, so most existing hashes were never
+		 * revisited and are "unseen" for reasons that have nothing to do with the
+		 * page having changed. Running the cleanup then would delete the bulk of a
+		 * working knowledge base and report it as tidying up.
+		 */
+		const sawEverything = !stoppedEarly && alreadyIndexed === 0;
+		const orphanHashes = sawEverything
+			? [...existingHashes].filter((h) => !seenHashes.has(h))
+			: [];
 		let orphansDeleted = 0;
 		if (orphanHashes.length > 0) {
 			await sql`
@@ -436,6 +493,8 @@ export async function POST(request: Request) {
 			WHERE id = ${sourceId}
 		`;
 
+		const remaining = Math.max(0, pending.length - pagesProcessed);
+
 		return Response.json({
 			success: true,
 			pagesProcessed,
@@ -444,6 +503,11 @@ export async function POST(request: Request) {
 			orphansDeleted,
 			sitemapUrl,
 			discoveryMethod,
+			// Resumability, surfaced so the UI can tell the truth about a partial run.
+			totalPages: pageUrls.length,
+			alreadyIndexed,
+			remaining,
+			complete: remaining === 0,
 		});
 	} catch (err: any) {
 		console.error("[ingest] Error:", err);
