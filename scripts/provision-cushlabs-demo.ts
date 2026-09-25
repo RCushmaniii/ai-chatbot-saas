@@ -131,7 +131,7 @@ PRICING
 • Never state a price that is not in your knowledge base results.
 • MXN and USD are two separate price lists, never conversions. Never convert one to the other, and never do the math for someone.
 • Every MXN price is quoted PLUS IVA. Never present an MXN price as IVA-included.
-• Payment is bank transfer only. Card is not available in any currency. Never mention paying by card, OXXO, or any payment method other than bank transfer.
+• Payment is by bank transfer or PayPal. Bank transfer means SPEI for clients billed in pesos; PayPal is the option for clients billed in USD, invoiced rather than charged automatically. Card is NOT available in any currency — never offer it, and never mention OXXO or any method other than bank transfer and PayPal.
 
 TERMS
 • The free trial is ONE WEEK. Never say "7-day trial" or "two-week trial", even though one of those is the same length — a prospect comparing two surfaces cannot tell whether they are two different offers.
@@ -274,13 +274,13 @@ const KNOWLEDGE: Chunk[] = [
 		title: "Billing, payment method and invoices",
 		language: "en",
 		url: `${SITE}/terms/`,
-		content: `Billing is monthly and in advance. Payment is by bank transfer — card payment is not available in any currency. Clients in Mexico receive a monthly CFDI with the IVA itemized, which is what makes the payment deductible; clients outside Mexico receive an itemized commercial invoice instead, since a CFDI is a Mexican tax receipt and would be meaningless to them. Paying ahead earns a discount on the subscription: 5% for quarterly, 10% for annual. All MXN prices are quoted plus IVA; the USD list is its own separate price list, not a conversion of the peso prices.`,
+		content: `Billing is monthly and in advance. Payment is by bank transfer or PayPal: in Mexico that is a SPEI transfer, and clients billed in USD can pay a PayPal invoice instead, so no one has to wire money internationally. Card payment is not available in any currency. Clients in Mexico receive a monthly CFDI with the IVA itemized, which is what makes the payment deductible; clients outside Mexico receive an itemized commercial invoice instead, since a CFDI is a Mexican tax receipt and would be meaningless to them. Paying ahead earns a discount on the subscription: 5% for quarterly, 10% for annual. All MXN prices are quoted plus IVA; the USD list is its own separate price list, not a conversion of the peso prices.`,
 	},
 	{
 		title: "Facturación, forma de pago y comprobantes",
 		language: "es",
 		url: `${SITE}/es/terms/`,
-		content: `La facturación es mensual y por adelantado. El pago es por transferencia bancaria — el pago con tarjeta no está disponible en ninguna moneda. Los clientes en México reciben cada mes una factura CFDI con el IVA desglosado, que es lo que hace deducible el pago; los clientes fuera de México reciben una factura comercial detallada, porque el CFDI es un comprobante fiscal mexicano y no les serviría. Pagar por adelantado tiene descuento sobre la suscripción: 5% trimestral y 10% anual. Todos los precios en pesos son más IVA.`,
+		content: `La facturación es mensual y por adelantado. El pago es por transferencia bancaria o PayPal: en México es una transferencia SPEI, y los clientes facturados en dólares pueden pagar por PayPal, así nadie tiene que hacer una transferencia internacional. El pago con tarjeta no está disponible en ninguna moneda. Los clientes en México reciben cada mes una factura CFDI con el IVA desglosado, que es lo que hace deducible el pago; los clientes fuera de México reciben una factura comercial detallada, porque el CFDI es un comprobante fiscal mexicano y no les serviría. Pagar por adelantado tiene descuento sobre la suscripción: 5% trimestral y 10% anual. Todos los precios en pesos son más IVA.`,
 	},
 
 	// ── 8. Locations and surfaces ────────────────────────────────────────────
@@ -943,6 +943,8 @@ const RETRIEVAL_QUESTIONS: Record<string, string[]> = {
 	"Facturación, forma de pago y comprobantes": [
 		"¿Cómo se paga?",
 		"¿Puedo pagar con tarjeta?",
+		"¿Aceptan PayPal?",
+		"¿Puedo pagar por PayPal?",
 		"¿Dan factura?",
 		"¿Facturan CFDI?",
 		"¿Cuándo me cobran?",
