@@ -73,9 +73,30 @@ export function AdminWebsiteScraping() {
 			}
 
 			const result = await response.json();
-			toast.success(
-				`Ingestion complete! Processed ${result.pagesProcessed} pages, created ${result.chunksCreated} chunks.`,
-			);
+
+			/**
+			 * Say plainly when a run was partial.
+			 *
+			 * A large site cannot be indexed inside one serverless invocation, so
+			 * the route is resumable: it skips pages already indexed and stops on a
+			 * time budget. Reporting "Ingestion complete!" after 20 of 133 pages —
+			 * which is what this said before — is the failure that hides longest,
+			 * because the operator has no reason to click again.
+			 */
+			if (result.complete === false && result.remaining > 0) {
+				toast.warning(
+					`Indexed ${result.pagesProcessed} more page${result.pagesProcessed === 1 ? "" : "s"}. ${result.remaining} of ${result.totalPages} still to go — run it again to continue.`,
+					{ duration: 10_000 },
+				);
+			} else if (result.pagesProcessed === 0 && result.alreadyIndexed > 0) {
+				toast.success(
+					`Already up to date — all ${result.totalPages} pages are indexed.`,
+				);
+			} else {
+				toast.success(
+					`Done. Indexed ${result.pagesProcessed} page${result.pagesProcessed === 1 ? "" : "s"}, ${result.chunksCreated} new chunk${result.chunksCreated === 1 ? "" : "s"}${result.totalPages ? ` — ${result.totalPages} pages total.` : "."}`,
+				);
+			}
 
 			// Reload stats
 			await loadStats();
