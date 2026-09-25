@@ -8,6 +8,7 @@ import {
 	getLatestSitemapScan,
 } from "@/lib/db/queries-retraining";
 import { contentSource } from "@/lib/db/schema";
+import { extractUrlsFromSitemap, fetchSitemap } from "@/lib/ingest/site";
 
 // Vercel Cron configuration
 export const dynamic = "force-dynamic";
@@ -16,20 +17,39 @@ export const maxDuration = 300; // 5 minutes
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
 
+/**
+ * Pages per scan. This only lists URLs — no fetching, no embedding — so the
+ * ceiling exists to bound a pathological sitemap, not to ration work.
+ */
+const MAX_PAGES = 5000;
+
+/**
+ * Every page URL in a sitemap, following a sitemap index to its children.
+ *
+ * This used to be a bare `/<loc>(.*?)<\/loc>/g` over the top-level document,
+ * which cannot tell a sitemap INDEX from a sitemap. A `<sitemapindex>` contains
+ * one `<loc>` per CHILD SITEMAP, so for any site whose sitemap is split — which
+ * is what generators do once a site grows — the scan returned the child sitemap
+ * URLs and called them pages.
+ *
+ * Measured on 2026-09-25 against cushlabs.ai: the scan recorded
+ * `pages_found: 1, new_pages: 1`, where the one "page" was
+ * https://www.cushlabs.ai/sitemap-0.xml. The real site has 133 pages. So the
+ * retraining pipeline has been proposing to re-ingest an XML file every day and
+ * has never once seen an actual page change.
+ *
+ * lib/ingest/site.ts holds the single implementation, shared with the admin
+ * ingest route and scripts/ingest-site.ts. This was the third copy of sitemap
+ * parsing in the repo and the only one still wrong.
+ */
 async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
 	try {
-		const response = await fetch(sitemapUrl);
-		const text = await response.text();
-
-		// Parse XML to extract URLs
-		const urlRegex = /<loc>(.*?)<\/loc>/g;
-		const urls: string[] = [];
-
-		for (const match of text.matchAll(urlRegex)) {
-			urls.push(match[1]);
+		const xml = await fetchSitemap(sitemapUrl);
+		if (!xml) {
+			console.warn(`[Cron] ${sitemapUrl} did not return a sitemap`);
+			return [];
 		}
-
-		return urls;
+		return await extractUrlsFromSitemap(xml, MAX_PAGES);
 	} catch (error) {
 		console.error(`Error fetching sitemap ${sitemapUrl}:`, error);
 		return [];

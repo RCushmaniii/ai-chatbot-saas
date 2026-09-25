@@ -2,12 +2,23 @@ import { openai } from "@ai-sdk/openai";
 import { embed } from "ai";
 import * as cheerio from "cheerio";
 import postgres from "postgres";
+import { extractUrlsFromSitemap, fetchSitemap } from "@/lib/ingest/site";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
 const USER_AGENT = "ConversoBot/1.0 (+https://converso.chat)";
 const CHUNK_SIZE = 1000;
 const CHUNK_OVERLAP = 200;
+
+/**
+ * Pages per retrain run. This path scrapes and embeds every page it finds and
+ * runs inside a Vercel function capped at 300 seconds, so the ceiling is a real
+ * constraint rather than a preference. It was a bare `slice(0, 20)` before.
+ *
+ * To index a site larger than this, use scripts/ingest-site.ts, which runs from
+ * a shell with no timeout and is incremental by content hash.
+ */
+const MAX_RETRAIN_PAGES = 20;
 
 /**
  * Scrape a single page and return its text content.
@@ -180,34 +191,38 @@ export async function retrainWebsiteSources({
 	let totalChunks = 0;
 
 	for (const source of sources) {
-		// Delete existing chunks for this source
-		await sql`
-			DELETE FROM "KnowledgeChunk"
-			WHERE source_id = ${source.id}
-		`;
-
-		// Get the sitemap or base URL to discover pages
 		const sourceUrl = source.url as string;
 		const baseUrl = source.name as string;
 
-		// Try fetching the sitemap URL
+		/**
+		 * DISCOVER FIRST, DELETE SECOND. The order is the whole point.
+		 *
+		 * This function used to `DELETE FROM "KnowledgeChunk" WHERE source_id`
+		 * as its first act, then go looking for pages. Anything that went wrong
+		 * afterwards — an unreachable sitemap, a timeout, a parse that found
+		 * nothing — left the business with its website knowledge deleted and
+		 * nothing put back. The bot keeps answering, from whatever curated
+		 * chunks remain, so nobody notices until a customer asks about a page
+		 * that used to be indexed.
+		 *
+		 * As of 2026-09-25 that was a loaded gun pointed at 753 chunks: the only
+		 * reason it had not fired is that RetrainingConfig holds no rows, so no
+		 * business is due for retraining. Enabling retraining in the admin UI
+		 * would have been enough.
+		 *
+		 * Sitemap parsing now comes from lib/ingest/site.ts, shared with the
+		 * admin ingest route, scripts/ingest-site.ts and the scan-sitemaps cron.
+		 * The local copy here used a bare <loc> regex that could not tell a
+		 * sitemap INDEX from a sitemap, so on any site with a split sitemap it
+		 * returned the child sitemap URLs and called them pages — one "page" for
+		 * cushlabs.ai, which really has 133.
+		 */
 		let pageUrls: string[] = [];
 		try {
-			const res = await fetch(sourceUrl, {
-				headers: { "User-Agent": USER_AGENT },
-				signal: AbortSignal.timeout(10000),
-			});
-			if (res.ok) {
-				const text = await res.text();
-				if (text.includes("<urlset") || text.includes("<sitemapindex")) {
-					const locRegex = /<loc>(.*?)<\/loc>/g;
-					for (const match of text.matchAll(locRegex)) {
-						if (match[1]) pageUrls.push(match[1].trim());
-					}
-				}
-			}
+			const xml = await fetchSitemap(sourceUrl);
+			if (xml) pageUrls = await extractUrlsFromSitemap(xml, MAX_RETRAIN_PAGES);
 		} catch {
-			// Sitemap fetch failed
+			// Sitemap fetch failed; the crawl fallback below still applies.
 		}
 
 		// If no sitemap pages found, try crawling the base URL
@@ -249,7 +264,28 @@ export async function retrainWebsiteSources({
 			}
 		}
 
-		pageUrls = pageUrls.slice(0, 20);
+		pageUrls = pageUrls.slice(0, MAX_RETRAIN_PAGES);
+
+		/**
+		 * Refuse to wipe a knowledge base we cannot rebuild.
+		 *
+		 * Discovery returning nothing means the sitemap was unreachable, or it
+		 * parsed to nothing, or the crawl failed — never that the site genuinely
+		 * has no pages. Deleting on that signal trades a working knowledge base for
+		 * an empty one and reports success while doing it.
+		 */
+		if (pageUrls.length === 0) {
+			console.error(
+				`[retrain] ${baseUrl}: discovered 0 pages — refusing to delete existing chunks for source ${source.id}`,
+			);
+			continue;
+		}
+
+		// Only now is it safe to clear the old chunks for this source.
+		await sql`
+			DELETE FROM "KnowledgeChunk"
+			WHERE source_id = ${source.id}
+		`;
 
 		// Get bot_id from existing chunks metadata or use null
 		const botResult = await sql`
