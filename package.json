@@ -19,10 +19,12 @@
 		"test": "export PLAYWRIGHT=True && pnpm exec playwright test",
 		"test:mocked": "export PLAYWRIGHT=True && pnpm exec playwright test --project=embed-mocked",
 		"test:setup": "tsx scripts/setup-test-users.ts",
-		"ingest": "tsx scripts/ingest.ts",
 		"reset-messages": "tsx scripts/reset-message-count.ts",
 		"seed:plans": "tsx scripts/seed-plans.ts",
-		"db:guard": "node scripts/guard-db-push.mjs"
+		"db:guard": "node scripts/guard-db-push.mjs",
+		"ingest:site": "tsx scripts/ingest-site.ts",
+		"db:baseline": "node scripts/baseline-drizzle-journal.mjs",
+		"db:dedupe-memberships": "node scripts/dedupe-memberships.mjs"
 	},
 	"dependencies": {
 		"@ai-sdk/gateway": "^1.0.41",

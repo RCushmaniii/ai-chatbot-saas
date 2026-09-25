@@ -9,6 +9,14 @@ config({
 config({
 	path: ".env.local",
 });
+// The plain env file is where this repo actually keeps its connection string.
+// Without this line `db:migrate` throws "POSTGRES_URL is not defined" on every
+// local run and only works where the platform injects the environment — which
+// is a large part of how this database came to be changed exclusively through
+// hand-run SQL sitting in a second, unjournalled migrations folder.
+config({
+	path: ".env",
+});
 
 const runMigrate = async () => {
 	if (!process.env.POSTGRES_URL) {

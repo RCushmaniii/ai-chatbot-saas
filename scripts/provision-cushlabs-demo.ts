@@ -1187,7 +1187,26 @@ async function main() {
 			set: { name: "CushLabs", onboardingStatus: "active" },
 		});
 
-	// 3. Owner membership
+	/**
+	 * 3. Owner membership.
+	 *
+	 * onConflictDoNothing() has always been here and did nothing for eight runs,
+	 * because there was no unique constraint for it to conflict with: Membership
+	 * had only a primary key on its own id. This script therefore inserted a
+	 * fresh duplicate owner row every time it ran, and by 2026-09-25 demo-bot
+	 * held EIGHT identical memberships on this business.
+	 *
+	 * That is not cosmetic. Every read that reaches bot_settings joins through an
+	 * owner Membership and takes LIMIT 1 — getBusinessPersona() and
+	 * /api/embed/settings both do — so duplicates multiply the join and make the
+	 * chosen row arbitrary. It stayed harmless only because all eight pointed at
+	 * the same user.
+	 *
+	 * The unique index `membership_business_user_unique` on
+	 * ("businessId", "userId") is what gives this clause something to infer.
+	 * If that index is ever dropped, this line silently goes back to being
+	 * decorative.
+	 */
 	await db
 		.insert(membership)
 		.values({ businessId: BUSINESS_ID, userId: USER_ID, role: "owner" })
