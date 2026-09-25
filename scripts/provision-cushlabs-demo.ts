@@ -1237,16 +1237,52 @@ async function main() {
 		userId: USER_ID,
 		botName: "CushLabs AI Assistant",
 		customInstructions: CUSHLABS_PERSONA,
+		/**
+		 * Starter questions carry BOTH languages.
+		 *
+		 * These override the widget's own bilingual defaults, so a single-language
+		 * list means a Spanish visitor gets a Spanish frame around English chips —
+		 * which is exactly what cushlabs.ai/es shipped until 2026-09-25.
+		 * /api/embed/settings picks per request language and omits anything with
+		 * no translation, so the widget falls back to its own copy rather than
+		 * showing the wrong language.
+		 *
+		 * Spanish here is Mexican professional Spanish, consistent with every
+		 * other client-facing surface: "tu", not "usted"; no Iberian vocabulary.
+		 */
 		starterQuestions: [
-			{ id: "1", question: "What exactly do you do?", emoji: "💬" },
-			{ id: "2", question: "How much does it cost?", emoji: "💰" },
-			{ id: "3", question: "What's included in each plan?", emoji: "📋" },
-			{ id: "4", question: "Book a free call", emoji: "📅" },
+			{
+				id: "1",
+				question: "What exactly do you do?",
+				question_es: "¿Qué hacen exactamente?",
+				emoji: "💬",
+			},
+			{
+				id: "2",
+				question: "How much does it cost?",
+				question_es: "¿Cuánto cuesta?",
+				emoji: "💰",
+			},
+			{
+				id: "3",
+				question: "What's included in each plan?",
+				question_es: "¿Qué incluye cada plan?",
+				emoji: "📋",
+			},
+			{
+				id: "4",
+				question: "Book a free call",
+				question_es: "Agendar una llamada gratis",
+				emoji: "📅",
+			},
 		],
 		embedSettings: {
 			welcomeMessage:
 				"👋 Ask me anything about what CushLabs does, what it costs, or what your business would actually get. I answer in English or Spanish — and what you're about to experience is what your own customers would get, 24/7.",
+			welcomeMessage_es:
+				"👋 Pregúntame lo que quieras sobre lo que hace CushLabs, cuánto cuesta o qué recibiría tu negocio. Respondo en español o en inglés — y esto que estás probando es justo lo que recibirían tus clientes, las 24 horas.",
 			placeholder: "Type a message…",
+			placeholder_es: "Escribe un mensaje…",
 			position: "bottom-right" as const,
 		},
 		updatedAt: now,

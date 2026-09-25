@@ -62,9 +62,20 @@ function EmbedChatContent() {
 	 */
 	const conversationId = useRef<string | null>(null);
 
-	// Fetch embed settings from admin
+	/**
+	 * Settings are fetched PER LANGUAGE.
+	 *
+	 * Tenant-configured starter questions and placeholder override the widget's
+	 * own bilingual copy, and they are stored in whichever language they were
+	 * typed. Without this parameter the Spanish widget rendered a Spanish frame
+	 * around English question chips and an English placeholder — reported from
+	 * cushlabs.ai/es on 2026-09-25.
+	 *
+	 * The endpoint now returns only copy that exists in the requested language
+	 * and omits the rest, so the fallbacks below supply the right translation.
+	 */
 	useEffect(() => {
-		fetch("/api/embed/settings")
+		fetch(`/api/embed/settings?language=${language}`)
 			.then((res) => res.json())
 			.then((data) => {
 				setEmbedSettings(data);
@@ -74,7 +85,8 @@ function EmbedChatContent() {
 				console.error("Failed to load embed settings:", err);
 				setIsLoadingSettings(false);
 			});
-	}, []);
+		// Refetch if the host page swaps language without remounting the iframe.
+	}, [language]);
 
 	const STRINGS = {
 		en: {

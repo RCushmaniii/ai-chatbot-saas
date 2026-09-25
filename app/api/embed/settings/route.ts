@@ -33,7 +33,57 @@ const DEFAULT_EMBED_SETTINGS = {
 const servingBusinessId = process.env.DEFAULT_BUSINESS_ID?.trim() || undefined;
 const servingBotId = process.env.DEFAULT_BOT_ID?.trim() || undefined;
 
-export async function GET() {
+/**
+ * A tenant's configured copy, per language.
+ *
+ * Starter questions and the input placeholder are stored by the admin UI as
+ * single strings, in whichever language they were typed. The widget then used
+ * them verbatim and they OVERRODE its own bilingual defaults — so on
+ * cushlabs.ai/es the frame rendered in Spanish ("¡Hola!", "Preguntas rápidas:")
+ * while the four question chips and the placeholder stayed in English. A
+ * Spanish-speaking visitor was shown a half-translated widget on a page that is
+ * otherwise entirely Spanish.
+ *
+ * Each item may now carry a `question_es` alongside `question`, and
+ * embedSettings may carry `placeholder_es`. When the requested language has no
+ * translation, the value is dropped rather than substituted, and the widget
+ * falls back to its own built-in copy for that language.
+ *
+ * DROPPING IS THE POINT. Returning the English string on a Spanish page is what
+ * the bug was. A missing translation should degrade to a correct generic
+ * phrase, never to the wrong language.
+ */
+function localize(
+	row: {
+		starterQuestions: Array<{ question?: string; question_es?: string }> | null;
+		embedSettings: Record<string, unknown> | null;
+	},
+	lang: "en" | "es",
+) {
+	const questions = (row.starterQuestions ?? [])
+		.map((q) =>
+			lang === "es" ? (q.question_es ?? null) : (q.question ?? null),
+		)
+		.filter((q): q is string => Boolean(q?.trim()));
+
+	const embed = { ...(row.embedSettings ?? {}) } as Record<string, unknown>;
+	if (lang === "es") {
+		const es = embed.placeholder_es;
+		if (typeof es === "string" && es.trim()) embed.placeholder = es;
+		else delete embed.placeholder;
+		const welcomeEs = embed.welcomeMessage_es;
+		if (typeof welcomeEs === "string" && welcomeEs.trim())
+			embed.welcomeMessage = welcomeEs;
+	}
+	delete embed.placeholder_es;
+	delete embed.welcomeMessage_es;
+
+	return { questions, embed };
+}
+
+export async function GET(request: Request) {
+	const lang =
+		new URL(request.url).searchParams.get("language") === "es" ? "es" : "en";
 	try {
 		/**
 		 * Scoped to THIS deployment's business, not "whatever row was saved last".
@@ -106,10 +156,17 @@ export async function GET() {
 		 * disagree, and nothing compares them. Deleted rather than wired up,
 		 * because starterQuestions is the one with a UI behind it.
 		 */
+		const localized = localize(row as Parameters<typeof localize>[0], lang);
+
+		/**
+		 * An empty list after localization means the tenant has questions
+		 * configured but none in THIS language. Returning `undefined` rather than
+		 * an empty array lets the widget fall back to its own bilingual defaults —
+		 * an empty array would render the "Quick questions:" heading with nothing
+		 * under it, which reads as broken.
+		 */
 		const suggestedQuestions =
-			row.starterQuestions && row.starterQuestions.length > 0
-				? row.starterQuestions.map((q) => q.question)
-				: DEFAULT_EMBED_SETTINGS.suggestedQuestions;
+			localized.questions.length > 0 ? localized.questions : undefined;
 
 		/**
 		 * businessId and botId are returned so the widget can send them back on
@@ -120,9 +177,15 @@ export async function GET() {
 		 */
 		const embedSettings = {
 			...DEFAULT_EMBED_SETTINGS,
-			...(row.embedSettings ?? {}),
+			...localized.embed,
 			botName: row.botName ?? DEFAULT_EMBED_SETTINGS.botName,
-			suggestedQuestions,
+			// Omitted entirely when this language has no tenant-configured copy, so
+			// the widget uses its own translation instead of the other language's.
+			...(suggestedQuestions ? { suggestedQuestions } : {}),
+			...(localized.embed.placeholder === undefined
+				? { placeholder: undefined }
+				: {}),
+			language: lang,
 			businessId: servingBusinessId ?? null,
 			botId: servingBotId ?? null,
 		};

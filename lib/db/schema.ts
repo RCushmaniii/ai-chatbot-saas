@@ -356,9 +356,24 @@ export const botSettings = pgTable("bot_settings", {
 		.references(() => user.id),
 	botName: varchar("botName", { length: 100 }),
 	customInstructions: text("customInstructions"),
+	/**
+	 * `question_es` is optional and holds the Spanish rendering of the same
+	 * prompt. These override the widget's built-in bilingual copy, so a list
+	 * with only `question` shows English chips inside a Spanish widget — the
+	 * defect reported on cushlabs.ai/es. /api/embed/settings selects per request
+	 * language and omits anything untranslated so the widget falls back to its
+	 * own copy instead of the wrong language.
+	 *
+	 * jsonb, so adding the field needs no migration.
+	 */
 	starterQuestions:
 		jsonb("starterQuestions").$type<
-			Array<{ id: string; question: string; emoji?: string }>
+			Array<{
+				id: string;
+				question: string;
+				question_es?: string;
+				emoji?: string;
+			}>
 		>(),
 	colors: jsonb("colors").$type<{
 		primary?: string;
@@ -389,6 +404,11 @@ export const botSettings = pgTable("bot_settings", {
 		position?: "bottom-right" | "bottom-left";
 		welcomeMessage?: string;
 		placeholder?: string;
+		// Spanish renderings. Optional: when absent, /api/embed/settings omits the
+		// field for a Spanish request so the widget uses its own translation rather
+		// than falling through to the English string.
+		welcomeMessage_es?: string;
+		placeholder_es?: string;
 		botIcon?: string;
 	}>(),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
