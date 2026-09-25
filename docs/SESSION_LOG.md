@@ -17,6 +17,147 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ---
 
+## Session: 2026-09-24/25 — This app was living in a client's database, and four copies of one idea were disagreeing
+
+The whole arc of these two days is one shape: **two or more implementations of a
+single idea, quietly disagreeing, with nothing comparing them.** Every serious
+defect below is an instance of it, and every fix collapses a duplicate rather
+than patching a symptom.
+
+Full narrative: [docs/DATABASE-SPLIT-2026-09-25.md](./DATABASE-SPLIT-2026-09-25.md).
+
+### The headline: two production apps shared one database
+
+`ai-chatbot-saas` is a **clone** of `ny-ai-chatbot` — identical commit SHAs
+through `a4b9a23`, diverged 2025-12-02. When the Converso Vercel project was
+created on 2026-01-24 it was pointed at New York English Teacher's existing Neon
+database instead of getting its own. The env var sets prove which app owns it:
+NYET carries the full Neon-integration series, this project carried a single
+hand-set variable. **Nobody decided to share a database** — a clone inherited a
+pointer and it worked for eight months.
+
+What it cost while it lasted:
+
+- **A client's site wore the wrong brand.** NYET's `/api/embed/settings` does an
+  unscoped `SELECT * FROM bot_settings ORDER BY updatedAt DESC LIMIT 1`, and the
+  only row was CushLabs'. chat.nyenglishteacher.com greeted its own visitors with
+  *"Ask me anything about what CushLabs does…"*.
+- **Converso's crons ran inside a client's database.** `purge-old-messages`
+  issues `DELETE FROM "WidgetMessage"` daily.
+- **CI wrote to production.** Preview shared the connection, so every PR's
+  Playwright run created users and chats there — 469 by the end.
+- **One command from either repo could have destroyed the other.**
+
+**Resolved.** Converso now has its own Neon project (`converso` /
+`broad-water-93272047`, pg17, us-east-1 — a project, not a branch). Data was
+**copied, never moved**; the old database still holds every row as the rollback
+path. Production *and* Preview switched. Verified by sending a live message and
+counting both databases: new 14 conversations, old still 13, NYET's 3,901 rows
+untouched.
+
+### PRs merged across the two days
+
+| PR | What |
+| --- | --- |
+| [saas#107](https://github.com/RCushmaniii/ai-chatbot-saas/pull/107) | `db:push` guard — refuses while NYET's tables are present |
+| [ny#186](https://github.com/RCushmaniii/ny-ai-chatbot/pull/186) | the mirror guard, and the sharper one — NYET's schema declares 13 tables against a database holding 38 |
+| [saas#108](https://github.com/RCushmaniii/ai-chatbot-saas/pull/108) | drizzle journal baselined, duplicate memberships collapsed, dead tooling retired |
+| [saas#109](https://github.com/RCushmaniii/ai-chatbot-saas/pull/109) | cron sitemap parser + retrain safety + resumable admin ingest |
+| [saas#110](https://github.com/RCushmaniii/ai-chatbot-saas/pull/110) | Spanish widget copy |
+| [saas#111](https://github.com/RCushmaniii/ai-chatbot-saas/pull/111) | migrations made replayable |
+| [saas#112](https://github.com/RCushmaniii/ai-chatbot-saas/pull/112) | the bot's PayPal claim |
+
+### Three sitemap parsers, and the two that were wrong
+
+The scan cron recorded `pages_found: 1` for cushlabs.ai. The site has 133. A
+bare `<loc>` regex cannot tell a sitemap **index** from a sitemap, so it returned
+the child sitemap URL and called it a page. Measured, both parsers on the same
+input: **old 1 → `sitemap-0.xml`; shared parser 133 real pages.**
+
+The retraining pipeline had therefore been proposing to re-ingest an XML file
+every day and had **never once detected a real page change** — and it left a
+*pending* suggestion in the admin UI, one click from scraping XML into the
+knowledge base.
+
+Worse, `retrainWebsiteSources()` opened with `DELETE FROM "KnowledgeChunk"` and
+*then* looked for pages. Combined with the parser bug that was a loaded gun
+pointed at 753 chunks; the only thing preventing it was that `RetrainingConfig`
+holds no rows. Now: discover first, refuse to delete on zero discovered pages,
+delete only when there is something to put back.
+
+### The admin ingest button could not index this site
+
+It capped at 20 pages against a 133-page sitemap, then reported **"Ingestion
+complete!"** — the failure that hides longest, because an operator who is told it
+finished has no reason to click again. Now resumable: already-indexed pages are
+skipped, the run is time-boxed inside the 300s function limit, and it reports
+`remaining` so the UI can say "run it again". Orphan cleanup no longer runs on a
+partial pass, where it would have deleted most of a working knowledge base and
+called it tidying up.
+
+### A fresh database could not be built by replay — proven, then fixed
+
+Replaying all 16 migrations against an empty database **failed**:
+`column "role" cannot be cast automatically to type membership_role`. Migration
+0010 casts varchar to an enum with no `USING` clause, which Postgres refuses —
+so that statement cannot succeed anywhere it has not already been applied. A
+second blocker: no migration ever created pgvector, though 0008 and 0010 declare
+`vector(1536)` columns.
+
+This is why the split had to be built from `pg_dump`. The repo had **four**
+sources of schema truth: the journalled migrations, an unjournalled file beside
+them, a repo-root `migrations/` folder whose README told operators to paste SQL
+into a console by hand, and whatever was run ad hoc.
+
+Root cause of the hand-run habit: `lib/db/migrate.ts` never loaded `.env`, so
+`db:migrate` threw *"POSTGRES_URL is not defined"* on every local run. **The tool
+meant to do the job was broken, so people reached for a SQL editor.**
+
+Now: 0015 folds in every hand-run statement, the extension is created ahead of
+the migrator, the folder is deleted, and a replay against an empty database
+produces a schema **identical to production** — 33 tables, same set, 19 enums,
+both unique indexes, both HNSW indexes.
+
+### PayPal, and a bot that argued with its own website
+
+`commercial-terms.json` gained `methods_live: ["bank transfer", "PayPal"]`. The
+USD surfaces on cushlabs.ai were updated ([cushlabs#342](https://github.com/RCushmaniii/cushlabs/pull/342));
+MXN surfaces deliberately were not, because PayPal is the US rail and SPEI is
+free in Mexico.
+
+The assistant, meanwhile, carried a hard rule: *"Payment is bank transfer only…
+Never mention paying by card, OXXO, or any payment method other than bank
+transfer."* So the widget embedded on the page offering PayPal was **actively
+telling US prospects PayPal was unavailable.** Fixed and verified live in both
+languages; card is still correctly refused.
+
+**Card is still NOT live in any currency.** The request that prompted this
+described a "hosted Stripe/PayPal page" — only the PayPal half exists, and the
+verified Stripe Mexico *account* is not the same thing as checkout being live.
+
+### Smaller things that were true and are no longer
+
+- `/api/admin/knowledge/stats` had **never worked for anyone** — it counted
+  `website_content WHERE business_id`, a column that does not exist, so every
+  caller got a swallowed 500 and an em dash. That em dash is what made the
+  product look dead.
+- `bot_settings` resolution was a coin flip between a business's owners; made
+  deterministic before a second owner was added.
+- Duplicate memberships 9 → 2, with a unique index so the provisioning script's
+  long-decorative `onConflictDoNothing()` finally has something to infer.
+- The Spanish widget rendered English question chips inside a Spanish frame,
+  because tenant-configured copy overrode the bilingual defaults.
+
+### Known and deliberately not done
+
+- The old database still holds Converso's tables as the rollback copy, and NYET's
+  `db:push` guard keys on them — removing them also disarms that guard.
+- 152,813 orphaned guest users remain there, dormant since February.
+- `meta-whatsapp-pricing-change-2026-10-01` is **6 days out** as of 2026-09-25:
+  in-window utility templates and service messages start being charged.
+
+---
+
 ## Session: 2026-08-27 — The homepage assistant was selling a pricing model the business had stopped selling
 
 **PR:** [#95](https://github.com/RCushmaniii/ai-chatbot-saas/pull/95) — merged, deployed, verified against production.
