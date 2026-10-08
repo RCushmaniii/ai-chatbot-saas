@@ -1,0 +1,45 @@
+# pnpm 10+ blocks dependency install scripts unless allowlisted (pnpm 9 ran
+# them all). These four need theirs: sentry-cli and esbuild fetch their
+# binaries, bufferutil builds the optional ws native addon, sharp its libvips
+# fallback. @clerk/shared is deliberately NOT here: its postinstall only
+# prints a telemetry notice.
+allowBuilds:
+  "@sentry/cli": true
+  esbuild: true
+  bufferutil: true
+  sharp: true
+
+# Transitive-dependency floors that close Dependabot security alerts.
+#
+# These used to live in package.json under "pnpm.overrides". pnpm 11 stopped
+# reading that block, and Dependabot's pnpm moves with whatever packageManager
+# pins. This repo pinned pnpm 9, which still read the block, but pnpm 9 does
+# not read overrides from pnpm-workspace.yaml and is two majors behind the
+# rest of the fleet. pnpm-workspace.yaml is read by pnpm 10, 11 and 12 alike,
+# so the floors live here and packageManager is pinned to pnpm 10.
+#
+# Floor = the first patched version named by the alert. Raise, never lower.
+# Scoped selectors (pkg@range) keep a floor from forcing a major on callers
+# that asked for an older line the alert does not cover.
+overrides:
+  undici: ">=8.10.2"
+  ai: ">=5.0.52"
+  postcss: ">=8.5.23"
+  "@babel/core": ">=7.29.6"
+  ws: ">=8.21.0"
+  "brace-expansion@>=4": ">=5.0.11"
+  fast-uri: ">=3.1.6 <4.0.0"
+  sharp: ">=0.35.4"
+  js-cookie: ">=3.0.7"
+  markdown-it: ">=14.3.1 <15.0.0"
+  linkify-it: ">=5.0.2 <6.0.0"
+  prismjs: ">=1.30.0"
+  "@opentelemetry/core": ">=2.8.0 <3.0.0"
+  esbuild: ">=0.28.1"
+  "postcss>nanoid": ">=3.3.17 <4.0.0"
+  mermaid: ">=11.16.1"
+  dompurify: ">=3.4.16"
+  "@xmldom/xmldom@>=0.7 <0.9": ">=0.8.15 <0.9.0"
+  "baseline-browser-mapping@>=2": ">=2.11.0"
+  browserslist: ">=4.28.7"
+  "@ai-sdk/provider-utils@<4": ">=3.0.28 <4.0.0"

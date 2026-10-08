@@ -34,7 +34,7 @@ If Claude cannot complete a task (e.g., needs a CLI tool installed, needs a pack
 - **Flow Builder:** React Flow (@xyflow/react 12.10)
 - **Testing:** Playwright 1.50
 - **Linting:** Biome 2.2
-- **Package Manager:** pnpm 9.12
+- **Package Manager:** pnpm 10.28 (pinned in `package.json#packageManager`; dependency floors live in `pnpm-workspace.yaml`, not `package.json#pnpm`)
 
 ## Project Structure
 
@@ -147,3 +147,13 @@ Required environment variables (see `.env.local`):
 A running log of all working sessions is maintained at `docs/SESSION_LOG.md`.
 Always append a new entry at the top of this file before closing a session.
 Use the `session-logger` skill to generate the entry.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
