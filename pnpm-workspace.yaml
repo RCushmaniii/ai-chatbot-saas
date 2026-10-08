@@ -1,0 +1,63 @@
+# pnpm 10+ blocks dependency install scripts unless allowlisted (pnpm 9 ran
+# them all). These four need theirs: sentry-cli and esbuild fetch their
+# binaries, bufferutil builds the optional ws native addon, sharp its libvips
+# fallback. @clerk/shared is deliberately NOT here: its postinstall only
+# prints a telemetry notice.
+#
+# pnpm 11 renamed this key to `allowBuilds` (a map of name: true). Rename it
+# when packageManager moves to pnpm 11 or later.
+onlyBuiltDependencies:
+  - "@sentry/cli"
+  - esbuild
+  - bufferutil
+  - sharp
+
+# Transitive-dependency floors that close Dependabot security alerts.
+#
+# These used to live in package.json under "pnpm.overrides". pnpm 11 stopped
+# reading that block, and Dependabot's pnpm moves with whatever packageManager
+# pins. This repo pinned pnpm 9, which still read the block, but pnpm 9 does
+# not read overrides from pnpm-workspace.yaml and is two majors behind the
+# rest of the fleet. pnpm-workspace.yaml is read by pnpm 10, 11 and 12 alike,
+# so the floors live here and packageManager is pinned to pnpm 10.
+#
+# Floor = the first patched version named by the alert. Raise, never lower.
+#
+# Every selector AND target is bounded to one major. An override replaces the
+# consumer's declared range outright, so an unbounded floor like ">=7.29.0"
+# resolves to the newest major that exists (undici 8.x for consumers that
+# asked for ^5), and every later advisory on that major then lands here as an
+# alert. The two promotions that remain are deliberate and commented.
+overrides:
+  # undici 5.x has no patched release for GHSA-m8rv-5g2x-5cg5 / GHSA-r53p-7pc4-xj5r
+  # (first fix 6.28.1), so ^5 consumers (@vercel/blob, @ai-sdk/provider-utils)
+  # ride the 6.x line. cheerio asks for ^7.
+  "undici@<7": ">=6.29.0 <7"
+  "undici@>=7 <8": ">=7.30.0 <8"
+  "undici@>=8 <9": ">=8.10.2 <9"
+  "ai@>=5 <6": ">=5.0.52 <6"
+  "postcss@>=8 <9": ">=8.5.23 <9"
+  "@babel/core@>=7 <8": ">=7.29.6 <8"
+  "ws@>=8 <9": ">=8.21.0 <9"
+  "brace-expansion@>=5 <6": ">=5.0.11 <6"
+  "fast-uri@>=3 <4": ">=3.1.6 <4"
+  "sharp@>=0.35 <0.36": ">=0.35.4 <0.36"
+  "js-cookie@>=3 <4": ">=3.0.7 <4"
+  "markdown-it@>=14 <15": ">=14.3.1 <15"
+  "linkify-it@>=5 <6": ">=5.0.2 <6"
+  "prismjs@>=1 <2": ">=1.30.0 <2"
+  # @opentelemetry/core 1.x has no patched release for GHSA-8988-4f7v-96qf
+  # (first fix 2.8.0); the 1.30.1 consumers (@opentelemetry/sdk-logs 0.57,
+  # sdk-metrics 1.30, resources 1.30 under @vercel/otel) are promoted on purpose.
+  "@opentelemetry/core@<3": ">=2.8.0 <3"
+  # esbuild is 0.x, so its "major" is the minor. The 0.18 / 0.25 consumers
+  # (@esbuild-kit, drizzle-kit) have no fix on their own line; 0.28 is known
+  # to work with both.
+  esbuild: ">=0.28.1 <0.29"
+  "postcss>nanoid": ">=3.3.17 <4"
+  "mermaid@>=11 <12": ">=11.16.1 <12"
+  "dompurify@>=3 <4": ">=3.4.16 <4"
+  "@xmldom/xmldom@>=0.8 <0.9": ">=0.8.15 <0.9"
+  "baseline-browser-mapping@>=2 <3": ">=2.11.0 <3"
+  "browserslist@>=4 <5": ">=4.28.7 <5"
+  "@ai-sdk/provider-utils@>=3 <4": ">=3.0.28 <4"
