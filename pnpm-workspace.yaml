@@ -61,3 +61,16 @@ overrides:
   "baseline-browser-mapping@>=2 <3": ">=2.11.0 <3"
   "browserslist@>=4 <5": ">=4.28.7 <5"
   "@ai-sdk/provider-utils@>=3 <4": ">=3.0.28 <4"
+  "source-map-js@>=1 <2": ">=1.2.2 <2"
+  "prosemirror-view@>=1 <2": ">=1.42.3 <2"
+  # katex 0.16.x has no patched release for GHSA-238p-pmpm-9mq7 (first fix
+  # 0.18.2), and mermaid / streamdown / rehype-katex / micromark-extension-math
+  # all ask for ^0.16. Promoted on purpose so there is ONE katex: 0.18 renamed
+  # its internal CSS classes, and app/globals.css imports katex.min.css, so the
+  # renderer and the stylesheet must be the same version.
+  "katex@>=0.11 <0.19": ">=0.18.2 <0.19"
+  # postcss-selector-parser 6.x has no patched release for GHSA-rj75-hqrm-r3gf
+  # (first fix 7.1.6); @tailwindcss/typography pins 6.0.10 exactly. Promoted on
+  # purpose; 7.0.0's only change is safe insertion during iteration. Compiled
+  # .prose CSS was diffed before and after: identical.
+  "postcss-selector-parser@<8": ">=7.1.6 <8"
