@@ -32,6 +32,12 @@ updates:
           - "major"
       # Major bumps outside the ai-sdk group still get individual PRs —
       # they typically need case-by-case review for breaking changes.
+    ignore:
+      # @types/node majors track the newest Node release, not the Node this app
+      # runs on. Types ahead of the runtime let code call APIs that do not exist
+      # in production. Raise this by hand when the runtime moves (2026-10-08).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
