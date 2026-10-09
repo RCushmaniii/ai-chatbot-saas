@@ -19,6 +19,38 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 ---
 
+## Session: 2026-10-09 — Quick-question chips now send on tap
+
+Reported live on cushlabs.ai/es: tapping a chip ("¿Cuánto cuesta?") in the
+embed only copied its text into the input; the visitor then had to press send.
+One extra step at the very first message of every conversation.
+
+### What shipped (`app/embed/chat/page.tsx`)
+
+- **Chips send immediately**, through the same `sendMessage()` the send button
+  and Enter use — so the request body (businessId, botId, visitorId, sessionId,
+  conversationId) is identical whichever way the visitor asked. No second fetch.
+- **Double-send guard**: a `useRef` in-flight flag, because `isLoading` is state
+  and two taps in the same frame both read the stale `false`. Chips are also
+  `disabled` while a reply is loading.
+- **Focus**: the tapped chip unmounts with the welcome panel, so focus moves to
+  the message area (now `role="log"`, localised label, `tabIndex=-1`), not to
+  `<body>`. Deliberately not the input — on a phone that pops the keyboard over
+  the reply. `role="log"` also makes new replies announce to screen readers.
+- Applies to every tenant. Searched config/settings/schema for any "fill but
+  don't send" flag — none exists, so no tenant depended on the old behaviour.
+
+### Tests
+
+`tests/e2e/embed-widget.test.ts` (embed-mocked project): replaced "pre-fills
+the input" with chip-sends-immediately (asserts the logging fields and that a
+typed follow-up still works and carries conversationId), Spanish chip, and
+double-tap. The double-tap test fires both clicks in one JS task — Playwright's
+`dblclick()` leaves enough gap for the chip to unmount, so it passed even with
+the guard removed. Verified it fails without the guard, passes with it.
+
+---
+
 ## Session: 2026-10-08 — The website chat now learns from the website
 
 The cushlabs.ai chat bubble was telling prospects Instagram was "coming soon"

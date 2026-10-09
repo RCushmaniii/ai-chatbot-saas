@@ -75,18 +75,111 @@ test.describe("Embed widget — cold open", () => {
 });
 
 test.describe("Embed widget — chat flow", () => {
-	test("clicking a suggested question pre-fills the input", async ({
+	/**
+	 * A chip used to only copy its text into the input, leaving the visitor to
+	 * press send as a second step. It now sends through the same path as the send
+	 * button, so the request must carry the same logging fields.
+	 */
+	test("tapping a suggested question sends it immediately", async ({
 		page,
 	}) => {
-		await mockSettings(page);
+		await mockSettings(page, { businessId: "biz-123", botId: "bot-456" });
+
+		const bodies: Array<Record<string, unknown>> = [];
+		await page.route("**/api/embed/chat**", async (route) => {
+			bodies.push(route.request().postDataJSON());
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "About two weeks.", conversationId: "conv-1" },
+			});
+		});
+
 		await page.goto(EMBED_URL);
 		await page.waitForLoadState("networkidle");
 
 		await page.getByRole("button", { name: "How long does it take?" }).click();
 
-		await expect(page.getByPlaceholder(/type your message/i)).toHaveValue(
-			"How long does it take?",
-		);
+		// The question appears as the visitor's message and the reply renders —
+		// no send-button press involved.
+		await expect(page.getByText("About two weeks.")).toBeVisible({
+			timeout: 5000,
+		});
+		await expect(page.getByText("How long does it take?")).toBeVisible();
+		await expect(page.getByPlaceholder(/type your message/i)).toHaveValue("");
+		// Focus lands on the conversation, not lost to <body>.
+		await expect(page.getByRole("log")).toBeFocused();
+
+		expect(bodies).toHaveLength(1);
+		expect(bodies[0].message).toBe("How long does it take?");
+		expect(bodies[0].businessId).toBe("biz-123");
+		expect(bodies[0].botId).toBe("bot-456");
+		expect((bodies[0].visitorId as string).length).toBeGreaterThan(0);
+		expect((bodies[0].sessionId as string).length).toBeGreaterThan(0);
+
+		// The input still works for a follow-up typed message.
+		await sendMessage(page, "And the price?");
+		await expect.poll(() => bodies.length).toBe(2);
+		expect(bodies[1].message).toBe("And the price?");
+		expect(bodies[1].conversationId).toBe("conv-1");
+	});
+
+	test("double-tapping a suggested question sends it only once", async ({
+		page,
+	}) => {
+		await mockSettings(page);
+
+		let calls = 0;
+		await page.route("**/api/embed/chat**", async (route) => {
+			calls += 1;
+			await new Promise((r) => setTimeout(r, 300));
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "Once." },
+			});
+		});
+
+		await page.goto(EMBED_URL);
+		await page.waitForLoadState("networkidle");
+
+		// Both clicks in ONE task, before React re-renders. Playwright's dblclick
+		// leaves enough gap for the chip to unmount between clicks, so it passes
+		// even with no guard; this reproduces the actual race on a fast double-tap.
+		await page
+			.getByRole("button", { name: "How much does it cost?" })
+			.evaluate((el: HTMLElement) => {
+				el.click();
+				el.click();
+			});
+
+		await expect(page.getByText("Once.")).toBeVisible({ timeout: 5000 });
+		expect(calls).toBe(1);
+		await expect(page.getByText("How much does it cost?")).toHaveCount(1);
+	});
+
+	test("Spanish chips send immediately too", async ({ page }) => {
+		await mockSettings(page);
+		const bodies: Array<Record<string, unknown>> = [];
+		await page.route("**/api/embed/chat**", async (route) => {
+			bodies.push(route.request().postDataJSON());
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				json: { response: "Depende del plan." },
+			});
+		});
+
+		await page.goto(`${EMBED_URL}?language=es`);
+		await page.waitForLoadState("networkidle");
+
+		await page.getByRole("button", { name: "¿Cuánto cuesta?" }).click();
+
+		await expect(page.getByText("Depende del plan.")).toBeVisible({
+			timeout: 5000,
+		});
+		expect(bodies).toHaveLength(1);
+		expect(bodies[0].message).toBe("¿Cuánto cuesta?");
 	});
 
 	test("submitting a message hides the welcome screen and renders the AI response", async ({
