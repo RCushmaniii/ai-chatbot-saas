@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/queries-retraining";
 import { contentSource } from "@/lib/db/schema";
 import { extractUrlsFromSitemap, fetchSitemap } from "@/lib/ingest/site";
+import { allowlistFor } from "@/lib/ingest/site-allowlists";
 
 // Vercel Cron configuration
 export const dynamic = "force-dynamic";
@@ -77,6 +78,11 @@ export async function GET(request: Request) {
 
 		for (const source of websiteSources) {
 			if (!source.url) continue;
+
+			// A source with a fixed page list does not take new pages from its
+			// sitemap — the list is the decision, and a suggestion to add a blog
+			// post would only be undone by the next retrain.
+			if (allowlistFor(source.businessId, source.name)) continue;
 
 			try {
 				// source.url already stores the discovered sitemap URL
