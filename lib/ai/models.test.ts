@@ -1,12 +1,20 @@
 import { simulateReadableStream } from "ai";
-import { MockLanguageModelV2 } from "ai/test";
+import { MockLanguageModelV3 } from "ai/test";
 import { getResponseChunksByPrompt } from "@/tests/prompts/utils";
 
-export const chatModel = new MockLanguageModelV2({
+export const chatModel = new MockLanguageModelV3({
 	doGenerate: async () => ({
 		rawCall: { rawPrompt: null, rawSettings: {} },
-		finishReason: "stop",
-		usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+		finishReason: { unified: "stop", raw: "stop" },
+		usage: {
+			inputTokens: {
+				total: 10,
+				noCache: 10,
+				cacheRead: undefined,
+				cacheWrite: undefined,
+			},
+			outputTokens: { total: 20, text: 20, reasoning: undefined },
+		},
 		content: [{ type: "text", text: "Hello, world!" }],
 		warnings: [],
 	}),
@@ -20,11 +28,19 @@ export const chatModel = new MockLanguageModelV2({
 	}),
 });
 
-export const reasoningModel = new MockLanguageModelV2({
+export const reasoningModel = new MockLanguageModelV3({
 	doGenerate: async () => ({
 		rawCall: { rawPrompt: null, rawSettings: {} },
-		finishReason: "stop",
-		usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+		finishReason: { unified: "stop", raw: "stop" },
+		usage: {
+			inputTokens: {
+				total: 10,
+				noCache: 10,
+				cacheRead: undefined,
+				cacheWrite: undefined,
+			},
+			outputTokens: { total: 20, text: 20, reasoning: undefined },
+		},
 		content: [{ type: "text", text: "Hello, world!" }],
 		warnings: [],
 	}),
@@ -38,11 +54,19 @@ export const reasoningModel = new MockLanguageModelV2({
 	}),
 });
 
-export const titleModel = new MockLanguageModelV2({
+export const titleModel = new MockLanguageModelV3({
 	doGenerate: async () => ({
 		rawCall: { rawPrompt: null, rawSettings: {} },
-		finishReason: "stop",
-		usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+		finishReason: { unified: "stop", raw: "stop" },
+		usage: {
+			inputTokens: {
+				total: 10,
+				noCache: 10,
+				cacheRead: undefined,
+				cacheWrite: undefined,
+			},
+			outputTokens: { total: 20, text: 20, reasoning: undefined },
+		},
 		content: [{ type: "text", text: "This is a test title" }],
 		warnings: [],
 	}),
@@ -56,8 +80,16 @@ export const titleModel = new MockLanguageModelV2({
 				{ id: "1", type: "text-end" },
 				{
 					type: "finish",
-					finishReason: "stop",
-					usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
+					finishReason: { unified: "stop", raw: "stop" },
+					usage: {
+						inputTokens: {
+							total: 3,
+							noCache: 3,
+							cacheRead: undefined,
+							cacheWrite: undefined,
+						},
+						outputTokens: { total: 10, text: 10, reasoning: undefined },
+					},
 				},
 			],
 		}),
@@ -65,11 +97,19 @@ export const titleModel = new MockLanguageModelV2({
 	}),
 });
 
-export const artifactModel = new MockLanguageModelV2({
+export const artifactModel = new MockLanguageModelV3({
 	doGenerate: async () => ({
 		rawCall: { rawPrompt: null, rawSettings: {} },
-		finishReason: "stop",
-		usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+		finishReason: { unified: "stop", raw: "stop" },
+		usage: {
+			inputTokens: {
+				total: 10,
+				noCache: 10,
+				cacheRead: undefined,
+				cacheWrite: undefined,
+			},
+			outputTokens: { total: 20, text: 20, reasoning: undefined },
+		},
 		content: [{ type: "text", text: "Hello, world!" }],
 		warnings: [],
 	}),

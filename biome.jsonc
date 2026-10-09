@@ -27,6 +27,9 @@
 	"linter": {
 		"rules": {
 			"suspicious": {
+				/* Too many false positives (was nursery before Biome 2.5) */
+				"noUnnecessaryConditions": "off",
+
 				/* Needs more work to fix */
 				"noExplicitAny": "off",
 
@@ -54,10 +57,6 @@
 
 				/* Common pattern for env variables */
 				"noNonNullAssertion": "off"
-			},
-			"nursery": {
-				/* Too many false positives */
-				"noUnnecessaryConditions": "off"
 			},
 			"complexity": {
 				/* Needs more work to fix */
