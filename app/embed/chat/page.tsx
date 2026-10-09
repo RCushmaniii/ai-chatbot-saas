@@ -101,6 +101,7 @@ function EmbedChatContent() {
 				"Book a free call",
 			],
 			send: "Send message",
+			conversation: "Conversation",
 			error: "Sorry, I encountered an error. Please try again.",
 		},
 		es: {
@@ -115,6 +116,7 @@ function EmbedChatContent() {
 				"Agendar una llamada gratis",
 			],
 			send: "Enviar mensaje",
+			conversation: "Conversación",
 			error: "Lo siento, hubo un error. Por favor, intenta de nuevo.",
 		},
 	} as const;
@@ -174,11 +176,25 @@ function EmbedChatContent() {
 		window.parent.postMessage("close-chat", "*");
 	};
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!input.trim() || isLoading) return;
+	/**
+	 * Synchronous in-flight guard. `isLoading` is React state, so two taps landing
+	 * in the same frame (a double-tap on a quick-question chip, Enter + click)
+	 * both read the stale `false` and would POST twice. A ref flips immediately.
+	 */
+	const inFlight = useRef(false);
+	const messagesRef = useRef<HTMLDivElement>(null);
 
-		const userMessage = input.trim();
+	/**
+	 * The ONE send path. The send button, Enter, and the quick-question chips all
+	 * come through here, so the request body (businessId, visitorId, sessionId,
+	 * conversationId — see the logging note above) is identical whichever way the
+	 * visitor asked. Do not add a second fetch for chips.
+	 */
+	const sendMessage = async (text: string) => {
+		const userMessage = text.trim();
+		if (!userMessage || isLoading || inFlight.current) return;
+		inFlight.current = true;
+
 		setInput("");
 		setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 		setIsLoading(true);
@@ -221,8 +237,26 @@ function EmbedChatContent() {
 				},
 			]);
 		} finally {
+			inFlight.current = false;
 			setIsLoading(false);
 		}
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		sendMessage(input);
+	};
+
+	/**
+	 * A chip SENDS — it used to only copy its text into the input, so the visitor
+	 * had to find and press send as a second step. Tapping the chip removes the
+	 * welcome panel (and the focused chip with it), so focus is moved to the
+	 * conversation log rather than dropped to <body>. The log, not the input: on
+	 * a phone, focusing the input would pop the keyboard over the reply.
+	 */
+	const handleChipClick = (question: string) => {
+		sendMessage(question);
+		messagesRef.current?.focus({ preventScroll: true });
 	};
 
 	return (
@@ -261,7 +295,13 @@ function EmbedChatContent() {
 			</div>
 
 			{/* Messages */}
-			<div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+			<div
+				ref={messagesRef}
+				role="log"
+				aria-label={t.conversation}
+				tabIndex={-1}
+				className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 focus:outline-none"
+			>
 				{messages.length === 0 && (
 					<div className="flex flex-col items-center justify-center h-full space-y-4 px-4">
 						<div className="text-center mb-6">
@@ -284,7 +324,8 @@ function EmbedChatContent() {
 								<button
 									type="button"
 									key={idx}
-									onClick={() => setInput(question)}
+									onClick={() => handleChipClick(question)}
+									disabled={isLoading}
 									className="w-full text-left px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-sm text-gray-700 hover:text-blue-700"
 								>
 									{question}
