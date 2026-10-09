@@ -12,8 +12,69 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 
 - **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5** while v3 providers / `ai` v6 exist — deferred since closed PR #15 (needs coordinated cross-package bump + smoke test). Also the reason the last 4 low-severity `@ai-sdk/provider-utils` audit findings (GHSA-866g-f22w-33x8) can't be patched. Blocks: those 4 findings, and Dependabot PRs #64 and #65 sitting open waiting on it.
 - **Dependabot PR #58** (esbuild 0.18.20→0.28.0) is now redundant — the 2026-08-09 `pnpm.overrides` fix already forces esbuild to 0.28.2 repo-wide. Needs closing with a comment, not merging.
-- **No golden-set tests for the CushLabs tenant's channel claims.** The homepage persona now opens with a paragraph naming Instagram and WhatsApp, neither reachable by a client (see `strategy/DECISION-LOG.md` 2026-08-27 in operating-system). Containment is a persona rule, verified against one direct phrasing only. Needs a `bot-launch-gate` golden set asserting a dozen Instagram/WhatsApp phrasings all return "not live yet".
+- **No golden-set tests for the CushLabs tenant's channel claims.** Rewritten 2026-10-08: the claims to protect are now the opposite of what this item used to say — Instagram and WhatsApp automation ARE live on Premium/Ultra, and the trap is the AI being described as answering customers ON WhatsApp (it does not; replies go to the owner). Verified live against 10 EN/ES phrasings by hand, not by a test. Needs a `bot-launch-gate` golden set: "do you do WhatsApp", "is Instagram included", "what's in Premium", "what does CushLabs cost" (must quote the real list — it once invented one), "can your AI answer my customers on WhatsApp" (must say no).
+- **The website-page allowlist lives in code** (`lib/ingest/site-allowlists.ts`), keyed by business id. Fine on this one-tenant deployment; the moment a second tenant wants one it belongs on `ContentSource` (a migration).
+- **The persona still restates channel facts** (`scripts/provision-cushlabs-demo.ts`, CHANNELS rules) — a second copy of what the pricing page says, kept because it must hold when retrieval misses. When the site's channel story changes, that block must change in the same week.
 - **`/api/embed/settings` returns the most recently updated `bot_settings` row globally** (`orderBy(desc(updatedAt)).limit(1)`, no tenant filter). Consistent with the current one-business-per-deploy model and NOT a live leak today; it breaks the moment two tenants share a deployment. Also the reason a Spanish visitor sees English starter chips: any DB-configured `starterQuestions` overrides the widget's localised defaults for both languages.
+
+---
+
+## Session: 2026-10-08 — The website chat now learns from the website
+
+The cushlabs.ai chat bubble was telling prospects Instagram was "coming soon"
+and that Premium adds only "the website chatbot and the weekly report" — three
+weeks after Instagram and WhatsApp reminders/promotions went live on Premium and
+Ultra. Same root cause as the Messenger bot that day: hand-written knowledge,
+reconciled 2026-08-27, with nothing comparing it to the site.
+
+### What already existed (and why it didn't help)
+
+Converso already had website ingestion: a `website` ContentSource for CushLabs
+holding **753 chunks from all 133 sitemap URLs, blog included**, last ingested
+2026-09-25 and **never refreshed** — the tenant had no `RetrainingConfig` row, so
+`/api/cron/retrain` skipped it; `/api/cron/scan-sitemaps` only logged
+suggestions. Even if it had run, retrain deleted every chunk and re-embedded the
+first 20 sitemap pages. And the flattened page text fused both currencies
+("$3,490$229 MXN/mo + IVAUSD/mo") and lost the comparison table's columns.
+
+### What shipped
+
+- **Fixed page allowlist** for the CushLabs source (`lib/ingest/site-allowlists.ts`):
+  pricing, FAQ, services + 7 service pages, about, terms — EN and ES, 24 pages.
+  No blog: a dated post keeps saying "coming soon" forever.
+- **Section-aware extraction** (`lib/ingest/page-sections.ts`): one chunk per
+  heading (FAQ question = chunk), tables rendered "Feature: Basic: x; Premium: y;
+  Ultra: z", pages with `data-cur` rendered once per market and labelled
+  `[Prices for clients in Mexico (MXN, plus IVA)]` / `[… US … (USD)]`.
+- **One incremental sync engine** (`lib/ingest/sync-website.ts`) used by the
+  cron, the admin retrain button, accepted suggestions and `scripts/ingest-site.ts`.
+  Deterministic chunk ids → re-runs replace, never duplicate; only changed text
+  is embedded; an unreadable page keeps its chunks; atomic swap.
+- **Heading vectors.** Each section also stored under its bare heading and
+  "CushLabs.ai — heading". Measured: "What does CushLabs cost?" 0.43 → 0.80
+  against the FAQ price answer. Without it the live bot **invented a price list**
+  ($3,500/$5,500/$8,500 MXN) during this session's verification.
+- **Retired 40 of 48 hand-written chunks** the site now covers; kept 8 (human
+  takeover, fully-managed detail, what CushLabs doesn't do, who it's for).
+  Persona CHANNELS rules rewritten to the site (EN/ES), plus market-label and
+  "lead with what a plan adds" rules.
+- **Daily freshness**: `RetrainingConfig` enabled (daily) for CushLabs; fixed
+  `getBusinessesForRetraining` skipping every other day (nextRunAt = finish time
+  + 24h vs a 06:00:00 cron). Scan cron skips allowlisted sources. No new secret.
+
+Result in production: website source 1,657 rows (≈555 chunks × content/heading/
+brand vectors), curated 10 rows. Idempotent re-run: 0 inserted, 0 removed. A
+no-change daily run takes ~2s.
+
+### Follow-ups noticed, not done here
+
+- cushlabs.ai pricing page still renders a "Coming" legend and a "What does
+  Coming mean" FAQ though no card item is marked Coming.
+- `cushlabs/docs/strategy/ADVERTISED-COMMITMENTS.md` §WhatsApp still says the
+  customer channel is "Coming" and "may not be described as included" — the site
+  and the brief for this session say reminders/promotions are live.
+- Facebook post comments: registry shows `pages_manage_engagement` approved for
+  any client, but the site doesn't advertise it, so the persona stays silent.
 
 ---
 

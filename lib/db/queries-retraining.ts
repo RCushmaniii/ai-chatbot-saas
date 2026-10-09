@@ -143,7 +143,13 @@ export async function getBusinessesForRetraining(): Promise<
 			.where(
 				and(
 					eq(retrainingConfig.enabled, true),
-					sql`${retrainingConfig.nextRunAt} <= NOW()`,
+					/**
+					 * One hour of slack, because nextRunAt is set from when the PREVIOUS
+					 * run finished (06:00:40), and the cron fires at 06:00:00. Compared
+					 * with a bare NOW(), tomorrow's run is 40 seconds "early", is
+					 * skipped, and a daily schedule silently runs every other day.
+					 */
+					sql`${retrainingConfig.nextRunAt} <= NOW() + interval '1 hour'`,
 				),
 			);
 	} catch (error) {
