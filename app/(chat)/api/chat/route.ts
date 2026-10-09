@@ -283,12 +283,15 @@ ${uniqueUrls.map((url) => `- ${url}`).join("\n")}
 		let outputGuardViolation: { reason: string; matched?: string } | null =
 			null;
 
+		// AI SDK 6: convertToModelMessages is async.
+		const modelMessages = await convertToModelMessages(uiMessages);
+
 		const stream = createUIMessageStream({
 			execute: ({ writer: dataStream }) => {
 				const result = streamText({
 					model: myProvider.languageModel(selectedChatModel),
 					system: `${systemPrompt({ selectedChatModel, requestHints })}${knowledgeContext}`,
-					messages: convertToModelMessages(uiMessages),
+					messages: modelMessages,
 					maxRetries: 3,
 					stopWhen: stepCountIs(5),
 					experimental_activeTools:
