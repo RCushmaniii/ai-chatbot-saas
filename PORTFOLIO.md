@@ -5,7 +5,7 @@
 portfolio_enabled: true
 portfolio_priority: 1
 portfolio_featured: true
-portfolio_last_reviewed: "2026-03-02"
+portfolio_last_reviewed: "2026-09-13"
 
 title: "Converso AI — Bilingual AI Front Desk & Sales Assistant"
 tagline: "Bilingual AI chatbot platform for service businesses — handles front desk and sales conversations 24/7"
