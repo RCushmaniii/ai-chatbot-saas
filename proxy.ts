@@ -1,13 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import {
-	type NextFetchEvent,
-	type NextRequest,
-	NextResponse,
-} from "next/server";
+import { NextResponse } from "next/server";
 
 /**
  * Public routes that don't require authentication.
- * Everything else is protected by Clerk middleware.
+ * Everything else the proxy matches is protected by Clerk.
+ *
+ * Several of these prefixes are also EXCLUDED from `config.matcher` below, so
+ * the proxy never runs for them at all. They stay listed here so that, if a
+ * matcher exclusion is ever removed, the route is still public rather than
+ * suddenly protected.
  */
 const isPublicRoute = createRouteMatcher([
 	"/",
@@ -25,120 +26,57 @@ const isPublicRoute = createRouteMatcher([
 	"/api/webhooks(.*)",
 	"/api/clerk(.*)",
 	"/api/cron(.*)",
+	"/api/health(.*)",
 ]);
 
-/**
- * Routes that must be embeddable as iframes on third-party customer sites.
- * The widget loader (`/api/embed`) injects an iframe pointing at `/embed/chat`
- * from any customer domain, so frame-ancestors must allow `*` and
- * X-Frame-Options must not be set.
- */
-function isEmbeddableRoute(pathname: string): boolean {
-	return pathname.startsWith("/embed");
-}
+// Security headers (CSP, X-Frame-Options, HSTS, ...) are NOT set here. They live
+// in next.config.ts `headers()`, which Vercel applies without running a function,
+// so they reach every route — including the ones this proxy no longer runs on.
 
-/**
- * Security headers applied to all responses.
- */
-function applySecurityHeaders(
-	response: NextResponse,
-	pathname: string,
-): NextResponse {
-	const embeddable = isEmbeddableRoute(pathname);
-
-	// Prevent MIME type sniffing
-	response.headers.set("X-Content-Type-Options", "nosniff");
-
-	// Clickjacking protection. Embeddable routes intentionally omit X-Frame-Options
-	// so customer sites can iframe the widget. CSP frame-ancestors below carries
-	// the same intent for browsers that honor CSP.
-	if (!embeddable) {
-		response.headers.set("X-Frame-Options", "SAMEORIGIN");
-	}
-
-	// Control referrer information
-	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-
-	// Restrict browser features
-	response.headers.set(
-		"Permissions-Policy",
-		"camera=(), microphone=(), geolocation=(), browsing-topics=()",
-	);
-
-	// Content Security Policy. Embeddable routes allow any frame-ancestor so the
-	// widget renders on customer sites; everything else stays locked to self.
-	const frameAncestors = embeddable
-		? "frame-ancestors *"
-		: "frame-ancestors 'self'";
-
-	response.headers.set(
-		"Content-Security-Policy",
-		[
-			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.clerk.accounts.dev https://challenges.cloudflare.com https://va.vercel-scripts.com",
-			"style-src 'self' 'unsafe-inline'",
-			"img-src 'self' blob: data: https://img.clerk.com https://avatar.vercel.sh https://*.public.blob.vercel-storage.com",
-			"font-src 'self' data:",
-			"media-src 'self' blob:",
-			"worker-src 'self' blob:",
-			"connect-src 'self' https://*.clerk.accounts.dev https://clerk-telemetry.com https://api.stripe.com https://api.openai.com https://vitals.vercel-insights.com https://*.ingest.us.sentry.io",
-			"frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://challenges.cloudflare.com",
-			frameAncestors,
-			"base-uri 'self'",
-			"form-action 'self'",
-		].join("; "),
-	);
-
-	// Strict Transport Security (1 year, include subdomains)
-	response.headers.set(
-		"Strict-Transport-Security",
-		"max-age=31536000; includeSubDomains; preload",
-	);
-
-	return response;
-}
-
-const clerk = clerkMiddleware(async (auth, request) => {
-	const response = NextResponse.next();
-	const { pathname } = new URL(request.url);
-
-	// Apply security headers to all responses
-	applySecurityHeaders(response, pathname);
-
+export default clerkMiddleware(async (auth, request) => {
 	// Allow public routes without authentication
 	if (isPublicRoute(request)) {
-		return response;
+		return NextResponse.next();
 	}
 
 	// Protect all non-public routes
 	await auth.protect();
 
-	return response;
+	return NextResponse.next();
 });
 
 /**
- * The public embed widget must be COMPLETELY Clerk-free. It renders in a
- * cross-origin iframe on customer sites, where Clerk's dev-browser handshake
- * and auth iframes are CSP-blocked and blank the page. So short-circuit /embed
- * before clerkMiddleware ever runs — but still apply the security headers
- * (notably `frame-ancestors *`) so the iframe is allowed to load.
+ * Where the proxy runs — and, more importantly, where it does NOT.
+ *
+ * Every proxy invocation is billed Fluid Active CPU on Vercel. With the stock
+ * Clerk matcher it ran on every page and API request, including the embeddable
+ * widget customers load on their own sites. The exclusions below are routes
+ * that (a) are already public in `isPublicRoute`, so excluding them removes no
+ * protection, and (b) never call Clerk's server helpers (`auth()` /
+ * `currentUser()`), which throw unless the proxy ran first:
+ *
+ *   /embed/*          widget iframe page (was already short-circuited past Clerk)
+ *   /api/embed/*      widget loader script + widget chat/settings/capture APIs
+ *   /api/webhooks/*   Stripe + messaging-platform webhooks (signature-verified)
+ *   /api/clerk/*      Clerk webhook (svix-verified)
+ *   /api/cron/*       Vercel Cron (CRON_SECRET-verified in the route)
+ *   /api/plans        public plan list for the pricing page
+ *   /api/health       health check
+ *   /ping, /pricing, /demo, /demo-ny-english   public marketing pages
+ *
+ * Still matched, on purpose:
+ *   /                 calls getAuthUser() -> auth() to route signed-in users
+ *   /sign-in, /sign-up, /login, /register     Clerk handshake
+ *   /chat, /admin, /documentation, /onboarding, /checkout, and all other
+ *   /api/* routes     protected; route handlers call auth()
+ *   /monitoring       Sentry tunnel — left exactly as it was
+ *   anything unknown  fails closed (protected), as before
  */
-export default function middleware(
-	request: NextRequest,
-	event: NextFetchEvent,
-) {
-	const { pathname } = new URL(request.url);
-	if (pathname.startsWith("/embed")) {
-		return applySecurityHeaders(NextResponse.next(), pathname);
-	}
-	return clerk(request, event);
-}
-
 export const config = {
 	matcher: [
-		// Skip Next.js internals and all static files
-		"/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|ogg|mp3|wav)).*)",
-		// Always run for API routes
-		"/(api|trpc)(.*)",
+		// Pages: skip Next.js internals, static files, and the public routes above.
+		"/((?!_next|embed|api/embed|api/webhooks|api/clerk|api/cron|api/plans|api/health|ping|pricing|demo|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|ogg|mp3|wav)).*)",
+		// API routes (even ones that look like static files), minus the public ones.
+		"/(api|trpc)((?!/embed|/webhooks|/clerk|/cron|/plans|/health).*)",
 	],
 };
