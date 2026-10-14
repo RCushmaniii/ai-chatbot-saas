@@ -10,12 +10,73 @@ Entries are newest-first. Each entry documents one Claude Code working session.
 > **An item leaves this list only when it has been verified end to end.** "Tests pass" and
 > "the config looks right" are not verification.
 
-- **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5** while v3 providers / `ai` v6 exist — deferred since closed PR #15 (needs coordinated cross-package bump + smoke test). Also the reason the last 4 low-severity `@ai-sdk/provider-utils` audit findings (GHSA-866g-f22w-33x8) can't be patched. Blocks: those 4 findings, and Dependabot PRs #64 and #65 sitting open waiting on it.
-- **Dependabot PR #58** (esbuild 0.18.20→0.28.0) is now redundant — the 2026-08-09 `pnpm.overrides` fix already forces esbuild to 0.28.2 repo-wide. Needs closing with a comment, not merging.
-- **No golden-set tests for the CushLabs tenant's channel claims.** Rewritten 2026-10-08: the claims to protect are now the opposite of what this item used to say — Instagram and WhatsApp automation ARE live on Premium/Ultra, and the trap is the AI being described as answering customers ON WhatsApp (it does not; replies go to the owner). Verified live against 10 EN/ES phrasings by hand, not by a test. Needs a `bot-launch-gate` golden set: "do you do WhatsApp", "is Instagram included", "what's in Premium", "what does CushLabs cost" (must quote the real list — it once invented one), "can your AI answer my customers on WhatsApp" (must say no).
-- **The website-page allowlist lives in code** (`lib/ingest/site-allowlists.ts`), keyed by business id. Fine on this one-tenant deployment; the moment a second tenant wants one it belongs on `ContentSource` (a migration).
-- **The persona still restates channel facts** (`scripts/provision-cushlabs-demo.ts`, CHANNELS rules) — a second copy of what the pricing page says, kept because it must hold when retrieval misses. When the site's channel story changes, that block must change in the same week.
-- **`/api/embed/settings` returns the most recently updated `bot_settings` row globally** (`orderBy(desc(updatedAt)).limit(1)`, no tenant filter). Consistent with the current one-business-per-deploy model and NOT a live leak today; it breaks the moment two tenants share a deployment. Also the reason a Spanish visitor sees English starter chips: any DB-configured `starterQuestions` overrides the widget's localised defaults for both languages.
+### cushlabs.ai quotes the Basic price as the website chatbot's starting price
+
+**High** · opened 2026-10-14 · blocks: the QA gate exiting 0 on production; Spanish visitors are told the website chat starts at $1,990 MXN
+
+https://www.cushlabs.ai/services/website-chatbot/ and /es/services/website-chatbot/ say "From $129 USD/mo ($1,990 MXN + IVA)". The website chatbot is Premium/Ultra ($229 / $3,490 MXN). The bot quotes the page faithfully, so `followup-no-reintro-es` fails every run. Robert agreed to the fix on 2026-10-14. Knowledge re-ingests daily.
+
+**Next:** in a cushlabs repo session, change that comparison row to "From $229 USD/mo ($3,490 MXN + IVA in Mexico) — website chat is part of Premium" / "Desde $3,490 MXN/mes + IVA — el chat para sitio web es parte de Premium", then run `pnpm qa-gate` here the next day.
+
+### Avatar upload has never run end to end
+
+**Medium** · opened 2026-10-14 · blocks: trusting the drag-and-drop avatar in the Widget tab
+
+`app/api/admin/avatar/route.ts` and the Blob store `converso-widget-avatars` exist (BLOB_READ_WRITE_TOKEN in Production + Development), but the token was not available locally and the admin is owner-only, so no upload was made. Validation, typing by bytes and the save path are unit-tested; the `put()` to Blob is not.
+
+**Next:** upload one avatar from https://www.soyconverso.com/admin?tab=embed, save, check it on https://www.soyconverso.com/embed/chat?language=es, then "Back to the standard avatar" and save.
+
+### bot_settings is keyed by user, not business
+
+**Medium** · opened 2026-10-14 · blocks: an owner with two businesses (they share one persona, one set of starter questions and one look)
+
+Seen live on the ada test account (two businesses). Fine while each deployment serves one business. Fix is a `businessId` column plus a migration.
+
+**Next:** add `bot_settings.businessId`, backfill from the owner membership, key reads/writes by it.
+
+### Other standing items
+
+- **AI SDK pinned on v2-era `@ai-sdk/*` / `ai` v5**: deferred since closed PR #15 (needs a coordinated cross-package bump + smoke test). Also why the 4 low-severity `@ai-sdk/provider-utils` findings (GHSA-866g-f22w-33x8) can't be patched; Dependabot PRs #64 and #65 wait on it.
+- **Dependabot PR #58** (esbuild) is redundant since the 2026-08-09 override; close it with a comment.
+- **The website-page allowlist lives in code** (`lib/ingest/site-allowlists.ts`), keyed by business id; it belongs on `ContentSource` when a second tenant needs one.
+- **The persona restates channel facts** (`scripts/provision-cushlabs-demo.ts`); change it in the same week the site's channel story changes.
+- **`page-this-es` is weak on the local dev server** (1 of 4 locally on 2026-10-14, 3 of 3 + baseline on production). Recheck with `--only page-this-es` after any prompt change.
+
+### Resolved
+
+- 2026-10-14 · No golden-set tests for channel claims → `pnpm qa-gate` (25 scenarios EN/ES incl. WhatsApp, pricing, plans), passing on production.
+- 2026-10-14 · `/api/embed/settings` unscoped row and English chips on Spanish pages → scoped by `DEFAULT_BUSINESS_ID`, per-language text with no cross-language fallback; verified live on /embed/chat?language=es.
+
+---
+
+## Session: 2026-10-14 — Audit against the ny-ai-chatbot lessons, five PRs as four
+
+### Accomplished
+
+- #125 security: `?id=` script injection removed; foreign business ids get 403; preview builds off (VERCEL_ENV guard).
+- #127 `pnpm qa-gate` (25 real scenarios EN/ES, internal-traffic token, Server-Timing, hover warm-up). #128 answer fixes (no forced link footer, visitor-language price list, page and history in context).
+- CushLabs bot instructions (production DB, `bot_settings` id 5): "If you can't tell, give both" replaced; pricing-en 4/5 → 5/5. Backup kept in the session scratchpad.
+- #129 widget settings: saved > attribute > default in the loader, EN/ES text with per-language fallback, language from `<html lang>` with reload on switch, appearance editor with live EN/ES preview, Blob avatar upload, bare install snippet + test, 90-day metadata strip, IP rows 1 day, /privacy (EN + es-MX aviso). Verified live: saved Spanish welcome on a Spanish page, switch to English reloads, no runtime errors.
+- QA gate on production: 20/25 → 24/25. Median 1.8 s, P95 3.8 s.
+
+### Decisions Made
+
+- PR 4 + 5 combined (one theme, two fewer production deploys): approved by Robert.
+- Kept gpt-4o-mini: gpt-4.1-mini measured no better on the weak scenarios.
+- Local admin testing runs against a throwaway Neon branch with the ada test user (Clerk test instance), never against production rows.
+
+### Immediate Next Steps
+
+- [ ] Fix the cushlabs.ai website-chatbot price row (Open Items, first entry): don't break what pays — it misquotes price to buyers.
+- [ ] Upload one avatar on production to close the last unverified link.
+
+### Technical Debt
+
+- An avatar uploaded then undone stays in Blob (a few KB each).
+
+### Open Questions / Blockers
+
+- None.
 
 ---
 
