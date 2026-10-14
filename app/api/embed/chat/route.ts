@@ -23,6 +23,7 @@ import {
 	createWidgetMessage,
 	getWidgetConversationBySession,
 } from "@/lib/db/queries-live-chat";
+import { resolveEmbedTenant } from "@/lib/embed/tenant";
 import { playbookEngine } from "@/lib/playbook/engine";
 import { rateLimit } from "@/lib/rate-limit";
 import {
@@ -70,15 +71,16 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
 		}
 
-		// This deployment is single-tenant (one business per deploy). The embed
-		// widget doesn't thread tenant context, so fall back to the deployment's
-		// default business/bot for knowledge retrieval + persona.
-		// .trim() is load-bearing: env values set via some CLIs carry a trailing
-		// newline, and an untrimmed UUID makes Postgres throw 22P02 (invalid uuid).
-		const effectiveBusinessId =
-			(businessId ?? process.env.DEFAULT_BUSINESS_ID)?.trim() || undefined;
-		const effectiveBotId =
-			(botId ?? process.env.DEFAULT_BOT_ID)?.trim() || undefined;
+		// The business is this deployment's, never the request's — a visitor who
+		// names another tenant's id is refused, not answered as that tenant.
+		// See lib/embed/tenant.ts.
+		const tenant = resolveEmbedTenant({ businessId, botId });
+		if (!tenant.ok) {
+			console.warn(`[embed-chat] refused ${tenant.reason}`, { origin });
+			return NextResponse.json({ error: "Unknown business" }, { status: 403 });
+		}
+		const effectiveBusinessId = tenant.businessId;
+		const effectiveBotId = tenant.botId;
 
 		// Input safety: refuse prompt-injection attempts before they reach the model.
 		const inputCheck = checkInput(message);
