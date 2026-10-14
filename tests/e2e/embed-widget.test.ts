@@ -373,3 +373,70 @@ test.describe("Embed widget — conversation logging contract", () => {
 		expect((bodies[0].visitorId as string).length).toBeGreaterThan(0);
 	});
 });
+
+/**
+ * Attribute and stored values reach a CUSTOMER'S page through the loader
+ * script (/api/embed), so they are treated as hostile. This loads the real
+ * loader on a host page whose script tag carries attack values and checks
+ * that none of them reach the DOM as anything but inert text.
+ */
+test.describe("Embed loader — hostile attribute values", () => {
+	test("a CSS-injection color, a quote-breaking image URL and a bad position are refused", async ({
+		page,
+		baseURL,
+	}) => {
+		await page.setContent(`<!doctype html><html><body>
+			<script
+				src="${baseURL}/api/embed?id=x';window.__pwned_id=1;//"
+				buttonColor="red;background:url(https://evil.example/x)"
+				welcomeGif="https://abc.public.blob.vercel-storage.com/a.png&quot; onerror=&quot;window.__pwned_img=1"
+				welcomeMessage="<img src=x onerror=window.__pwned_text=1>"
+				position="top:0;left:0"
+				buttonSize="1);background:url(x"
+			></script>
+		</body></html>`);
+
+		const button = page.locator("#nyenglish-chat-button");
+		await expect(button).toBeVisible();
+
+		const style = await button.evaluate((el) => {
+			const cs = getComputedStyle(el);
+			const inline = (el as HTMLElement).style;
+			return {
+				bg: cs.backgroundColor,
+				bgImage: cs.backgroundImage,
+				right: inline.right,
+				transform: inline.transform,
+			};
+		});
+		expect(style.bg).toBe("rgb(79, 70, 229)");
+		expect(style.bgImage).toBe("none");
+		expect(style.right).toBe("20px");
+		expect(style.transform).toBe("scale(1)");
+
+		// The message is shown as text and the image is dropped.
+		const welcome = page.locator("#nyenglish-chat-welcome");
+		await expect(welcome).toBeVisible();
+		await expect(welcome.locator("img")).toHaveCount(0);
+		await expect(welcome).toContainText("<img src=x onerror=");
+
+		const pwned = await page.evaluate(() => {
+			const w = window as unknown as Record<string, unknown>;
+			return { id: w.__pwned_id, img: w.__pwned_img, text: w.__pwned_text };
+		});
+		expect(pwned).toEqual({ id: undefined, img: undefined, text: undefined });
+	});
+
+	test("valid values are honoured", async ({ page, baseURL }) => {
+		await page.setContent(`<!doctype html><html><body>
+			<script src="${baseURL}/api/embed" buttonColor="#1c4992" position="bottom-left" showWelcomeMessage="false"></script>
+		</body></html>`);
+		const button = page.locator("#nyenglish-chat-button");
+		await expect(button).toBeVisible();
+		const style = await button.evaluate((el) => ({
+			bg: getComputedStyle(el).backgroundColor,
+			left: (el as HTMLElement).style.left,
+		}));
+		expect(style).toEqual({ bg: "rgb(28, 73, 146)", left: "20px" });
+	});
+});

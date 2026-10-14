@@ -72,6 +72,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Fast, no server, no credentials: the embed validators and the tenant rule.
+      - name: Unit tests
+        run: pnpm test:unit
+
       - name: Set up Clerk test users
         if: env.HAS_REAL_CLERK == 'true'
         run: pnpm test:setup

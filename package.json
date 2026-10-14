@@ -18,6 +18,7 @@
 		"db:up": "drizzle-kit up",
 		"test": "export PLAYWRIGHT=True && pnpm exec playwright test",
 		"test:mocked": "export PLAYWRIGHT=True && pnpm exec playwright test --project=embed-mocked",
+		"test:unit": "node --import tsx --test \"tests/unit/**/*.test.ts\"",
 		"test:setup": "tsx scripts/setup-test-users.ts",
 		"reset-messages": "tsx scripts/reset-message-count.ts",
 		"seed:plans": "tsx scripts/seed-plans.ts",

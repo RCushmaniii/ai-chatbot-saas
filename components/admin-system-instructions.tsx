@@ -41,19 +41,19 @@ export function AdminSystemInstructions() {
 				if (response.status === 404) {
 					// No settings yet, use defaults
 					setCustomInstructions(DEFAULT_INSTRUCTIONS);
-					setBotName("New York English Teacher");
+					setBotName("");
 					return;
 				}
 				throw new Error("Failed to load settings");
 			}
 			const data = await response.json();
-			setBotName(data.botName || "New York English Teacher");
+			setBotName(data.botName || "");
 			setCustomInstructions(data.customInstructions || DEFAULT_INSTRUCTIONS);
 		} catch (error) {
 			console.error("Error loading settings:", error);
 			toast.error("Failed to load settings");
 			setCustomInstructions(DEFAULT_INSTRUCTIONS);
-			setBotName("New York English Teacher");
+			setBotName("");
 		} finally {
 			setIsLoading(false);
 		}

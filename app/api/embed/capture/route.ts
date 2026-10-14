@@ -6,7 +6,11 @@ import {
 	getContactByEmail,
 	updateContact,
 } from "@/lib/db/queries-contacts";
-import { updateWidgetConversation } from "@/lib/db/queries-live-chat";
+import {
+	getWidgetConversation,
+	updateWidgetConversation,
+} from "@/lib/db/queries-live-chat";
+import { resolveEmbedTenant } from "@/lib/embed/tenant";
 import { rateLimit } from "@/lib/rate-limit";
 
 const captureSchema = z.object({
@@ -30,6 +34,15 @@ export async function POST(request: Request) {
 	try {
 		const json = await request.json();
 		const data = captureSchema.parse(json);
+
+		// Contacts are written to THIS deployment's business only. The body's
+		// businessId used to be trusted as-is, so anyone could create contacts in
+		// any tenant's CRM — or overwrite an existing contact's name and phone by
+		// knowing their email. See lib/embed/tenant.ts.
+		const tenant = resolveEmbedTenant({ businessId: data.businessId });
+		if (!tenant.ok || !tenant.businessId) {
+			return NextResponse.json({ error: "Unknown business" }, { status: 403 });
+		}
 
 		if (!data.email && !data.phone && !data.name) {
 			return NextResponse.json(
@@ -113,7 +126,12 @@ export async function POST(request: Request) {
 		}
 
 		// Link contact to conversation if provided
-		if (data.conversationId) {
+		// Only a conversation of the same business may be linked; an id from
+		// another tenant is ignored rather than rewritten.
+		const conversation = data.conversationId
+			? await getWidgetConversation({ id: data.conversationId })
+			: null;
+		if (data.conversationId && conversation?.businessId === data.businessId) {
 			await updateWidgetConversation({
 				id: data.conversationId,
 				contactId,
