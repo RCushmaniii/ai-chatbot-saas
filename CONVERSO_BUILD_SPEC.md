@@ -785,18 +785,11 @@ interface WidgetConfig {
 
 ### Embed Code Generator
 
-Update `/settings/embed` to generate:
+The admin's Widget tab generates only the loader (superseded 2026-10-14, see `docs/EMBED_WIDGET.md`). Appearance and text are saved in the admin, never baked into the tag:
 
 ```html
 <!-- Converso Chat Widget -->
-<script
-  src="https://soyconverso.com/api/embed?id=BOT_ID"
-  data-button-color="#20B2AA"
-  data-position="bottom-right"
-  data-language="es"
-  data-welcome-message="Hola! Cómo puedo ayudarte?"
-  async
-></script>
+<script async src="https://www.soyconverso.com/api/embed"></script>
 ```
 
 ---

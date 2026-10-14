@@ -16,24 +16,34 @@ import { Input } from "@/components/ui/input";
 type StarterQuestion = {
 	id: string;
 	question: string;
+	/** Spanish. Saved separately: a question with no Spanish never shows on a Spanish page. */
+	question_es?: string;
 	emoji?: string;
 };
 
+/**
+ * Bilingual pairs. These used to be Spanish sentences stored in
+ * `question`, the ENGLISH field, so a tenant who pressed "Reset to Default" got Spanish
+ * chips on English pages and the built-in ones on Spanish pages.
+ */
 const DEFAULT_QUESTIONS: StarterQuestion[] = [
 	{
 		id: "1",
-		question: "¿Cómo puedo agendar una consulta gratuita?",
-		emoji: "📅",
+		question: "What do you offer?",
+		question_es: "¿Qué ofrecen?",
+		emoji: "💬",
 	},
 	{
 		id: "2",
-		question: "¿Qué servicios de coaching ofrecen?",
-		emoji: "💼",
+		question: "How much does it cost?",
+		question_es: "¿Cuánto cuesta?",
+		emoji: "💰",
 	},
 	{
 		id: "3",
-		question: "¿Dónde puedo leer testimonios de clientes?",
-		emoji: "⭐",
+		question: "How can I contact you?",
+		question_es: "¿Cómo los contacto?",
+		emoji: "📅",
 	},
 ];
 
@@ -99,6 +109,7 @@ export function AdminStarterQuestions() {
 		const newQuestion: StarterQuestion = {
 			id: Date.now().toString(),
 			question: "",
+			question_es: "",
 			emoji: "💬",
 		};
 		setQuestions([...questions, newQuestion]);
@@ -148,7 +159,9 @@ export function AdminStarterQuestions() {
 					<CardTitle>Starter Questions</CardTitle>
 					<CardDescription>
 						Suggested questions that appear when users start a new conversation.
-						These help guide users and showcase what your chatbot can answer.
+						Write each one in English and in Spanish: English pages show the
+						English column, Spanish pages the Spanish one. A question left empty
+						in one language is simply not shown in that language.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -175,14 +188,32 @@ export function AdminStarterQuestions() {
 												maxLength={2}
 											/>
 										</div>
-										<Input
-											placeholder="Enter question..."
-											value={question.question}
-											onChange={(e) =>
-												updateQuestion(question.id, "question", e.target.value)
-											}
-											className="flex-1"
-										/>
+										<div className="grid flex-1 gap-2 sm:grid-cols-2">
+											<Input
+												aria-label="Question in English"
+												placeholder="English"
+												value={question.question}
+												onChange={(e) =>
+													updateQuestion(
+														question.id,
+														"question",
+														e.target.value,
+													)
+												}
+											/>
+											<Input
+												aria-label="Question in Spanish"
+												placeholder="Español"
+												value={question.question_es ?? ""}
+												onChange={(e) =>
+													updateQuestion(
+														question.id,
+														"question_es",
+														e.target.value,
+													)
+												}
+											/>
+										</div>
 									</div>
 								</div>
 

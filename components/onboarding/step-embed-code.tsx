@@ -2,6 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { buildInstallCode } from "@/components/admin-embed-code";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -10,15 +11,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import type { OnboardingStrings } from "./types";
 
 interface StepEmbedCodeProps {
@@ -26,20 +18,18 @@ interface StepEmbedCodeProps {
 	t: OnboardingStrings;
 }
 
-export function StepEmbedCode({ botId, t }: StepEmbedCodeProps) {
+/**
+ * The install code carries no appearance attributes: colors, avatar and text
+ * are set in the admin's Widget tab and reach the site through
+ * /api/embed/settings. A color baked into this code used to sit on the
+ * customer's site out of the admin's reach (see components/admin-embed-code.tsx).
+ * botId stays in the props for the wizard's sake; the deployment already knows
+ * which business it serves.
+ */
+export function StepEmbedCode({ t }: StepEmbedCodeProps) {
 	const [copied, setCopied] = useState(false);
-	const [buttonColor, setButtonColor] = useState("#1c4992");
-	const [position, setPosition] = useState("bottom-right");
-
 	const origin = typeof window !== "undefined" ? window.location.origin : "";
-
-	const embedCode = `<script
-  async
-  src="${origin}/api/embed"
-  id="${botId}"
-  buttonColor="${buttonColor}"
-  position="${position}"
-></script>`;
+	const embedCode = buildInstallCode(origin);
 
 	const copyToClipboard = () => {
 		navigator.clipboard.writeText(embedCode);
@@ -56,44 +46,6 @@ export function StepEmbedCode({ botId, t }: StepEmbedCodeProps) {
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">
-				{/* Settings */}
-				<div className="grid gap-4 sm:grid-cols-2 max-w-md mx-auto">
-					<div className="space-y-2">
-						<Label htmlFor="embedColor">{t.embedButtonColor}</Label>
-						<div className="flex gap-2">
-							<Input
-								id="embedColor"
-								type="color"
-								value={buttonColor}
-								onChange={(e) => setButtonColor(e.target.value)}
-								className="w-12 h-10 p-1 cursor-pointer"
-							/>
-							<Input
-								type="text"
-								value={buttonColor}
-								onChange={(e) => setButtonColor(e.target.value)}
-								className="flex-1"
-							/>
-						</div>
-					</div>
-					<div className="space-y-2">
-						<Label>{t.embedPosition}</Label>
-						<Select value={position} onValueChange={setPosition}>
-							<SelectTrigger>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="bottom-right">
-									{t.embedPositionRight}
-								</SelectItem>
-								<SelectItem value="bottom-left">
-									{t.embedPositionLeft}
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-
 				{/* Code block */}
 				<div className="relative">
 					<pre className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto text-sm">

@@ -175,17 +175,13 @@ export default function DemoEmbedPage() {
 				</footer>
 			</div>
 
-			{/* Embed Widget Script */}
+			{/* Embed Widget Script. Only the language: appearance and text come from
+			    the admin (tests/unit/embed-install-attributes.test.ts enforces it). */}
 			<Script
-				src="/api/embed?v=3"
+				src="/api/embed"
 				id="demo-bot"
 				strategy="afterInteractive"
-				data-welcome-message="👋 Hey... ask your questions here!"
 				data-language="en"
-				data-button-color="#1c4992"
-				data-position="bottom-right"
-				data-open="false"
-				data-show-welcome-message="true"
 			/>
 		</>
 	);

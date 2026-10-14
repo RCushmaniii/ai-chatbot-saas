@@ -116,6 +116,39 @@ Key gotchas:
 - `memo()` comparison functions must return `true` when props are equal (skip re-render)
 - Monthly schedule calculations must use `setMonth()`, not fixed 30-day intervals
 
+## Website widget rules (audit of 2026-10-14)
+
+Each rule below is a production bug found here or on ny-ai-chatbot. Break one and the bug comes back.
+
+**What visitors see**
+
+- **A save is not done until a visitor sees it.** The chain is: admin (`components/admin-widget-appearance.tsx`, `components/admin-starter-questions.tsx`) → `POST /api/admin/settings` (validated by `lib/embed/settings-schema.ts`) → `bot_settings.embedSettings` / `starterQuestions` → `GET /api/embed/settings` (CDN cache 30 s + 30 s stale) → the loader (`lib/embed/script.ts`, served by `/api/embed`) and the chat window (`app/embed/chat/page.tsx`). Verify a change against the live public endpoint, not the code.
+- **Saved settings win, then legacy script-tag attributes, then built-in defaults.** The install code is the bare script tag. Never add appearance or text attributes to an install, demo page or doc: `tests/unit/embed-install-attributes.test.ts` fails if you do.
+- **Every visitor-facing text exists in English and Spanish** (`lib/embed/widget-text.ts`). Each language falls back to its own built-in text, never to the other language. Saved text with no language counts as English only. Spanish is Mexican Professional Spanish (es-MX), `tú` for CushLabs.
+- **The widget's language comes from** `data-language`, then `language`, then the page's `<html lang>`, and the chat reloads when the page switches language.
+- **The admin preview and the live widget render the same components** (`components/widget/widget-chrome.tsx`). Change the header or welcome there, never in one place only.
+- **Defaults are today's look** (`lib/embed/appearance.ts`): white header, pale blue circle, no ring, standard icon. A new appearance option must default to what visitors already see.
+
+**Hostile values**
+
+- Anything that reaches a customer's page is hostile until checked: colors are hex only (`#abc`/`#aabbcc`), images only from our own Vercel Blob store over https (store `converso-widget-avatars`), checked on save AND in the browser (`lib/embed/sanitize.ts` holds the TypeScript and browser copies; a parity test keeps them equal). Build DOM elements, never HTML strings. Uploads are typed by their bytes; SVG is refused.
+- Nothing from a request is pasted into the served script. Each deployment serves one business (`DEFAULT_BUSINESS_ID`); a request naming another gets a 403 (`lib/embed/tenant.ts`).
+
+**What the bot says**
+
+- Any change to the tenant's instructions, the knowledge, `lib/ai/**`, `lib/embed/**` or `app/api/embed/**` goes through the QA gate routine in `docs/QA_GATE.md`: production baseline, change, local `--compare`, read every changed reply, merge, then `pnpm qa-gate` on production must exit 0. The tenant's instructions live in the production database (`bot_settings.customInstructions`): back them up before editing.
+- The gate needs `QA_GATE_TOKEN`, `DEFAULT_BUSINESS_ID` and `DEFAULT_BOT_ID` in the local env file. Local runs use the PRODUCTION database. There are no preview deployments (`vercel.json` VERCEL_ENV guard; never remove it), so pre-merge checks run on the local dev server.
+
+**Privacy**
+
+- Retention is code plus a public promise: `app/api/cron/purge-old-messages/route.ts` (messages 90 days, conversation page/visitor ids 90 days idle, rate-limit IP rows 1 day) and `/privacy` (`app/privacy/page.tsx`). Change both together. A new third-party service that touches visitor data, or turning on WhatsApp, means a new line on `/privacy` in the same change.
+
+**Working rules**
+
+- After every deploy: check the live site and the Vercel runtime errors before calling it done.
+- Stop the local dev server by its port (`Get-NetTCPConnection -LocalPort 3000`), never by killing every `node.exe`.
+- After an admin change ships, an admin tab that was already open shows the old screen until reloaded: tell the owner to press F5.
+- To drive the admin locally without touching production data: create a throwaway Neon branch, run `pnpm dev` with `POSTGRES_URL` pointed at it and `ADMIN_EMAIL=ada-test@cushlabs.ai` (the local Clerk keys are a test instance), sign in with `@clerk/testing`, then delete the branch.
 ## Known Issues
 
 - All ~89 components use `"use client"` directive — many static components should be server components for bundle size optimization

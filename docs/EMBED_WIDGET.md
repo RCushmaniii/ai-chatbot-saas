@@ -22,31 +22,47 @@ The embed widget allows you to add the chatbot to any website with a simple scri
 
 ### Basic Usage
 
-Add this script tag to any HTML page:
+Add this script tag to any HTML page, once, before the closing `</body>` tag:
 
 ```html
-<script
-  src="https://your-domain.com/api/embed"
-  data-language="en"
-  data-button-color="#2563eb"
-  data-welcome-message="Hello! How can I help you today?"
-  data-placeholder="Type your message..."
-  data-bot-icon="🎓"
-  async
-></script>
+<script async src="https://www.soyconverso.com/api/embed"></script>
 ```
 
-### Configuration Options
+That is the whole install. **Do not add appearance or text attributes.** Colors, the avatar, the
+welcome note and the input hint are set in the admin (**Widget** tab) and reach the site through
+`/api/embed/settings`. An attribute pasted onto a customer's page is out of the admin's reach, and
+an owner's saved change would look like a broken save (the ny-ai-chatbot bug of 2026-10-12).
+`tests/unit/embed-install-attributes.test.ts` fails if a demo page, this file or the admin snippet
+brings one back.
 
-| Attribute              | Description                                       | Default                        |
-| ---------------------- | ------------------------------------------------- | ------------------------------ |
-| `data-language`        | Interface language (`en` or `es`)                 | `en`                           |
-| `data-button-color`    | Hex color for chat bubble                         | `#2563eb`                      |
-| `data-button-size`     | Scale factor for bubble (0.8-1.2)                 | `1.0`                          |
-| `data-position`        | Bubble position (`bottom-right` or `bottom-left`) | `bottom-right`                 |
-| `data-welcome-message` | Initial greeting message                          | `"Hello! How can I help you?"` |
-| `data-placeholder`     | Input field placeholder text                      | `"Type your message..."`       |
-| `data-bot-icon`        | Emoji or text for bot avatar                      | `🎓`                           |
+### Language
+
+The widget takes its language from, in order:
+
+1. `data-language="es"` (or `"en"`) on the script tag
+2. `language="es"` on the script tag (older installs)
+3. the page's `<html lang>`: anything starting with `es` is Spanish, everything else English
+
+When the page changes language (a toggle that rewrites `<html lang>`), the chat reloads in that
+language. Set `data-language` only on pages whose `lang` attribute is wrong.
+
+### Where each setting comes from
+
+A saved value wins. Without one, a legacy attribute on an older install is used. Without that, the
+built-in default.
+
+| Setting                   | Saved in the admin | Legacy attribute (older installs)          | Built-in default                         |
+| ------------------------- | ------------------ | ------------------------------------------ | ---------------------------------------- |
+| Chat button color         | Widget tab         | `data-button-color`, `buttonColor`         | `#4f46e5`                                |
+| Button position           | Widget tab         | `data-position`, `position`                | `bottom-right`                           |
+| Welcome note (EN / ES)    | Widget tab         | `data-welcome-message` (counts as English) | per language, `lib/embed/widget-text.ts` |
+| Input hint (EN / ES)      | Widget tab         | none                                       | per language                             |
+| Quick questions (EN / ES) | Settings tab       | none                                       | per language                             |
+| Header, avatar, ring      | Widget tab         | none                                       | today's look (white header)              |
+
+Each language falls back to its own built-in text, never to the other language. Saved text with no
+language counts as English. Every value is checked again in the browser (hex colors only, images
+only from our own Blob store, text set as text, never HTML).
 
 ---
 

@@ -4,6 +4,9 @@ import { nanoid } from "nanoid";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { WidgetHeader, WidgetWelcome } from "@/components/widget/widget-chrome";
+import { resolveAppearance } from "@/lib/embed/appearance";
+import { WIDGET_COPY } from "@/lib/embed/widget-text";
 
 function EmbedChatContent() {
 	const searchParams = useSearchParams();
@@ -92,66 +95,18 @@ function EmbedChatContent() {
 		// Refetch if the host page swaps language without remounting the iframe.
 	}, [language]);
 
-	const STRINGS = {
-		en: {
-			welcomeTitle: "Welcome! 👋",
-			welcomeSubtitle: "How can I help you today?",
-			quickLabel: "Quick questions:",
-			placeholder: "Type your message...",
-			suggested: [
-				"How much does it cost?",
-				"How long does it take?",
-				"How does the guarantee work?",
-				"Book a free call",
-			],
-			send: "Send message",
-			conversation: "Conversation",
-			error: "Sorry, I encountered an error. Please try again.",
-		},
-		es: {
-			welcomeTitle: "¡Hola! 👋",
-			welcomeSubtitle: "¿En qué puedo ayudarte hoy?",
-			quickLabel: "Preguntas rápidas:",
-			placeholder: "Escribe un mensaje...",
-			suggested: [
-				"¿Cuánto cuesta?",
-				"¿Cuánto tarda?",
-				"¿Cómo funciona la garantía?",
-				"Agendar una llamada gratis",
-			],
-			send: "Enviar mensaje",
-			conversation: "Conversación",
-			error: "Lo siento, hubo un error. Por favor, intenta de nuevo.",
-		},
-	} as const;
-	const t = STRINGS[language];
-
-	const botIcon = embedSettings?.botIcon || "💬";
+	const t = WIDGET_COPY[language];
 
 	/**
-	 * Tenant settings win over the built-in copy.
+	 * Tenant settings win over the built-in copy, per language.
 	 *
-	 * /api/embed/settings has always returned `suggestedQuestions` and
-	 * `placeholder`, reading them per tenant from `row.embedSettings`, and this
-	 * component read neither — it used the hardcoded bilingual list below. So on a
-	 * multi-tenant product every tenant's widget showed the same questions about
-	 * guarantees and booking a free call regardless of what they configured. The
-	 * admin could save a value that nothing ever rendered.
-	 *
-	 * A tenant-set list is used exactly as given, in whatever language it was
-	 * written, because those are the strings that tenant chose. The bilingual
-	 * defaults below only apply when nothing is configured.
-	 *
-	 * An explicitly empty array is honoured as "no quick questions" rather than
-	 * silently falling back to defaults — clearing them is a real choice, and the
-	 * settings route already substitutes its own defaults when a tenant has none.
+	 * /api/embed/settings returns welcomeMessage, placeholder and
+	 * suggestedQuestions ONLY when the tenant saved them in this language, so a
+	 * missing value means "use this language's built-in text"
+	 * (lib/embed/widget-text.ts) — never the other language's.
 	 *
 	 * NOTE: `embedSettings` here is the /api/embed/settings RESPONSE, not the
-	 * database column of the same name. The response always carries
-	 * `suggestedQuestions`, resolved server-side from botSettings.starterQuestions
-	 * or the route's defaults. The `embedSettings.suggestedQuestions` DB field was
-	 * deleted on 2026-08-09 as a duplicate — do not "clean up" the read below on
-	 * the strength of that; it is a different thing with the same name.
+	 * database column of the same name.
 	 */
 	const placeholder: string = embedSettings?.placeholder || t.placeholder;
 	const suggestedQuestions: readonly string[] = Array.isArray(
@@ -159,6 +114,13 @@ function EmbedChatContent() {
 	)
 		? embedSettings.suggestedQuestions
 		: t.suggested;
+	// Re-resolved here as well as on the server: this page also runs against
+	// whatever an older or mocked endpoint returns.
+	const appearance = resolveAppearance(embedSettings?.appearance ?? null);
+	const welcomeMessage: string | undefined =
+		typeof embedSettings?.welcomeMessage === "string"
+			? embedSettings.welcomeMessage
+			: undefined;
 
 	const [messages, setMessages] = useState<
 		Array<{ role: string; content: string }>
@@ -270,38 +232,13 @@ function EmbedChatContent() {
 
 	return (
 		<div className="flex flex-col h-screen bg-white">
-			{/* Header */}
-			<div className="flex items-center justify-between p-4 border-b bg-white shadow-sm">
-				<div className="flex items-center gap-3">
-					<div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-2xl">
-						{botIcon}
-					</div>
-					<h1 className="text-lg font-semibold text-gray-900">
-						{embedSettings?.botName || "AI Assistant"}
-					</h1>
-				</div>
-				<button
-					type="button"
-					onClick={handleClose}
-					className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
-					aria-label="Close chat"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					>
-						<path d="M18 6 6 18" />
-						<path d="m6 6 12 12" />
-					</svg>
-				</button>
-			</div>
+			<WidgetHeader
+				appearance={appearance}
+				botName={embedSettings?.botName}
+				botIcon={embedSettings?.botIcon}
+				language={language}
+				onClose={handleClose}
+			/>
 
 			{/* Messages */}
 			<div
@@ -313,12 +250,10 @@ function EmbedChatContent() {
 			>
 				{messages.length === 0 && (
 					<div className="flex flex-col items-center justify-center h-full space-y-4 px-4">
-						<div className="text-center mb-6">
-							<h2 className="text-xl font-semibold text-gray-800 mb-2">
-								{t.welcomeTitle}
-							</h2>
-							<p className="text-gray-600">{t.welcomeSubtitle}</p>
-						</div>
+						<WidgetWelcome
+							welcomeMessage={welcomeMessage}
+							language={language}
+						/>
 						{/* Hidden entirely when a tenant has cleared their questions —
                 a "Quick questions:" heading with nothing under it reads as a
                 broken widget rather than as a deliberate choice. */}

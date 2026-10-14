@@ -108,7 +108,10 @@ export function Footer() {
 						</div>
 						<ul className="space-y-3 text-sm text-white/60">
 							<li>
-								<a href="#" className="hover:text-white transition-colors">
+								<a
+									href="/privacy"
+									className="hover:text-white transition-colors"
+								>
 									{t.footer.privacy}
 								</a>
 							</li>

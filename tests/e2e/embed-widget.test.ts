@@ -20,6 +20,24 @@ async function mockSettings(
 	);
 }
 
+/**
+ * The loader fetches /api/embed/settings cross-origin from the host page, so
+ * the mock must carry the CORS header the real route sends. Mocked even when
+ * a test expects "nothing saved": a local run reads the production database,
+ * where the CushLabs tenant HAS saved values.
+ */
+async function mockLoaderSettings(
+	page: Page,
+	body: Record<string, unknown> = {},
+) {
+	await page.route("**/api/embed/settings**", (route) =>
+		route.fulfill({
+			json: body,
+			headers: { "Access-Control-Allow-Origin": "*" },
+		}),
+	);
+}
+
 async function mockChat(page: Page, responseText: string) {
 	await page.route("**/api/embed/chat**", (route) =>
 		route.fulfill({
@@ -98,20 +116,20 @@ test.describe("Embed widget — chat flow", () => {
 		await page.goto(EMBED_URL);
 		await page.waitForLoadState("networkidle");
 
-		await page.getByRole("button", { name: "How long does it take?" }).click();
+		await page.getByRole("button", { name: "How can I contact you?" }).click();
 
 		// The question appears as the visitor's message and the reply renders —
 		// no send-button press involved.
 		await expect(page.getByText("About two weeks.")).toBeVisible({
 			timeout: 5000,
 		});
-		await expect(page.getByText("How long does it take?")).toBeVisible();
+		await expect(page.getByText("How can I contact you?")).toBeVisible();
 		await expect(page.getByPlaceholder(/type your message/i)).toHaveValue("");
 		// Focus lands on the conversation, not lost to <body>.
 		await expect(page.getByRole("log")).toBeFocused();
 
 		expect(bodies).toHaveLength(1);
-		expect(bodies[0].message).toBe("How long does it take?");
+		expect(bodies[0].message).toBe("How can I contact you?");
 		expect(bodies[0].businessId).toBe("biz-123");
 		expect(bodies[0].botId).toBe("bot-456");
 		expect((bodies[0].visitorId as string).length).toBeGreaterThan(0);
@@ -385,6 +403,7 @@ test.describe("Embed loader — hostile attribute values", () => {
 		page,
 		baseURL,
 	}) => {
+		await mockLoaderSettings(page);
 		await page.setContent(`<!doctype html><html><body>
 			<script
 				src="${baseURL}/api/embed?id=x';window.__pwned_id=1;//"
@@ -428,6 +447,7 @@ test.describe("Embed loader — hostile attribute values", () => {
 	});
 
 	test("valid values are honoured", async ({ page, baseURL }) => {
+		await mockLoaderSettings(page);
 		await page.setContent(`<!doctype html><html><body>
 			<script src="${baseURL}/api/embed" buttonColor="#1c4992" position="bottom-left" showWelcomeMessage="false"></script>
 		</body></html>`);
@@ -438,5 +458,217 @@ test.describe("Embed loader — hostile attribute values", () => {
 			left: (el as HTMLElement).style.left,
 		}));
 		expect(style).toEqual({ bg: "rgb(28, 73, 146)", left: "20px" });
+	});
+});
+
+/**
+ * Lessons 1 and 2 of the 2026-10-14 audit: what the owner SAVED reaches the
+ * visitor and wins over the script tag, and the tag still wins over built-in
+ * defaults. Saved values are as hostile as attributes and are checked again.
+ */
+test.describe("Embed loader — saved settings", () => {
+	test("saved color, position and welcome win over the tag's attributes", async ({
+		page,
+		baseURL,
+	}) => {
+		await mockLoaderSettings(page, {
+			buttonColor: "#16a34a",
+			position: "bottom-left",
+			welcomeMessage: "Saved hello",
+		});
+		await page.setContent(`<!doctype html><html lang="en"><body>
+			<script src="${baseURL}/api/embed" data-button-color="#1c4992" data-position="bottom-right" data-welcome-message="Attribute hello"></script>
+		</body></html>`);
+		const button = page.locator("#nyenglish-chat-button");
+		await expect(button).toBeVisible();
+		const style = await button.evaluate((el) => ({
+			bg: getComputedStyle(el).backgroundColor,
+			left: (el as HTMLElement).style.left,
+		}));
+		expect(style).toEqual({ bg: "rgb(22, 163, 74)", left: "20px" });
+		await expect(page.locator("#nyenglish-chat-welcome")).toContainText(
+			"Saved hello",
+		);
+	});
+
+	test("hostile saved values are refused like hostile attributes", async ({
+		page,
+		baseURL,
+	}) => {
+		await mockLoaderSettings(page, {
+			buttonColor: "red;background:url(x)",
+			position: "top:0;left:0",
+			welcomeMessage: "<img src=x onerror=window.__pwned_saved=1>",
+		});
+		await page.setContent(`<!doctype html><html lang="en"><body>
+			<script src="${baseURL}/api/embed"></script>
+		</body></html>`);
+		const button = page.locator("#nyenglish-chat-button");
+		await expect(button).toBeVisible();
+		const style = await button.evaluate((el) => ({
+			bg: getComputedStyle(el).backgroundColor,
+			bgImage: getComputedStyle(el).backgroundImage,
+			right: (el as HTMLElement).style.right,
+		}));
+		expect(style).toEqual({
+			bg: "rgb(79, 70, 229)",
+			bgImage: "none",
+			right: "20px",
+		});
+		const welcome = page.locator("#nyenglish-chat-welcome");
+		await expect(welcome.locator("img")).toHaveCount(0);
+		await expect(welcome).toContainText("<img src=x onerror=");
+		expect(
+			await page.evaluate(
+				() => (window as unknown as Record<string, unknown>).__pwned_saved,
+			),
+		).toBeUndefined();
+	});
+
+	test("a settings outage still draws the widget from its fallbacks", async ({
+		page,
+		baseURL,
+	}) => {
+		await page.route("**/api/embed/settings**", (route) => route.abort());
+		await page.setContent(`<!doctype html><html lang="en"><body>
+			<script src="${baseURL}/api/embed" data-button-color="#1c4992"></script>
+		</body></html>`);
+		const button = page.locator("#nyenglish-chat-button");
+		await expect(button).toBeVisible();
+		expect(
+			await button.evaluate((el) => getComputedStyle(el).backgroundColor),
+		).toBe("rgb(28, 73, 146)");
+	});
+});
+
+/**
+ * Lesson 9: the language comes from data-language, then language, then the
+ * page's <html lang>, and switching the page's language reloads the chat in
+ * that language. Lesson 3: a Spanish page never shows English text.
+ */
+test.describe("Embed loader — language", () => {
+	test("follows <html lang> and reloads when the page switches language", async ({
+		page,
+		baseURL,
+	}) => {
+		const asked: string[] = [];
+		await page.route("**/api/embed/settings**", (route) => {
+			const lang = new URL(route.request().url()).searchParams.get("language");
+			asked.push(lang ?? "");
+			return route.fulfill({
+				json: lang === "es" ? {} : { welcomeMessage: "English only hello" },
+				headers: { "Access-Control-Allow-Origin": "*" },
+			});
+		});
+		await page.setContent(`<!doctype html><html lang="es-MX"><body>
+			<script src="${baseURL}/api/embed" data-welcome-message="Attribute hello"></script>
+		</body></html>`);
+		const iframe = page.locator("#nyenglish-chat-iframe");
+		await expect(iframe).toHaveAttribute("src", /language=es/);
+		// Spanish page, nothing saved in Spanish: the built-in Spanish note, never
+		// the English saved text or the language-less attribute.
+		const welcome = page.locator("#nyenglish-chat-welcome");
+		await expect(welcome).toContainText("¡Hola! Pregúntame lo que quieras.");
+		await expect(page.locator("#nyenglish-chat-button")).toHaveAttribute(
+			"aria-label",
+			"Abrir chat",
+		);
+
+		await page.evaluate(() =>
+			document.documentElement.setAttribute("lang", "en"),
+		);
+		await expect(iframe).toHaveAttribute("src", /language=en/);
+		await expect(welcome).toContainText("English only hello");
+		// The iframe fetches settings too, so only the order of the first two
+		// languages asked for is checked: Spanish first, English after the switch.
+		expect(asked[0]).toBe("es");
+		expect(asked).toContain("en");
+	});
+
+	test("data-language beats the page's lang", async ({ page, baseURL }) => {
+		await mockLoaderSettings(page);
+		await page.setContent(`<!doctype html><html lang="en"><body>
+			<script src="${baseURL}/api/embed" data-language="es"></script>
+		</body></html>`);
+		await expect(page.locator("#nyenglish-chat-iframe")).toHaveAttribute(
+			"src",
+			/language=es/,
+		);
+	});
+});
+
+/**
+ * The chat window renders the saved appearance and the saved welcome for its
+ * language, and drops hostile appearance values.
+ */
+test.describe("Embed widget — appearance and welcome", () => {
+	test("saved header color, readable title and the Spanish welcome", async ({
+		page,
+	}) => {
+		await mockSettings(page, {
+			botName: "Prueba",
+			welcomeMessage: "Hola desde el admin",
+			appearance: {
+				headerColor: "#1c4992",
+				avatarBackground: "#ffffff",
+				avatarRing: "#FF6A3D",
+				avatarUrl: null,
+			},
+		});
+		await page.goto(`${EMBED_URL}?language=es`);
+		await expect(page.getByText("Hola desde el admin")).toBeVisible();
+		const title = page.getByRole("heading", { name: "Prueba" });
+		await expect(title).toBeVisible();
+		// Dark header, so the title switches to white on its own.
+		expect(await title.evaluate((el) => getComputedStyle(el).color)).toBe(
+			"rgb(255, 255, 255)",
+		);
+		await expect(
+			page.getByRole("button", { name: "Cerrar chat" }),
+		).toBeVisible();
+		await expect(page.getByPlaceholder("Escribe un mensaje...")).toBeVisible();
+	});
+
+	test("hostile appearance values fall back to the standard look", async ({
+		page,
+	}) => {
+		await mockSettings(page, {
+			appearance: {
+				headerColor: "red;background:url(x)",
+				avatarBackground: "url(javascript:alert(1))",
+				avatarUrl:
+					'https://abc.public.blob.vercel-storage.com/a.png" onerror="window.__pwned_av=1',
+			},
+		});
+		await page.goto(EMBED_URL);
+		await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
+		const header = page.getByRole("heading", { name: "AI Assistant" });
+		const bg = await header.evaluate(
+			(el) =>
+				getComputedStyle(el.parentElement?.parentElement as Element)
+					.backgroundColor,
+		);
+		expect(bg).toBe("rgb(255, 255, 255)");
+		await expect(page.locator("img")).toHaveCount(0);
+		expect(
+			await page.evaluate(
+				() => (window as unknown as Record<string, unknown>).__pwned_av,
+			),
+		).toBeUndefined();
+	});
+});
+
+test.describe("Embed loader — welcome note timing", () => {
+	test("the note never fades in over a chat the visitor already opened", async ({
+		page,
+		baseURL,
+	}) => {
+		await mockLoaderSettings(page, { welcomeMessage: "Saved hello" });
+		await page.setContent(`<!doctype html><html lang="en"><body>
+			<script src="${baseURL}/api/embed"></script>
+		</body></html>`);
+		await page.locator("#nyenglish-chat-button").click();
+		await page.waitForTimeout(1500);
+		await expect(page.locator("#nyenglish-chat-welcome")).toBeHidden();
 	});
 });
