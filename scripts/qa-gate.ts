@@ -50,14 +50,31 @@ const flag = (name: string) => process.argv.includes(`--${name}`);
 
 // ── Reply checks ────────────────────────────────────────────────────────────
 
-const SPANISH_MARKERS =
-	/\b(que|para|con|una|los|las|por|más|tu|te|es|cómo|qué|puedes|negocio|tus|clientes|plan|también|está)\b/gi;
-const ENGLISH_MARKERS =
-	/\b(the|and|you|your|for|with|this|that|is|are|can|what|business|customers)\b/gi;
+/**
+ * Word lists, matched on whole Unicode words. A `\b` regex treats an accented
+ * letter as a word boundary, so "qué" never matched and "¡Hola! ¿En qué puedo
+ * ayudarte hoy?" scored as English (first PR 3 run, 2026-10-14). Deliberately
+ * separate from the server's lib/embed/visitor-language.ts, so one bug cannot
+ * blind both the bot and the test.
+ */
+const SPANISH_WORDS = new Set(
+	"que qué para con una los las por más tu tus te es en el la de y cómo puedes puedo negocio clientes también está hola hoy ayudarte tienes tu sitio llamada precio planes mes".split(
+		" ",
+	),
+);
+const ENGLISH_WORDS = new Set(
+	"the and you your for with this that is are can what business customers how help today i we our it of to".split(
+		" ",
+	),
+);
 
 function detectLang(text: string): Lang {
-	const es = text.match(SPANISH_MARKERS)?.length ?? 0;
-	const en = text.match(ENGLISH_MARKERS)?.length ?? 0;
+	let es = /[¿¡ñáéíóú]/i.test(text) ? 1 : 0;
+	let en = 0;
+	for (const w of text.toLowerCase().match(/\p{L}+/gu) ?? []) {
+		if (SPANISH_WORDS.has(w)) es++;
+		if (ENGLISH_WORDS.has(w)) en++;
+	}
 	return es > en ? "es" : "en";
 }
 

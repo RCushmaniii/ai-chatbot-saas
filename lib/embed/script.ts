@@ -115,6 +115,10 @@ ${SANITIZERS_JS}
     iframe.id = iframeId;
     var src = CHAT_APP_URL + '/embed/chat?language=' + encodeURIComponent(config.language);
     if (config.placeholder) src += '&placeholder=' + encodeURIComponent(config.placeholder);
+    // The page the visitor is on, so "does this fit me?" can mean this page.
+    // Origin + path only (a query string can carry personal data); title capped.
+    src += '&pageUrl=' + encodeURIComponent(location.origin + location.pathname);
+    src += '&pageTitle=' + encodeURIComponent((document.title || '').slice(0, 160));
     iframe.src = src;
     iframe.title = 'Chat';
     iframe.style.cssText = 'display:none;opacity:0;position:fixed;border:none;z-index:2147483647;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);transition:opacity 200ms,transform 200ms;transform:translateY(10px);';

@@ -10,6 +10,10 @@ function EmbedChatContent() {
 	// The widget is loaded as /embed/chat?language=es|en by the host page, so the
 	// static UI follows that. (Chat replies are language-detected per message.)
 	const language = searchParams.get("language") === "es" ? "es" : "en";
+	// The host page, reported by the loader (lib/embed/script.ts). The iframe
+	// cannot read its parent's title across origins, so it is passed in.
+	const pageUrl = searchParams.get("pageUrl");
+	const pageTitle = searchParams.get("pageTitle");
 
 	const [embedSettings, setEmbedSettings] = useState<any>(null);
 	const [_isLoadingSettings, setIsLoadingSettings] = useState(true);
@@ -215,7 +219,12 @@ function EmbedChatContent() {
 					sessionId: sessionId.current,
 					conversationId: conversationId.current ?? undefined,
 					currentUrl:
-						typeof document !== "undefined" ? document.referrer || null : null,
+						pageUrl ||
+						(typeof document !== "undefined"
+							? document.referrer || null
+							: null),
+					pageTitle: pageTitle || undefined,
+					language,
 				}),
 			});
 

@@ -200,7 +200,14 @@ const scenarios: Scenario[] = [
 			title: "AI assistant for hair and beauty salons | CushLabs.ai",
 		},
 		note: "'this' and 'a business like mine' only resolve with the page context.",
-		expect: { includesAny: ["salon"], maxWords: 110 },
+		expect: {
+			includesAny: ["salon"],
+			// A salons page is one use case, not the whole business (overclaim
+			// seen in the first PR 3 run: "tailored specifically for … salons").
+			excludesPattern:
+				"(tailored|designed|built|made)( specifically| especially| exclusively)? (for|to) (hair|beauty|salons)|exclusively for|only for (hair|beauty|salons)",
+			maxWords: 110,
+		},
 	},
 	{
 		id: "page-this-es",
@@ -210,7 +217,12 @@ const scenarios: Scenario[] = [
 			url: "https://www.cushlabs.ai/salones/",
 			title: "Asistente con IA para salones de belleza | CushLabs.ai",
 		},
-		expect: { includesAny: ["salón", "salones", "estética"], maxWords: 120 },
+		expect: {
+			includesAny: ["salón", "salones", "estética"],
+			excludesPattern:
+				"(diseñad|hech|pensad|cread)[oa]s? (específicamente |especialmente |exclusivamente )?para (los )?salones|exclusivamente para|solo para salones",
+			maxWords: 120,
+		},
 	},
 
 	// ── A page title written as an attack ──

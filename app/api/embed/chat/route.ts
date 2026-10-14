@@ -26,18 +26,21 @@ import {
 	createWidgetConversation,
 	createWidgetMessage,
 	getWidgetConversationBySession,
+	getWidgetMessages,
 } from "@/lib/db/queries-live-chat";
+import {
+	buildEmbedContext,
+	cleanPage,
+	MONTHLY_LIMIT_REPLY,
+} from "@/lib/embed/context";
 import { isQaGateRequest } from "@/lib/embed/internal-traffic";
 import { resolveModelOverride } from "@/lib/embed/model-override";
 import { createTimer } from "@/lib/embed/server-timing";
 import { resolveEmbedTenant } from "@/lib/embed/tenant";
+import { visitorLanguage } from "@/lib/embed/visitor-language";
 import { playbookEngine } from "@/lib/playbook/engine";
 import { rateLimit } from "@/lib/rate-limit";
-import {
-	detectLanguage,
-	getLearnMoreText,
-	translateUrl,
-} from "@/lib/utils/language-detector";
+import { translateUrl } from "@/lib/utils/language-detector";
 
 /**
  * Shown when a deployment has no persona configured for its business. Neutral by
@@ -94,11 +97,19 @@ export async function POST(request: Request) {
 			botId,
 			conversationId: existingConversationId,
 			currentUrl,
+			pageTitle,
+			language: pageLanguage,
 		} = await request.json();
 
 		if (!message || typeof message !== "string") {
 			return respond({ error: "Invalid message" }, { status: 400 });
 		}
+
+		// The visitor's language (their words; the page's language breaks a tie)
+		// and the page they are on. See lib/embed/visitor-language.ts and
+		// lib/embed/context.ts.
+		const lang = visitorLanguage(message, pageLanguage);
+		const page = cleanPage(currentUrl, pageTitle);
 
 		// The business is this deployment's, never the request's — a visitor who
 		// names another tenant's id is refused, not answered as that tenant.
@@ -114,7 +125,6 @@ export async function POST(request: Request) {
 		// Input safety: refuse prompt-injection attempts before they reach the model.
 		const inputCheck = checkInput(message);
 		if (!inputCheck.ok) {
-			const lang = detectLanguage(message);
 			const reason = inputCheck.reason ?? "injection";
 			const safeReply = SAFE_REJECTION_MESSAGES[reason][lang];
 			console.warn(
@@ -138,8 +148,7 @@ export async function POST(request: Request) {
 				return respond(
 					{
 						error: "Monthly message limit reached. Please upgrade your plan.",
-						response:
-							"Lo siento, este negocio ha alcanzado su l\u00edmite mensual de mensajes. Por favor, int\u00e9ntalo m\u00e1s tarde.",
+						response: MONTHLY_LIMIT_REPLY[lang],
 					},
 					{ status: 429 },
 				);
@@ -169,6 +178,14 @@ export async function POST(request: Request) {
 		 */
 		let conversationId = existingConversationId;
 		let isFirstMessage = false;
+		/**
+		 * Earlier turns of THIS conversation. The route used to send the model the
+		 * latest message alone, so a follow-up ("which plan has that?") lost what
+		 * "that" was, and nothing stopped a second self-introduction. Loaded from
+		 * the conversation matched by business + visitor + session below — never
+		 * from an id or a transcript the browser sends.
+		 */
+		let history: Array<{ role: "user" | "assistant"; content: string }> = [];
 
 		if (effectiveBusinessId && visitorId && sessionId) {
 			const tLog = performance.now();
@@ -185,7 +202,7 @@ export async function POST(request: Request) {
 					visitorId,
 					sessionId,
 					metadata: {
-						pageUrl: currentUrl,
+						pageUrl: page.url ?? undefined,
 						origin,
 						...(internal ? { internal: true } : {}),
 					},
@@ -203,6 +220,18 @@ export async function POST(request: Request) {
 			});
 			if (!internal) {
 				await incrementMessageCount({ businessId: effectiveBusinessId });
+			}
+			if (!isFirstMessage) {
+				const earlier = await getWidgetMessages({ conversationId });
+				// The newest row is the message just saved; it is sent separately.
+				history = earlier
+					.slice(0, -1)
+					.filter((m) => m.role === "user" || m.role === "assistant")
+					.slice(-10)
+					.map((m) => ({
+						role: m.role as "user" | "assistant",
+						content: m.content.slice(0, 2000),
+					}));
 			}
 			timer.add("log", performance.now() - tLog);
 
@@ -301,10 +330,6 @@ export async function POST(request: Request) {
 				})
 			: [];
 
-		// Detect language
-		const detectedLang = detectLanguage(message);
-		const learnMoreText = getLearnMoreText(detectedLang);
-
 		/**
 		 * The business's own persona. A missing one is a CONFIGURATION FAILURE, and
 		 * it is answered as one.
@@ -344,7 +369,7 @@ export async function POST(request: Request) {
 			);
 			return respond(
 				{
-					response: UNCONFIGURED_REPLY[detectedLang] ?? UNCONFIGURED_REPLY.en,
+					response: UNCONFIGURED_REPLY[lang],
 					conversationId,
 					playbook: { active: false },
 				},
@@ -354,30 +379,26 @@ export async function POST(request: Request) {
 			);
 		}
 
-		let context = persona;
+		// Dedupe AFTER translating, not before. Retrieval routinely returns the
+		// EN and ES versions of the same page, which are two distinct URLs until
+		// they are localised and then collapse into one.
+		const sourceUrls = Array.from(
+			new Set(
+				knowledgeResults
+					.map((r) => r.url)
+					.filter(Boolean)
+					.map((url) => translateUrl(url as string, lang)),
+			),
+		).filter((u) => u !== page.url);
 
-		if (knowledgeResults.length > 0) {
-			// Dedupe AFTER translating, not before. Retrieval routinely returns the
-			// EN and ES versions of the same page, which are two distinct URLs until
-			// they are localised and then collapse into one — deduping first left
-			// the same link listed twice under "Learn more".
-			const uniqueUrls = Array.from(
-				new Set(
-					knowledgeResults
-						.map((r) => r.url)
-						.filter(Boolean)
-						.map((url) => translateUrl(url as string, detectedLang)),
-				),
-			);
-
-			context += `\n\nKnowledge base results:\n${knowledgeResults
-				.map((r) => r.content)
-				.join("\n\n")}`;
-
-			if (uniqueUrls.length > 0) {
-				context += `\n\nInclude these links at the end of your response:\n${learnMoreText}\n${uniqueUrls.map((url) => `- ${url}`).join("\n")}`;
-			}
-		}
+		const context = buildEmbedContext({
+			persona,
+			knowledge: knowledgeResults.map((r) => r.content),
+			sourceUrls,
+			lang,
+			page,
+			isFollowUp: history.length > 0,
+		});
 
 		// Generate response (with retry on 429/5xx — single 4xx other than
 		// 429 is NOT retried since the payload won't get better).
@@ -395,6 +416,7 @@ export async function POST(request: Request) {
 						model,
 						messages: [
 							{ role: "system", content: context },
+							...history,
 							{ role: "user", content: message },
 						],
 					}),
@@ -404,7 +426,7 @@ export async function POST(request: Request) {
 
 		// Output safety: refuse to surface system-prompt leakage or scaffolding.
 		const outputCheck = checkOutput(text);
-		const safeText = outputCheck.ok ? text : SAFE_OUTPUT_FALLBACK[detectedLang];
+		const safeText = outputCheck.ok ? text : SAFE_OUTPUT_FALLBACK[lang];
 		if (!outputCheck.ok) {
 			console.warn(
 				`[embed-chat] output rejected (${outputCheck.reason})${

@@ -22,7 +22,8 @@
 			"!app/globals.css",
 			"!playwright-report",
 			"!test-results",
-			"!scripts/qa-gate/cushlabs-commercial-terms.json"
+			"!scripts/qa-gate/cushlabs-commercial-terms.json",
+			"!docs/qa-gate"
 		]
 	},
 	"linter": {
