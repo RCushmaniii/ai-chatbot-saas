@@ -164,9 +164,18 @@ pnpm qa-gate --url http://localhost:3000 --compare docs/qa-gate/baseline.json
 ```
 
 Read every `BROKE` line and every `CHANGED` reply. A passing check on a bad answer is still a
-bad answer. 4. Paste the summary into the PR: the pass count, the FIXED/BROKE/CHANGED list, and the speed
-lines. 5. After the merge deploys, run the gate on production. **It must exit 0, or the change is not
-done.**
+bad answer. The model words its answers differently on every run, so expect most replies to show
+as `CHANGED`. Read them anyway; that is where an overclaim the checks don't cover will show up.
+
+A model is not deterministic, so one run is a sample. When a scenario fails, rerun just that one
+three times (`--only` with its id) before deciding: a failure that repeats is the bot, and a
+failure that comes and goes is a weak spot in the prompt worth fixing.
+
+4. Paste the summary into the PR: the pass count, the FIXED/BROKE/CHANGED list, and the speed
+   lines.
+
+5. After the merge deploys, run the gate on production. **It must exit 0, or the change is not
+   done.**
 
 ```powershell
 pnpm qa-gate

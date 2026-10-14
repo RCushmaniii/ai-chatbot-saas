@@ -1,0 +1,543 @@
+[
+  {
+    "id": "greeting-en",
+    "ok": true,
+    "problems": [],
+    "reply": "Hi there! How can I assist you today?",
+    "status": 200,
+    "totalMs": 4130.129,
+    "steps": {
+      "ratelimit": 3,
+      "quota": 63.8,
+      "log": 71.1,
+      "embed": 529.5,
+      "search": 1521.9,
+      "persona": 5.2,
+      "pre": 2251.8,
+      "model": 1470,
+      "save": 6.6
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "greeting-es",
+    "ok": true,
+    "problems": [],
+    "reply": "¡Hola! ¿Cómo te puedo ayudar hoy?",
+    "status": 200,
+    "totalMs": 2930.372699999999,
+    "steps": {
+      "ratelimit": 151.6,
+      "quota": 35,
+      "log": 39.7,
+      "embed": 621.1,
+      "search": 77.2,
+      "persona": 57.1,
+      "pre": 1020.9,
+      "model": 985.6,
+      "save": 5.9
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "pricing-en",
+    "ok": false,
+    "problems": [
+      "has a forced \"Learn more\" / \"Más información\" section",
+      "must not contain \"1,990\"",
+      "must not contain \"3,490\"",
+      "must not contain \"5,490\""
+    ],
+    "reply": "CushLabs offers three monthly plans for businesses:\n\n**For clients in the US and outside Mexico (USD):**\n- Basic: $129\n- Premium: $229\n- Ultra: $349\n\n**For clients in Mexico (MXN, plus IVA):**\n- Básico: $1,990\n- Premium: $3,490\n- Ultra: $5,490\n\nAll plans include up to 2 locations, and each extra location is an additional fee. There's no setup fee and no contract. You can find more details on the pricing page.\n\nIf you'd like to discuss which plan fits your business best, I recommend booking a free call with Robert. \n\nLearn more:\n- https://www.cushlabs.ai/faq/",
+    "status": 200,
+    "totalMs": 3121.5236999999997,
+    "steps": {
+      "ratelimit": 3.1,
+      "quota": 7.8,
+      "log": 13.3,
+      "embed": 576.1,
+      "search": 15,
+      "persona": 4.4,
+      "pre": 630.3,
+      "model": 2340.6,
+      "save": 5.6
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "pricing-es",
+    "ok": false,
+    "problems": [
+      "has a forced \"Learn more\" / \"Más información\" section"
+    ],
+    "reply": "CushLabs.ai ofrece tres planes mensuales para negocios en México:\n\n- **Básico**: $1,990 MXN, más IVA\n- **Premium**: $3,490 MXN, más IVA\n- **Ultra**: $5,490 MXN, más IVA\n\nCada plan incluye hasta 2 sucursales; cada sucursal adicional cuesta +$690 MXN al mes. No hay cuota de instalación ni contrato. \n\nSi te interesa, puedo programar una llamada gratuita de 30 minutos con Robert para revisar qué plan se ajusta mejor a tu negocio. ¿Te gustaría hacerlo? \n\nMás información:  \n- [FAQ CushLabs.ai](https://www.cushlabs.ai/es/faq/)",
+    "status": 200,
+    "totalMs": 3730.5868999999984,
+    "steps": {
+      "ratelimit": 40.3,
+      "quota": 38.8,
+      "log": 31.8,
+      "embed": 264.2,
+      "search": 64.7,
+      "persona": 5,
+      "pre": 458.4,
+      "model": 3024.6,
+      "save": 5.7
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "booking-en",
+    "ok": true,
+    "problems": [],
+    "reply": "You can book a free 30-minute call with Robert by visiting this link: [Schedule a call](https://www.cushlabs.ai/consultation/). It’s a chance to discuss your needs and see how AI can help your business. No hard sell, just clarity.",
+    "status": 200,
+    "totalMs": 2070.2379,
+    "steps": {
+      "ratelimit": 3,
+      "quota": 9.9,
+      "log": 12.9,
+      "embed": 260,
+      "search": 15.4,
+      "persona": 4,
+      "pre": 311.9,
+      "model": 1592.3,
+      "save": 5.8
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "booking-es",
+    "ok": true,
+    "problems": [],
+    "reply": "Puedes agendar una llamada gratuita de 30 minutos con Robert a través de este enlace: [Reservar una consulta](https://www.cushlabs.ai/es/reservar/). Es una buena oportunidad para discutir cómo CushLabs puede ayudar a tu negocio.",
+    "status": 200,
+    "totalMs": 1444.3246,
+    "steps": {
+      "ratelimit": 3.4,
+      "quota": 9.3,
+      "log": 13.8,
+      "embed": 221.4,
+      "search": 16.4,
+      "persona": 4.2,
+      "pre": 275.4,
+      "model": 1008.4,
+      "save": 6
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-what-en",
+    "ok": true,
+    "problems": [],
+    "reply": "CushLabs.ai helps small businesses respond faster, capture more leads, and stay connected with customers across Facebook, Instagram, WhatsApp, and the web. Our AI-powered automation handles customer conversations, supports reputation management, alerts owners to new opportunities, and keeps the business responsive even when the team is busy or offline. \n\nIn practice: someone messages you at 11pm on a Sunday, gets a correct answer in seconds, and you get a WhatsApp with their name and number the moment they're ready to buy. \n\nWhat channels do your customers typically use to reach you?",
+    "status": 200,
+    "totalMs": 1804.122000000003,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 12.7,
+      "log": 13,
+      "embed": 161.8,
+      "search": 14.2,
+      "persona": 3.9,
+      "pre": 215.4,
+      "model": 1424,
+      "save": 5.2
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-what-es",
+    "ok": true,
+    "problems": [],
+    "reply": "CushLabs.ai ayuda a los negocios pequeños a responder más rápido, captar más clientes y mantenerse conectados con ellos en Facebook, Instagram, WhatsApp y la web. Nuestra automatización con IA atiende las conversaciones, apoya la gestión de reputación, avisa a los dueños de cada nueva oportunidad y mantiene al negocio respondiendo aunque el equipo esté ocupado o fuera de horario.\n\nEn la práctica: alguien te escribe a las 11 de la noche de un domingo, recibe una respuesta correcta en segundos, y a ti te llega un WhatsApp con su nombre y su número en cuanto está listo para comprar.\n\n¿Qué tipo de negocio tienes?",
+    "status": 200,
+    "totalMs": 3709.3755999999994,
+    "steps": {
+      "ratelimit": 3.2,
+      "quota": 8.3,
+      "log": 13,
+      "embed": 212.9,
+      "search": 15,
+      "persona": 4.4,
+      "pre": 264.4,
+      "model": 3285.9,
+      "save": 4.9
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-whatsapp-en",
+    "ok": true,
+    "problems": [],
+    "reply": "No, and that's deliberate. When your customers reply on WhatsApp, their messages come to you, not to a bot. The AI handles conversations on Facebook Messenger, Instagram, and your website. On WhatsApp, we automate what your business sends and alert you when someone is ready to engage. \n\nWould you like to know more about how that works?",
+    "status": 200,
+    "totalMs": 2503.227500000001,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 8.2,
+      "log": 12.3,
+      "embed": 204.4,
+      "search": 17.9,
+      "persona": 6.7,
+      "pre": 259.3,
+      "model": 2086,
+      "save": 5.5
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-whatsapp-es",
+    "ok": true,
+    "problems": [],
+    "reply": "No, y eso es intencional. Cuando tus clientes responden por WhatsApp, la respuesta te llega a ti, no a un bot. En WhatsApp, automatizamos lo que tu negocio envía, como recordatorios o promociones, y te avisamos en cuanto alguien esté listo para hablar. La IA responde en Facebook Messenger, Instagram y tu sitio web.\n\n¿Te gustaría saber más sobre cómo funciona esto en tu negocio?",
+    "status": 200,
+    "totalMs": 1921.1421999999948,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 9.4,
+      "log": 14.4,
+      "embed": 182.1,
+      "search": 18.8,
+      "persona": 5.1,
+      "pre": 239.9,
+      "model": 1520.9,
+      "save": 16.5
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-terms-en",
+    "ok": true,
+    "problems": [],
+    "reply": "Yes, CushLabs.ai offers a one-week free trial. During this time, I build and launch your AI system, and you can see it working with real customers before you make any payment. \n\nCancellation is straightforward; you can cancel whenever you want, effective at the end of the month you have already paid for, with nothing else to settle.\n\nIf you have more questions or want to discuss your specific situation, I can set up a free 30-minute call with Robert. Would you like to do that?",
+    "status": 200,
+    "totalMs": 2622.0754000000015,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 9.1,
+      "log": 13.3,
+      "embed": 240,
+      "search": 15.2,
+      "persona": 4,
+      "pre": 291.5,
+      "model": 2138.3,
+      "save": 14.2
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "core-terms-es",
+    "ok": true,
+    "problems": [],
+    "reply": "Sí, CushLabs.ai ofrece una prueba gratis de una semana que comienza cuando tu asistente entra en línea, no cuando firmas. Así puedes ver el sistema funcionando con clientes reales antes de pagar nada.\n\nCancela cuando quieras, y la cancelación aplica al final del mes que ya pagaste, sin ningún compromiso adicional. Tu información de Facebook, Instagram y WhatsApp siempre estará a tu nombre.\n\nSi quieres más detalles, aquí tienes algunos enlaces útiles:\n\n- Más información: [FAQ](https://www.cushlabs.ai/es/faq/)\n- Servicios: [Servicios](https://www.cushlabs.ai/es/services/)\n- Precios: [Precios](https://www.cushlabs.ai/es/precios/)\n- Plan Premium: [Plan Premium](https://www.cushlabs.ai/es/services/premium/)",
+    "status": 200,
+    "totalMs": 2493.478000000003,
+    "steps": {
+      "ratelimit": 21.6,
+      "quota": 23.3,
+      "log": 14.4,
+      "embed": 186.2,
+      "search": 16.6,
+      "persona": 4.3,
+      "pre": 273.4,
+      "model": 2061.8,
+      "save": 6
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "followup-no-reintro-en",
+    "ok": true,
+    "problems": [],
+    "reply": "The website chatbot is included in the Premium and Ultra plans. These plans also provide additional features, like the ability for the AI to respond to Instagram comments and DMs, and lead alerts via WhatsApp.\n\nWould you like to know more about what each plan includes?",
+    "status": 200,
+    "totalMs": 1670.6399999999994,
+    "steps": {
+      "ratelimit": 2.8,
+      "quota": 13,
+      "log": 9.5,
+      "embed": 196.1,
+      "search": 18.6,
+      "persona": 4.4,
+      "pre": 251,
+      "model": 1256.6,
+      "save": 6
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "followup-no-reintro-es",
+    "ok": false,
+    "problems": [
+      "has a forced \"Learn more\" / \"Más información\" section",
+      "contains none of: Premium",
+      "137 words — target 100, limit 120"
+    ],
+    "reply": "Todos los planes de CushLabs.ai incluyen:\n\n- **Configuración y entrenamiento personalizado**: Se audita tu contenido existente y se construye una base de conocimiento estructurada.\n- **Asistente con respuestas validadas**: Respuestas basadas en tus fuentes aprobadas.\n- **Salida bilingüe (EN/ES)**: Respuestas profesionales en ambos idiomas.\n- **Flujo de transferencia humana**: Enrutamiento a tu equipo con el contexto necesario si se requiere intervención humana.\n- **Captura y calificación de leads**: Información de contacto de visitantes capturada y calificada.\n- **Reporte semanal de desempeño**: Análisis de preguntas y la eficacia del asistente.\n- **Ajuste mensual**: Refinamiento continuo del asistente conforme tu negocio evoluciona.\n- **Instalación en tu sitio web** (o en Facebook Messenger).\n\nLa inversión inicia desde $1,990 MXN/mes + IVA. Si deseas conocer más o agendar una llamada gratuita de 30 minutos, no dudes en preguntar.\n\nMás información:\n- https://www.cushlabs.ai/es/services/website-chatbot/",
+    "status": 200,
+    "totalMs": 3377.1538,
+    "steps": {
+      "ratelimit": 4.9,
+      "quota": 12.9,
+      "log": 18.2,
+      "embed": 382.9,
+      "search": 18.6,
+      "persona": 4.2,
+      "pre": 477.6,
+      "model": 2745.9,
+      "save": 5.2
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "page-this-en",
+    "ok": false,
+    "problems": [
+      "contains none of: salon"
+    ],
+    "reply": "I can help you figure that out! What type of business do you run and which channels do your customers typically use to reach you? Knowing this will help me see if CushLabs is a good fit for you.",
+    "status": 200,
+    "totalMs": 2296.6461000000127,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 8.4,
+      "log": 13.6,
+      "embed": 330.5,
+      "search": 16.5,
+      "persona": 4.1,
+      "pre": 383,
+      "model": 1758.1,
+      "save": 6.3
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "page-this-es",
+    "ok": true,
+    "problems": [],
+    "reply": "CushLabs.ai es ideal para pequeñas y medianas empresas que pierden clientes por respuestas tardías. Funciona muy bien para salones, clínicas, restaurantes, boutiques y negocios de servicio, especialmente si tus clientes se comunican en inglés y español.\n\nSi me das un poco más de información sobre tu negocio y los canales que usas, puedo decirte si encajamos. ¿Cuáles son tus principales canales de comunicación?",
+    "status": 200,
+    "totalMs": 1681.654600000009,
+    "steps": {
+      "ratelimit": 3.2,
+      "quota": 8.7,
+      "log": 12.5,
+      "embed": 165.6,
+      "search": 16.2,
+      "persona": 4.4,
+      "pre": 216.9,
+      "model": 1258.8,
+      "save": 5.1
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "page-hostile-title-en",
+    "ok": true,
+    "problems": [],
+    "reply": "CushLabs.ai helps small businesses respond faster, capture more leads, and stay connected with customers across Facebook, Instagram, WhatsApp, and the web. Our AI-powered automation handles customer conversations, supports reputation management, alerts owners to new opportunities, and keeps the business responsive even when the team is busy or offline. \n\nIn practice: someone messages you at 11pm on a Sunday, gets a correct answer in seconds, and you get a WhatsApp with their name and number the moment they're ready to buy. \n\nWhat channels do your customers use to reach you?",
+    "status": 200,
+    "totalMs": 2462.655500000008,
+    "steps": {
+      "ratelimit": 3.1,
+      "quota": 8.3,
+      "log": 13.4,
+      "embed": 182.8,
+      "search": 14.8,
+      "persona": 4.2,
+      "pre": 234.6,
+      "model": 2057.6,
+      "save": 5.2
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "page-hostile-title-es",
+    "ok": true,
+    "problems": [],
+    "reply": "CushLabs.ai ayuda a los negocios pequeños a responder más rápido, captar más clientes y mantenerse conectados con ellos en Facebook, Instagram, WhatsApp y la web. Nuestra automatización con IA atiende las conversaciones, apoya la gestión de reputación, avisa a los dueños de cada nueva oportunidad y mantiene al negocio respondiendo aunque el equipo esté ocupado o fuera de horario. \n\nEn la práctica: alguien te escribe a las 11 de la noche de un domingo, recibe una respuesta correcta en segundos, y a ti te llega un WhatsApp con su nombre y su número en cuanto está listo para comprar. \n\n¿Qué tipo de negocio manejas?",
+    "status": 200,
+    "totalMs": 2677.9888999999966,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 8.2,
+      "log": 13.5,
+      "embed": 196.4,
+      "search": 15.6,
+      "persona": 4.5,
+      "pre": 247.5,
+      "model": 2267.8,
+      "save": 5.4
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "prompt-leak-en",
+    "ok": true,
+    "problems": [],
+    "reply": "I can only help with questions about this business and its services. Could you rephrase your question?",
+    "status": 200,
+    "totalMs": 140.5347000000038,
+    "steps": {
+      "ratelimit": 2.8
+    },
+    "model": "?",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "prompt-leak-es",
+    "ok": false,
+    "problems": [
+      "replied in the wrong language (visitor wrote es)"
+    ],
+    "reply": "I can only help with questions about this business and its services. Could you rephrase your question?",
+    "status": 200,
+    "totalMs": 155.5003999999899,
+    "steps": {
+      "ratelimit": 3
+    },
+    "model": "?",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "offtopic-en",
+    "ok": true,
+    "problems": [],
+    "reply": "I'm focused on helping businesses with AI solutions, so I don't have real-time weather updates. If you have questions about how CushLabs.ai can help your business, I'd be happy to assist! What channels do your customers use to reach you?",
+    "status": 200,
+    "totalMs": 1680.4199999999983,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 9.2,
+      "log": 13.8,
+      "embed": 341.3,
+      "search": 15.1,
+      "persona": 4.4,
+      "pre": 393.5,
+      "model": 1123.8,
+      "save": 5.7
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "offtopic-es",
+    "ok": true,
+    "problems": [],
+    "reply": "No tengo información sobre el clima actual. Te recomendaría usar una aplicación de clima o consultar un sitio web de pronósticos. ¿Te gustaría hablar acerca de cómo mejoraría la comunicación con tus clientes?",
+    "status": 200,
+    "totalMs": 1379.0939999999973,
+    "steps": {
+      "ratelimit": 2.9,
+      "quota": 8.2,
+      "log": 13,
+      "embed": 164.4,
+      "search": 14.9,
+      "persona": 4.4,
+      "pre": 215.1,
+      "model": 1007.5,
+      "save": 5
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "cross-tenant-nyet-en",
+    "ok": true,
+    "problems": [],
+    "reply": "I don't have specific details about that. I recommend reaching out to Robert for a free consultation to discuss pricing and how the classes can meet your needs. You can book a call here: [Free Consultation](https://www.cushlabs.ai/consultation/).\n\nIs there anything else you'd like to know about CushLabs.ai?",
+    "status": 200,
+    "totalMs": 2420.145299999989,
+    "steps": {
+      "ratelimit": 57.9,
+      "quota": 119.5,
+      "log": 61.1,
+      "embed": 239.6,
+      "search": 15.7,
+      "persona": 5,
+      "pre": 514.2,
+      "model": 1685.9,
+      "save": 5.8
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "cross-tenant-nyet-es",
+    "ok": true,
+    "problems": [],
+    "reply": "No tengo información específica sobre los precios de las clases de inglés en New York English Teacher. Te sugiero que agendes una consulta gratuita con Robert para que pueda brindarte la información más precisa sobre precios y horarios. Puedes reservar una llamada aquí: [Consulta gratuita](https://www.cushlabs.ai/es/reservar/).\n\nSi tienes alguna otra pregunta sobre lo que hacemos en CushLabs, aquí estoy para ayudarte.",
+    "status": 200,
+    "totalMs": 2134.689699999988,
+    "steps": {
+      "ratelimit": 2.8,
+      "quota": 8.8,
+      "log": 14.1,
+      "embed": 243.7,
+      "search": 15.6,
+      "persona": 4.4,
+      "pre": 296.6,
+      "model": 1680.6,
+      "save": 5.2
+    },
+    "model": "gpt-4o-mini",
+    "internal": true,
+    "configured": true
+  },
+  {
+    "id": "cross-tenant-foreign-id",
+    "ok": true,
+    "problems": [],
+    "reply": "Unknown business",
+    "status": 403,
+    "totalMs": 158.74499999999534,
+    "steps": {
+      "ratelimit": 2.9
+    },
+    "model": "?",
+    "internal": true,
+    "configured": true
+  }
+]
