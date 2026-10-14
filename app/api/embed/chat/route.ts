@@ -1,3 +1,4 @@
+import { openai } from "@ai-sdk/openai";
 import * as Sentry from "@sentry/nextjs";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
@@ -12,7 +13,10 @@ import {
 	checkOutput,
 	SAFE_OUTPUT_FALLBACK,
 } from "@/lib/ai/safety/output-guard";
-import { searchKnowledgeDirect } from "@/lib/ai/tools/search-knowledge";
+import {
+	searchKnowledgeDirect,
+	warmKnowledgeSearch,
+} from "@/lib/ai/tools/search-knowledge";
 import { getBusinessPersona } from "@/lib/db/queries";
 import {
 	checkMessageLimit,
@@ -23,6 +27,9 @@ import {
 	createWidgetMessage,
 	getWidgetConversationBySession,
 } from "@/lib/db/queries-live-chat";
+import { isQaGateRequest } from "@/lib/embed/internal-traffic";
+import { resolveModelOverride } from "@/lib/embed/model-override";
+import { createTimer } from "@/lib/embed/server-timing";
 import { resolveEmbedTenant } from "@/lib/embed/tenant";
 import { playbookEngine } from "@/lib/playbook/engine";
 import { rateLimit } from "@/lib/rate-limit";
@@ -43,11 +50,33 @@ const UNCONFIGURED_REPLY: Record<string, string> = {
 };
 
 export async function POST(request: Request) {
+	/**
+	 * Every reply carries Server-Timing (ratelimit, quota, log, persona, embed,
+	 * search, pre = everything before the model, model, save) and X-Chat-Model
+	 * (the model that actually wrote it). Read by scripts/qa-gate.ts.
+	 */
+	const timer = createTimer();
+	let modelId: string | null = null;
+	const respond = (body: unknown, init?: ResponseInit) => {
+		const headers = new Headers(init?.headers);
+		headers.set("Server-Timing", timer.header());
+		if (modelId) headers.set("X-Chat-Model", modelId);
+		// Lets the gate confirm it is not being counted as a visitor.
+		if (internal) headers.set("X-Traffic", "internal");
+		return NextResponse.json(body, { ...init, headers });
+	};
+
+	// QA gate traffic (token-checked): tagged internal, not counted as usage.
+	const internal = isQaGateRequest(request);
+	const modelOverride = resolveModelOverride(request);
+
 	// Rate limit: 30 messages per minute per IP
-	const rateLimitResponse = await rateLimit(request, "embed-chat", {
-		maxRequests: 30,
-		windowSeconds: 60,
-	});
+	const rateLimitResponse = await timer.time("ratelimit", () =>
+		rateLimit(request, "embed-chat", {
+			maxRequests: 30,
+			windowSeconds: 60,
+		}),
+	);
 	if (rateLimitResponse) return rateLimitResponse;
 
 	// Capture the embedding origin so abuse can be traced back to a host site.
@@ -68,7 +97,7 @@ export async function POST(request: Request) {
 		} = await request.json();
 
 		if (!message || typeof message !== "string") {
-			return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+			return respond({ error: "Invalid message" }, { status: 400 });
 		}
 
 		// The business is this deployment's, never the request's — a visitor who
@@ -77,7 +106,7 @@ export async function POST(request: Request) {
 		const tenant = resolveEmbedTenant({ businessId, botId });
 		if (!tenant.ok) {
 			console.warn(`[embed-chat] refused ${tenant.reason}`, { origin });
-			return NextResponse.json({ error: "Unknown business" }, { status: 403 });
+			return respond({ error: "Unknown business" }, { status: 403 });
 		}
 		const effectiveBusinessId = tenant.businessId;
 		const effectiveBotId = tenant.botId;
@@ -93,7 +122,7 @@ export async function POST(request: Request) {
 					inputCheck.pattern ? ` pattern=${inputCheck.pattern}` : ""
 				}`,
 			);
-			return NextResponse.json({
+			return respond({
 				response: safeReply,
 				conversationId: existingConversationId,
 				playbook: { active: false },
@@ -102,11 +131,11 @@ export async function POST(request: Request) {
 
 		// Check plan-based monthly message limit for the business
 		if (effectiveBusinessId) {
-			const limitCheck = await checkMessageLimit({
-				businessId: effectiveBusinessId,
-			});
+			const limitCheck = await timer.time("quota", () =>
+				checkMessageLimit({ businessId: effectiveBusinessId }),
+			);
 			if (!limitCheck.allowed) {
-				return NextResponse.json(
+				return respond(
 					{
 						error: "Monthly message limit reached. Please upgrade your plan.",
 						response:
@@ -142,6 +171,7 @@ export async function POST(request: Request) {
 		let isFirstMessage = false;
 
 		if (effectiveBusinessId && visitorId && sessionId) {
+			const tLog = performance.now();
 			let conversation = await getWidgetConversationBySession({
 				businessId: effectiveBusinessId,
 				visitorId,
@@ -154,7 +184,11 @@ export async function POST(request: Request) {
 					botId: effectiveBotId,
 					visitorId,
 					sessionId,
-					metadata: { pageUrl: currentUrl, origin },
+					metadata: {
+						pageUrl: currentUrl,
+						origin,
+						...(internal ? { internal: true } : {}),
+					},
 				});
 				isFirstMessage = true;
 			}
@@ -167,7 +201,10 @@ export async function POST(request: Request) {
 				role: "user",
 				content: message,
 			});
-			await incrementMessageCount({ businessId: effectiveBusinessId });
+			if (!internal) {
+				await incrementMessageCount({ businessId: effectiveBusinessId });
+			}
+			timer.add("log", performance.now() - tLog);
 
 			// Check for active playbook execution
 			const activeExecution =
@@ -190,7 +227,7 @@ export async function POST(request: Request) {
 					});
 				}
 
-				return NextResponse.json({
+				return respond({
 					response: stepResult.content || "",
 					conversationId,
 					playbook: {
@@ -235,7 +272,7 @@ export async function POST(request: Request) {
 					});
 				}
 
-				return NextResponse.json({
+				return respond({
 					response: stepResult.content || "",
 					conversationId,
 					playbook: {
@@ -251,7 +288,7 @@ export async function POST(request: Request) {
 
 		// No active playbook - use AI response
 		// Track usage even when no conversation was created
-		if (effectiveBusinessId && !conversationId) {
+		if (effectiveBusinessId && !conversationId && !internal) {
 			await incrementMessageCount({ businessId: effectiveBusinessId });
 		}
 
@@ -260,6 +297,7 @@ export async function POST(request: Request) {
 			? await searchKnowledgeDirect(message, {
 					businessId: effectiveBusinessId,
 					botId: effectiveBotId,
+					onTiming: (step, ms) => timer.add(step, ms),
 				})
 			: [];
 
@@ -285,7 +323,9 @@ export async function POST(request: Request) {
 		 * minute instead of an unbounded number of misbranded conversations.
 		 */
 		const persona = effectiveBusinessId
-			? await getBusinessPersona(effectiveBusinessId)
+			? await timer.time("persona", () =>
+					getBusinessPersona(effectiveBusinessId),
+				)
 			: null;
 
 		if (!persona) {
@@ -302,11 +342,16 @@ export async function POST(request: Request) {
 				"[embed-chat] no persona for business",
 				effectiveBusinessId ?? "(none)",
 			);
-			return NextResponse.json({
-				response: UNCONFIGURED_REPLY[detectedLang] ?? UNCONFIGURED_REPLY.en,
-				conversationId,
-				playbook: { active: false },
-			});
+			return respond(
+				{
+					response: UNCONFIGURED_REPLY[detectedLang] ?? UNCONFIGURED_REPLY.en,
+					conversationId,
+					playbook: { active: false },
+				},
+				// Lets the QA gate stop with "not configured" instead of failing
+				// every scenario on the same canned reply.
+				{ headers: { "X-Tenant-Configured": "no" } },
+			);
 		}
 
 		let context = persona;
@@ -338,17 +383,23 @@ export async function POST(request: Request) {
 		// 429 is NOT retried since the payload won't get better).
 		// Two-model routing: pleasantries → gpt-4o-mini, knowledge → gpt-4o.
 		const modelKey = routeModel(message);
-		const model = myProvider.languageModel(modelKey);
-		const { text } = await withRetry(
-			() =>
-				generateText({
-					model,
-					messages: [
-						{ role: "system", content: context },
-						{ role: "user", content: message },
-					],
-				}),
-			{ label: "embed-chat:generateText" },
+		const model = modelOverride
+			? openai(modelOverride)
+			: myProvider.languageModel(modelKey);
+		modelId = model.modelId;
+		timer.mark("pre");
+		const { text } = await timer.time("model", () =>
+			withRetry(
+				() =>
+					generateText({
+						model,
+						messages: [
+							{ role: "system", content: context },
+							{ role: "user", content: message },
+						],
+					}),
+				{ label: "embed-chat:generateText" },
+			),
 		);
 
 		// Output safety: refuse to surface system-prompt leakage or scaffolding.
@@ -364,23 +415,89 @@ export async function POST(request: Request) {
 
 		// Save bot response
 		if (conversationId) {
-			await createWidgetMessage({
-				conversationId,
-				role: "assistant",
-				content: safeText,
-			});
+			await timer.time("save", () =>
+				createWidgetMessage({
+					conversationId,
+					role: "assistant",
+					content: safeText,
+				}),
+			);
 		}
 
-		return NextResponse.json({
+		return respond({
 			response: safeText,
 			conversationId,
 			playbook: { active: false },
 		});
 	} catch (error) {
 		console.error("Embed chat error:", error);
-		return NextResponse.json(
-			{ error: "Failed to process message" },
-			{ status: 500 },
-		);
+		return respond({ error: "Failed to process message" }, { status: 500 });
 	}
+}
+
+/** When this instance last warmed. Module scope = one value per instance. */
+let lastWarmAt = 0;
+const WARM_EVERY_MS = 60_000;
+
+/**
+ * Warm-up. The loader calls this once when a visitor first hovers over,
+ * touches or focuses the chat button (lib/embed/script.ts), so the function,
+ * the database (Neon suspends an idle compute) and the embedding client are
+ * awake before the first question. Measured 2026-10-14 before this existed:
+ * first answer after a quiet period 6.5s, the next one 2.2s.
+ *
+ * It touches the same things a real message touches first — rate limiter,
+ * persona query, knowledge-search client — and reveals nothing: the body is
+ * empty and the persona is never returned. Rate limited like the chat itself,
+ * and throttled to one round of work per minute per instance.
+ *
+ * scripts/qa-gate.ts sends this same request before its first scenario
+ * (unless --cold), so its first answer measures what a visitor gets.
+ */
+export async function GET(request: Request) {
+	const headers = {
+		"Cache-Control": "no-store",
+		"Access-Control-Allow-Origin": "*",
+		"Access-Control-Expose-Headers": "X-Warm, Server-Timing",
+	};
+
+	// Throttled to once a minute per instance: a page full of visitors hovering
+	// costs one round of work, not one per hover. Within the minute the instance
+	// is already awake, which is the whole point, so it answers at once.
+	if (Date.now() - lastWarmAt < WARM_EVERY_MS) {
+		return new NextResponse(null, {
+			status: 204,
+			headers: {
+				...headers,
+				"X-Warm": "already-warm",
+				"Server-Timing": "warm;dur=0",
+			},
+		});
+	}
+	lastWarmAt = Date.now();
+
+	// The rate limiter is part of the warm-up on purpose: it is the first
+	// database call every real message makes.
+	const t0 = performance.now();
+	const limited = await rateLimit(request, "embed-warm", {
+		maxRequests: 30,
+		windowSeconds: 60,
+	});
+	if (limited) return limited;
+
+	const tenant = resolveEmbedTenant({});
+	await Promise.allSettled([
+		tenant.ok && tenant.businessId
+			? getBusinessPersona(tenant.businessId)
+			: Promise.resolve(null),
+		warmKnowledgeSearch(),
+	]);
+	return new NextResponse(null, {
+		status: 204,
+		headers: {
+			...headers,
+			"X-Warm": "warmed",
+			"Server-Timing": `warm;dur=${(performance.now() - t0).toFixed(1)}`,
+		},
+	});
 }

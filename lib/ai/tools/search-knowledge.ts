@@ -18,6 +18,8 @@ export type KnowledgeSearchOptions = {
 	botId?: string; // Optional: filter by specific bot
 	maxChunks?: number; // Controlled by plan tier (default: 5)
 	similarityThreshold?: number; // Minimum similarity (default: 0.3 — see searchKnowledgeDirect)
+	/** Receives step durations (ms) for the Server-Timing header. */
+	onTiming?: (step: "embed" | "search", ms: number) => void;
 };
 
 // Simple in-memory cache for embeddings (prevents rate limiting during testing)
@@ -74,6 +76,16 @@ function isUuid(value: unknown): value is string {
 }
 
 /**
+ * Wake the knowledge-search database connection and the embedding client
+ * before a visitor's first question (the widget's warm-up, GET
+ * /api/embed/chat). The embedding of a fixed phrase is cached in-memory for
+ * five minutes, so repeated warm-ups do not call OpenAI again.
+ */
+export async function warmKnowledgeSearch(): Promise<void> {
+	await Promise.allSettled([client`SELECT 1`, generateEmbedding("warm-up")]);
+}
+
+/**
  * Search knowledge base with tenant isolation.
  *
  * SECURITY:
@@ -122,6 +134,7 @@ export async function searchKnowledgeDirect(
 			 * missed" and defers on a question it could have answered.
 			 */
 			similarityThreshold = 0.3,
+			onTiming,
 		} = options;
 
 		// Tenant isolation gate: refuse to query without a valid businessId.
@@ -129,8 +142,11 @@ export async function searchKnowledgeDirect(
 		if (botId !== undefined && !isUuid(botId)) return [];
 
 		// 1. Generate embedding for the query
+		const tEmbed = performance.now();
 		const embedding = await generateEmbedding(trimmed);
+		onTiming?.("embed", performance.now() - tEmbed);
 		if (!embedding) return [];
+		const tSearch = performance.now();
 
 		const embeddingStr = JSON.stringify(embedding);
 		const results: KnowledgeSearchResult[] = [];
@@ -209,6 +225,7 @@ export async function searchKnowledgeDirect(
 		 * burns a context slot that a different topic needed, and repetition in
 		 * context makes a model more likely to repeat itself back.
 		 */
+		onTiming?.("search", performance.now() - tSearch);
 		const seen = new Set<string>();
 		const deduped: KnowledgeSearchResult[] = [];
 		for (const r of results.sort((a, b) => b.similarity - a.similarity)) {

@@ -169,9 +169,22 @@ ${SANITIZERS_JS}
     button.onmouseover = function() { button.style.transform = 'scale(' + (config.buttonSize * 1.1) + ')'; button.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)'; };
     button.onmouseout = function() { button.style.transform = 'scale(' + config.buttonSize + ')'; button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; };
     button.onclick = toggleChat;
+
+    // Warm-up: the first time a visitor shows intent (hover, touch, focus), wake
+    // the chat function and its database before the first question. Measured
+    // 2026-10-14: first answer after a quiet period 6.5s, the next 2.2s.
+    var warmed = false;
+    function warmUp() {
+      if (warmed) return;
+      warmed = true;
+      try { fetch(CHAT_APP_URL + '/api/embed/chat', { method: 'GET', mode: 'no-cors', keepalive: true }); } catch (e) {}
+    }
+    button.addEventListener('mouseenter', warmUp);
+    button.addEventListener('touchstart', warmUp, { passive: true });
+    button.addEventListener('focus', warmUp);
     document.body.appendChild(button);
 
-    if (config.autoOpen) setTimeout(openChat, config.openDelay);
+    if (config.autoOpen) setTimeout(function() { warmUp(); openChat(); }, config.openDelay);
   }
 
   if (document.readyState === 'loading') {

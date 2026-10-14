@@ -574,6 +574,8 @@ export const widgetConversation = pgTable("WidgetConversation", {
 		ip?: string;
 		whatsappName?: string;
 		origin?: string | null;
+		/** QA gate traffic (lib/embed/internal-traffic.ts), never a visitor. */
+		internal?: boolean;
 	}>(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
