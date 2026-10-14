@@ -110,6 +110,13 @@ const AdminEmbedCode = dynamic(
 	() => import("@/components/admin-embed-code").then((m) => m.AdminEmbedCode),
 	{ ssr: false },
 );
+const AdminWidgetAppearance = dynamic(
+	() =>
+		import("@/components/admin-widget-appearance").then(
+			(m) => m.AdminWidgetAppearance,
+		),
+	{ ssr: false },
+);
 const AdminWhatsAppTab = dynamic(
 	() =>
 		import("@/components/admin-whatsapp/admin-whatsapp-tab").then(
@@ -198,7 +205,7 @@ function AdminTabsInner() {
 				</TabsTrigger>
 				<TabsTrigger value="embed" className="flex items-center gap-2">
 					<Code className="h-4 w-4" />
-					<span className="hidden sm:inline">Embed</span>
+					<span className="hidden sm:inline">Widget</span>
 				</TabsTrigger>
 				{WHATSAPP_ENABLED && (
 					<TabsTrigger value="whatsapp" className="flex items-center gap-2">
@@ -245,7 +252,10 @@ function AdminTabsInner() {
 			</TabsContent>
 
 			<TabsContent value="embed" className="mt-6">
-				<AdminEmbedCode />
+				<div className="space-y-6">
+					<AdminWidgetAppearance />
+					<AdminEmbedCode />
+				</div>
 			</TabsContent>
 
 			{WHATSAPP_ENABLED && (

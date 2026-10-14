@@ -15,8 +15,11 @@ test.describe("/api/embed", () => {
 		const contentType = response.headers()["content-type"];
 		expect(contentType).toContain("application/javascript");
 
+		// ?id= must NOT reach the script: it used to be pasted into the source,
+		// which let /api/embed?id=x';alert(1)// serve attacker script (fixed in
+		// #125). This test asserted the echo until 2026-10-14.
 		const body = await response.text();
-		expect(body).toContain("test-bot");
+		expect(body).not.toContain("test-bot");
 		expect(body).toContain("iframe");
 	});
 
@@ -54,6 +57,20 @@ test.describe("/api/embed", () => {
 		expect(response.status()).toBe(400);
 	});
 
+	test("POST /api/embed/capture refuses another business's id", async ({
+		page,
+	}) => {
+		// Each deployment serves one business (DEFAULT_BUSINESS_ID); a request
+		// naming any other is refused before anything else (lib/embed/tenant.ts).
+		const response = await page.request.post("/api/embed/capture", {
+			data: {
+				businessId: generateUUID(),
+				email: "visitor@example.com",
+			},
+		});
+		expect(response.status()).toBe(403);
+	});
+
 	test("POST /api/embed/capture requires at least one contact field", async ({
 		page,
 	}) => {
@@ -62,7 +79,8 @@ test.describe("/api/embed", () => {
 				businessId: generateUUID(),
 			},
 		});
-		expect(response.status()).toBe(400);
+		// 400 for the missing fields, or 403 if the foreign id is checked first.
+		expect([400, 403]).toContain(response.status());
 	});
 
 	// =========================================
@@ -111,7 +129,9 @@ test.describe("/api/embed", () => {
 
 		// At least one should be rate limited (429) if Redis is running,
 		// or all could pass if using in-memory limiter on fresh instance
-		const allValid = statuses.every((s) => [200, 201, 400, 429].includes(s));
+		const allValid = statuses.every((s) =>
+			[200, 201, 400, 403, 429].includes(s),
+		);
 		expect(allValid).toBe(true);
 	});
 });

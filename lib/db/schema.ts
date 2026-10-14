@@ -410,6 +410,11 @@ export const botSettings = pgTable("bot_settings", {
 		welcomeMessage_es?: string;
 		placeholder_es?: string;
 		botIcon?: string;
+		// Appearance editor (lib/embed/appearance.ts). Absent = the default look.
+		headerColor?: string;
+		avatarBackground?: string;
+		avatarRing?: string;
+		avatarUrl?: string;
 	}>(),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 	updatedAt: timestamp("updatedAt").notNull().defaultNow(),

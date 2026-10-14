@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 const isPublicRoute = createRouteMatcher([
 	"/",
 	"/pricing(.*)",
+	"/privacy(.*)",
 	"/sign-in(.*)",
 	"/sign-up(.*)",
 	"/login(.*)",
@@ -62,7 +63,7 @@ export default clerkMiddleware(async (auth, request) => {
  *   /api/cron/*       Vercel Cron (CRON_SECRET-verified in the route)
  *   /api/plans        public plan list for the pricing page
  *   /api/health       health check
- *   /ping, /pricing, /demo, /demo-ny-english   public marketing pages
+ *   /ping, /pricing, /privacy, /demo, /demo-ny-english   public pages
  *
  * Still matched, on purpose:
  *   /                 calls getAuthUser() -> auth() to route signed-in users
@@ -75,7 +76,7 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
 	matcher: [
 		// Pages: skip Next.js internals, static files, and the public routes above.
-		"/((?!_next|embed|api/embed|api/webhooks|api/clerk|api/cron|api/plans|api/health|ping|pricing|demo|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|ogg|mp3|wav)).*)",
+		"/((?!_next|embed|api/embed|api/webhooks|api/clerk|api/cron|api/plans|api/health|ping|pricing|privacy|demo|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt|mp4|webm|ogg|mp3|wav)).*)",
 		// API routes (even ones that look like static files), minus the public ones.
 		"/(api|trpc)((?!/embed|/webhooks|/clerk|/cron|/plans|/health).*)",
 	],

@@ -3,25 +3,19 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { botSettings, membership } from "@/lib/db/schema";
+import {
+	resolveAppearance,
+	type SavedAppearance,
+} from "@/lib/embed/appearance";
+import { isHexColor } from "@/lib/embed/sanitize";
+import {
+	localizeWidgetText,
+	type SavedStarterQuestion,
+	type SavedWidgetText,
+} from "@/lib/embed/widget-text";
 
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
-
-// Default embed settings
-const DEFAULT_EMBED_SETTINGS = {
-	buttonColor: "#4f46e5",
-	buttonSize: 1.0,
-	position: "bottom-right" as const,
-	welcomeMessage: "Hello! How can I help you today?",
-	placeholder: "Type your message...",
-	botIcon: "💬",
-	botName: "AI Assistant",
-	suggestedQuestions: [
-		"What services do you offer?",
-		"How much does it cost?",
-		"How do I book a call?",
-	],
-};
 
 /**
  * The business this deployment's public widget serves.
@@ -34,51 +28,66 @@ const servingBusinessId = process.env.DEFAULT_BUSINESS_ID?.trim() || undefined;
 const servingBotId = process.env.DEFAULT_BOT_ID?.trim() || undefined;
 
 /**
- * A tenant's configured copy, per language.
+ * Public, read by the chat window AND by the loader on the customer's page
+ * (cross-origin, hence the CORS header). Everything here is already public:
+ * it is what every visitor of the tenant's site sees.
  *
- * Starter questions and the input placeholder are stored by the admin UI as
- * single strings, in whichever language they were typed. The widget then used
- * them verbatim and they OVERRODE its own bilingual defaults — so on
- * cushlabs.ai/es the frame rendered in Spanish ("¡Hola!", "Preguntas rápidas:")
- * while the four question chips and the placeholder stayed in English. A
- * Spanish-speaking visitor was shown a half-translated widget on a page that is
- * otherwise entirely Spanish.
- *
- * Each item may now carry a `question_es` alongside `question`, and
- * embedSettings may carry `placeholder_es`. When the requested language has no
- * translation, the value is dropped rather than substituted, and the widget
- * falls back to its own built-in copy for that language.
- *
- * DROPPING IS THE POINT. Returning the English string on a Spanish page is what
- * the bug was. A missing translation should degrade to a correct generic
- * phrase, never to the wrong language.
+ * Cached at the CDN for 30 seconds, then served stale for up to 30 more while
+ * it refreshes, so a save reaches visitors within about a minute. Nothing else
+ * caches it: the loader fetches it on every page load.
  */
-function localize(
+const HEADERS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET",
+	"Cache-Control": "public, max-age=0, s-maxage=30, stale-while-revalidate=30",
+};
+
+/**
+ * What the widget needs, for ONE language.
+ *
+ * Text fields (welcomeMessage, placeholder, suggestedQuestions) are present
+ * only when the tenant saved them in THIS language: absent means "use your
+ * built-in text for this language" (lib/embed/widget-text.ts). This route used
+ * to fill gaps with English defaults ("Hello! How can I help you today?") and
+ * with the English welcome on Spanish requests, which is how English text
+ * reached Spanish pages.
+ *
+ * buttonColor and position are present only when SAVED, so the loader can let
+ * a saved value win over a script-tag attribute, and an attribute win over its
+ * own default. `appearance` is always complete: the resolved chat-window look.
+ */
+function widgetSettings(
 	row: {
-		starterQuestions: Array<{ question?: string; question_es?: string }> | null;
+		botName: string | null;
+		starterQuestions: SavedStarterQuestion[] | null;
 		embedSettings: Record<string, unknown> | null;
-	},
+	} | null,
 	lang: "en" | "es",
 ) {
-	const questions = (row.starterQuestions ?? [])
-		.map((q) =>
-			lang === "es" ? (q.question_es ?? null) : (q.question ?? null),
-		)
-		.filter((q): q is string => Boolean(q?.trim()));
-
-	const embed = { ...(row.embedSettings ?? {}) } as Record<string, unknown>;
-	if (lang === "es") {
-		const es = embed.placeholder_es;
-		if (typeof es === "string" && es.trim()) embed.placeholder = es;
-		else delete embed.placeholder;
-		const welcomeEs = embed.welcomeMessage_es;
-		if (typeof welcomeEs === "string" && welcomeEs.trim())
-			embed.welcomeMessage = welcomeEs;
-	}
-	delete embed.placeholder_es;
-	delete embed.welcomeMessage_es;
-
-	return { questions, embed };
+	const saved = (row?.embedSettings ?? {}) as Record<string, unknown> &
+		SavedAppearance;
+	const text = localizeWidgetText(
+		saved as SavedWidgetText,
+		row?.starterQuestions,
+		lang,
+	);
+	return {
+		language: lang,
+		botName: row?.botName?.trim() || undefined,
+		botIcon:
+			typeof saved.botIcon === "string" && saved.botIcon.length <= 16
+				? saved.botIcon
+				: undefined,
+		...text,
+		buttonColor: isHexColor(saved.buttonColor) ? saved.buttonColor : undefined,
+		position:
+			saved.position === "bottom-left" || saved.position === "bottom-right"
+				? saved.position
+				: undefined,
+		appearance: resolveAppearance(saved),
+		businessId: servingBusinessId ?? null,
+		botId: servingBotId ?? null,
+	};
 }
 
 export async function GET(request: Request) {
@@ -130,74 +139,28 @@ export async function GET(request: Request) {
 					.orderBy(desc(botSettings.updatedAt))
 					.limit(1);
 
-		if (settings.length === 0) {
-			// Return defaults if no settings found
-			return NextResponse.json({
-				...DEFAULT_EMBED_SETTINGS,
-				businessId: servingBusinessId ?? null,
-				botId: servingBotId ?? null,
-			});
-		}
-
-		const row = settings[0];
-
 		/**
-		 * starterQuestions is the ONLY configurable source, then the defaults.
+		 * starterQuestions is the ONLY configurable source of quick questions;
+		 * the duplicate embedSettings.suggestedQuestions was deleted on
+		 * 2026-08-09 (two fields for one concept, nothing comparing them).
 		 *
-		 * embedSettings.suggestedQuestions used to sit between the two as a second
-		 * fallback, and nothing ever wrote it — the admin UI
-		 * (components/admin-starter-questions.tsx) writes starterQuestions, and
-		 * this route already preferred that. So it was a field that could only be
-		 * populated by editing a live jsonb column by hand, for a value that would
-		 * then be overridden by any tenant who configured the real one.
-		 *
-		 * Two fields for one concept is the same second-copy problem removed from
-		 * business_unit in the operating-system repo on 2026-08-09: two places can
-		 * disagree, and nothing compares them. Deleted rather than wired up,
-		 * because starterQuestions is the one with a UI behind it.
-		 */
-		const localized = localize(row as Parameters<typeof localize>[0], lang);
-
-		/**
-		 * An empty list after localization means the tenant has questions
-		 * configured but none in THIS language. Returning `undefined` rather than
-		 * an empty array lets the widget fall back to its own bilingual defaults —
-		 * an empty array would render the "Quick questions:" heading with nothing
-		 * under it, which reads as broken.
-		 */
-		const suggestedQuestions =
-			localized.questions.length > 0 ? localized.questions : undefined;
-
-		/**
 		 * businessId and botId are returned so the widget can send them back on
 		 * every message. Without them the chat route's conversation-logging block
-		 * never runs — see the comment on that guard. They are ids the widget is
-		 * already being served by, not secrets: the same values are embedded in
-		 * every public widget install.
+		 * never runs. They are the ids every public install is already served by.
 		 */
-		const embedSettings = {
-			...DEFAULT_EMBED_SETTINGS,
-			...localized.embed,
-			botName: row.botName ?? DEFAULT_EMBED_SETTINGS.botName,
-			// Omitted entirely when this language has no tenant-configured copy, so
-			// the widget uses its own translation instead of the other language's.
-			...(suggestedQuestions ? { suggestedQuestions } : {}),
-			...(localized.embed.placeholder === undefined
-				? { placeholder: undefined }
-				: {}),
-			language: lang,
-			businessId: servingBusinessId ?? null,
-			botId: servingBotId ?? null,
-		};
-
-		return NextResponse.json(embedSettings);
+		return NextResponse.json(
+			widgetSettings(
+				(settings[0] as Parameters<typeof widgetSettings>[0]) ?? null,
+				lang,
+			),
+			{ headers: HEADERS },
+		);
 	} catch (error) {
 		console.error("Error fetching embed settings:", error);
-		// Return defaults on error
-		return NextResponse.json({
-			...DEFAULT_EMBED_SETTINGS,
-			businessId: servingBusinessId ?? null,
-			botId: servingBotId ?? null,
+		// The built-in look and text for this language. Not cached: a database
+		// blip must not pin the default look on the CDN.
+		return NextResponse.json(widgetSettings(null, lang), {
+			headers: { ...HEADERS, "Cache-Control": "no-store" },
 		});
 	}
 }
